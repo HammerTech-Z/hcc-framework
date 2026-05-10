@@ -7,27 +7,8 @@ import {
   Notification,
 } from "electron";
 import { join } from "path";
-
-// replaced @electron-toolkit/utils import (broken in Electron 39)
-const is = {
-  get dev() {
-    return !!process.env.ELECTRON_RENDERER_URL;
-  },
-};
-const electronApp = {
-  setAppUserModelId(id: string) {
-    if (process.platform === "win32") app.setAppUserModelId(id);
-  },
-};
-const optimizer = {
-  watchWindowShortcuts(window: BrowserWindow) {
-    window.webContents.on("before-input-event", (_event, input) => {
-      if (input.key === "F12" || (input.control && input.shift && input.key === "I")) {
-        window.webContents.toggleDevTools();
-      }
-    });
-  },
-};
+import { electronApp, optimizer, is } from "@electron-toolkit/utils";
+import type { AppUpdater } from "electron-updater";
 import icon from "../../resources/icon.png?asset";
 import {
   checkInstallStatus,
@@ -48,26 +29,15 @@ import {
   InstallProgress,
 } from "./installer";
 import {
-  isRemoteMode,
-  isRemoteOnlyMode,
   sendMessage,
   startGateway,
   stopGateway,
   isGatewayRunning,
+  isRemoteMode,
   testRemoteConnection,
   stopHealthPolling,
   restartGateway,
-  ensureSshTunnelIfNeeded,
-  setSshRemoteApiKey,
-  markApiServerUnavailable,
 } from "./hermes";
-import {
-  startSshTunnel,
-  stopSshTunnel,
-  testSshConnection,
-  isSshTunnelActive,
-  isSshTunnelHealthy,
-} from "./ssh-tunnel";
 import {
   getClaw3dStatus,
   setupClaw3d,
@@ -137,57 +107,13 @@ import {
   triggerCronJob,
 } from "./cronjobs";
 import { getAppLocale, setAppLocale } from "./locale";
+import {
+  hardenWebviewPreferences,
+  isAllowedAppNavigationUrl,
+  isAllowedExternalUrl,
+  isAllowedWebviewUrl,
+} from "./security";
 import type { AppLocale } from "../shared/i18n/types";
-import {
-  addMcpServer,
-  removeMcpServer,
-  toggleMcpServer,
-  testMcpServer,
-} from "./mcp";
-import {
-  sshListInstalledSkills,
-  sshGetSkillContent,
-  sshInstallSkill,
-  sshUninstallSkill,
-  sshListBundledSkills,
-  sshReadMemory,
-  sshAddMemoryEntry,
-  sshUpdateMemoryEntry,
-  sshRemoveMemoryEntry,
-  sshWriteUserProfile,
-  sshReadSoul,
-  sshWriteSoul,
-  sshResetSoul,
-  sshGetToolsets,
-  sshSetToolsetEnabled,
-  sshReadEnv,
-  sshSetEnvValue,
-  sshGetConfigValue,
-  sshSetConfigValue,
-  sshGetHermesHome,
-  sshGetModelConfig,
-  sshSetModelConfig,
-  sshListSessions,
-  sshGetSessionMessages,
-  sshSearchSessions,
-  sshListProfiles,
-  sshCreateProfile,
-  sshDeleteProfile,
-  sshGatewayStatus,
-  sshStartGateway,
-  sshStopGateway,
-  sshReadRemoteApiKey,
-  sshGetHermesVersion,
-  sshReadLogs,
-  sshGetPlatformEnabled,
-  sshSetPlatformEnabled,
-  sshListCachedSessions,
-  sshRunDoctor,
-  sshListModels,
-  sshRunUpdate,
-  sshRunDump,
-  sshDiscoverMemoryProviders,
-} from "./ssh-remote";
 
 process.on("uncaughtException", (err) => {
   console.error("[MAIN UNCAUGHT]", err);
@@ -200,19 +126,20 @@ process.on("unhandledRejection", (reason) => {
 let mainWindow: BrowserWindow | null = null;
 let currentChatAbort: (() => void) | null = null;
 
-const ALLOWED_EXTERNAL_SCHEMES = new Set(["http:", "https:", "mailto:", "vscode:"]);
-function safeOpenExternal(rawUrl: string): void {
-  try {
-    const u = new URL(rawUrl);
-    if (ALLOWED_EXTERNAL_SCHEMES.has(u.protocol)) {
-      shell.openExternal(u.toString());
-    }
-  } catch {
-    // invalid URL — skip silently
+function openExternalUrl(rawUrl: unknown): void {
+  if (!isAllowedExternalUrl(rawUrl)) {
+    console.warn("[SECURITY] Blocked unsafe external URL");
+    return;
   }
+
+  shell.openExternal(rawUrl).catch((err) => {
+    console.error("[SECURITY] Failed to open external URL:", err);
+  });
 }
 
 function createWindow(): void {
+  const rendererHtmlPath = join(__dirname, "../renderer/index.html");
+
   mainWindow = new BrowserWindow({
     width: 1100,
     height: 750,
@@ -227,13 +154,17 @@ function createWindow(): void {
     ...(process.platform === "linux" ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),
-      sandbox: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
       webviewTag: true,
     },
   });
 
   mainWindow.on("ready-to-show", () => {
-    mainWindow?.show();
+    mainWindow!.show();
   });
 
   mainWindow.webContents.on("render-process-gone", (_event, details) => {
@@ -261,23 +192,46 @@ function createWindow(): void {
   );
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    safeOpenExternal(details.url);
+    openExternalUrl(details.url);
     return { action: "deny" };
   });
+
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    if (
+      isAllowedAppNavigationUrl(
+        url,
+        rendererHtmlPath,
+        is.dev ? process.env["ELECTRON_RENDERER_URL"] : undefined,
+      )
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    openExternalUrl(url);
+  });
+
+  mainWindow.webContents.on(
+    "will-attach-webview",
+    (event, webPreferences, params) => {
+      if (!isAllowedWebviewUrl(params.src)) {
+        event.preventDefault();
+        console.warn("[SECURITY] Blocked webview attachment for untrusted URL");
+        return;
+      }
+
+      hardenWebviewPreferences(webPreferences);
+    },
+  );
 
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
   } else {
-    mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+    mainWindow.loadFile(rendererHtmlPath);
   }
 }
 
 function setupIPC(): void {
-  /** Guard against sending IPC after renderer is destroyed. */
-  const safeSend = (event: Electron.IpcMainInvokeEvent, channel: string, ...args: unknown[]): void => {
-    if (!event.sender.isDestroyed()) event.sender.send(channel, ...args);
-  };
-
   // Installation
   ipcMain.handle("check-install", () => {
     return checkInstallStatus();
@@ -288,7 +242,7 @@ function setupIPC(): void {
   ipcMain.handle("start-install", async (event) => {
     try {
       await runInstall((progress: InstallProgress) => {
-        safeSend(event, "install-progress", progress);
+        event.sender.send("install-progress", progress);
       }, mainWindow);
       return { success: true };
     } catch (err) {
@@ -297,42 +251,16 @@ function setupIPC(): void {
   });
 
   // Hermes engine info
-  ipcMain.handle("get-hermes-version", async () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetHermesVersion(conn.ssh);
-    return getHermesVersion();
-  });
+  ipcMain.handle("get-hermes-version", async () => getHermesVersion());
   ipcMain.handle("refresh-hermes-version", async () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetHermesVersion(conn.ssh);
     clearVersionCache();
     return getHermesVersion();
   });
-  ipcMain.handle("run-hermes-doctor", () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshRunDoctor(conn.ssh);
-    return runHermesDoctor();
-  });
+  ipcMain.handle("run-hermes-doctor", () => runHermesDoctor());
   ipcMain.handle("run-hermes-update", async (event) => {
     try {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) {
-        safeSend(event, "install-progress", {
-          step: 1,
-          totalSteps: 1,
-          title: "Updating remote Hermes Agent",
-          detail: "Running hermes update over SSH...",
-          log: "Running hermes update over SSH...\n",
-        });
-        await sshRunUpdate(conn.ssh);
-        await sshStartGateway(conn.ssh);
-        await startSshTunnel(conn.ssh);
-        const key = await sshReadRemoteApiKey(conn.ssh);
-        setSshRemoteApiKey(key);
-        return { success: true };
-      }
       await runHermesUpdate((progress: InstallProgress) => {
-        safeSend(event, "install-progress", progress);
+        event.sender.send("install-progress", progress);
       });
       return { success: true };
     } catch (err) {
@@ -345,7 +273,7 @@ function setupIPC(): void {
   ipcMain.handle("run-claw-migrate", async (event) => {
     try {
       await runClawMigrate((progress: InstallProgress) => {
-        safeSend(event, "install-progress", progress);
+        event.sender.send("install-progress", progress);
       });
       return { success: true };
     } catch (err) {
@@ -359,84 +287,53 @@ function setupIPC(): void {
     setAppLocale(locale),
   );
 
-  ipcMain.handle("get-env", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshReadEnv(conn.ssh, profile);
-    return readEnv(profile);
-  });
+  ipcMain.handle("get-env", (_event, profile?: string) => readEnv(profile));
 
   ipcMain.handle(
     "set-env",
-    async (_event, key: string, value: string, profile?: string) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) {
-        await sshSetEnvValue(conn.ssh, key, value, profile);
-        return true;
-      }
+    (_event, key: string, value: string, profile?: string) => {
       setEnvValue(key, value, profile);
       // Restart gateway so it picks up the new API key
-      const isCredentialKey = key.endsWith("_API_KEY") || key.endsWith("_TOKEN") || key === "HF_TOKEN";
-      if (isCredentialKey && isGatewayRunning()) {
+      if (
+        (isGatewayRunning() && key.endsWith("_API_KEY")) ||
+        key.endsWith("_TOKEN") ||
+        key === "HF_TOKEN"
+      ) {
         restartGateway(profile);
       }
       return true;
     },
   );
 
-  ipcMain.handle("get-config", (_event, key: string, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetConfigValue(conn.ssh, key, profile);
-    return getConfigValue(key, profile);
-  });
+  ipcMain.handle("get-config", (_event, key: string, profile?: string) =>
+    getConfigValue(key, profile),
+  );
 
   ipcMain.handle(
     "set-config",
-    async (_event, key: string, value: string, profile?: string) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) {
-        await sshSetConfigValue(conn.ssh, key, value, profile);
-        return true;
-      }
-      return setConfigValue(key, value, profile);
+    (_event, key: string, value: string, profile?: string) => {
+      setConfigValue(key, value, profile);
+      return true;
     },
   );
 
-  ipcMain.handle("get-hermes-home", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetHermesHome(conn.ssh, profile);
-    return getHermesHome(profile);
-  });
+  ipcMain.handle("get-hermes-home", (_event, profile?: string) =>
+    getHermesHome(profile),
+  );
 
-  ipcMain.handle("get-model-config", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetModelConfig(conn.ssh, profile);
-    return getModelConfig(profile);
-  });
+  ipcMain.handle("get-model-config", (_event, profile?: string) =>
+    getModelConfig(profile),
+  );
 
   ipcMain.handle(
     "set-model-config",
-    async (
+    (
       _event,
       provider: string,
       model: string,
       baseUrl: string,
       profile?: string,
     ) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) {
-        const prev = await sshGetModelConfig(conn.ssh, profile);
-        await sshSetModelConfig(conn.ssh, provider, model, baseUrl, profile);
-        if (
-          await sshGatewayStatus(conn.ssh) &&
-          (prev.provider !== provider ||
-            prev.model !== model ||
-            prev.baseUrl !== baseUrl)
-        ) {
-          await sshStopGateway(conn.ssh);
-          await sshStartGateway(conn.ssh);
-        }
-        return true;
-      }
       const prev = getModelConfig(profile);
       setModelConfig(provider, model, baseUrl, profile);
 
@@ -454,42 +351,14 @@ function setupIPC(): void {
     },
   );
 
-  // Connection mode (local / remote / ssh)
+  // Connection mode (local vs remote)
   ipcMain.handle("is-remote-mode", () => isRemoteMode());
-  ipcMain.handle("is-remote-only-mode", () => isRemoteOnlyMode());
   ipcMain.handle("get-connection-config", () => getConnectionConfig());
-  ipcMain.handle("is-ssh-tunnel-active", () => isSshTunnelActive());
 
   ipcMain.handle(
     "set-connection-config",
-    (_event, mode: "local" | "remote" | "ssh", remoteUrl: string, apiKey?: string) => {
-      setConnectionConfig({
-        mode,
-        remoteUrl,
-        apiKey: apiKey || "",
-        ssh: getConnectionConfig().ssh, // preserve existing ssh config
-      });
-      return true;
-    },
-  );
-
-  ipcMain.handle(
-    "set-ssh-config",
-    (
-      _event,
-      host: string,
-      port: number,
-      username: string,
-      keyPath: string,
-      remotePort: number,
-      localPort: number,
-    ) => {
-      const current = getConnectionConfig();
-      setConnectionConfig({
-        ...current,
-        mode: "ssh",
-        ssh: { host, port, username, keyPath, remotePort, localPort },
-      });
+    (_event, mode: "local" | "remote", remoteUrl: string, apiKey?: string) => {
+      setConnectionConfig({ mode, remoteUrl, apiKey: apiKey || "" });
       return true;
     },
   );
@@ -498,32 +367,6 @@ function setupIPC(): void {
     "test-remote-connection",
     (_event, url: string, apiKey?: string) => testRemoteConnection(url, apiKey),
   );
-
-  ipcMain.handle(
-    "test-ssh-connection",
-    (_event, host: string, port: number, username: string, keyPath: string, remotePort: number) =>
-      testSshConnection({ host, port, username, keyPath, remotePort, localPort: 19642 }),
-  );
-
-  ipcMain.handle("start-ssh-tunnel", async () => {
-    const conn = getConnectionConfig();
-    if (conn.mode !== "ssh") return false;
-    if (conn.ssh && !await sshGatewayStatus(conn.ssh)) {
-      await sshStartGateway(conn.ssh);
-    }
-    await startSshTunnel(conn.ssh);
-    // Cache the remote API key so chat auth works through the tunnel
-    if (conn.ssh) {
-      const key = await sshReadRemoteApiKey(conn.ssh);
-      setSshRemoteApiKey(key);
-    }
-    return true;
-  });
-
-  ipcMain.handle("stop-ssh-tunnel", () => {
-    stopSshTunnel();
-    return true;
-  });
 
   // Chat — lazy-start gateway on first message
   ipcMain.handle(
@@ -539,25 +382,9 @@ function setupIPC(): void {
         startGateway(profile);
       }
 
-      await ensureSshTunnelIfNeeded();
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) {
-        const gatewayRunning = await sshGatewayStatus(conn.ssh);
-        const tunnelHealthy = await isSshTunnelHealthy();
-        if (!gatewayRunning || !tunnelHealthy) {
-          await sshStartGateway(conn.ssh);
-          await startSshTunnel(conn.ssh);
-          const key = await sshReadRemoteApiKey(conn.ssh);
-          setSshRemoteApiKey(key);
-        }
-      }
-
-      // Cancel previous chat and immediately occupy the slot before any await
       if (currentChatAbort) {
         currentChatAbort();
       }
-      const chatController = new AbortController();
-      currentChatAbort = () => chatController.abort();
 
       let fullResponse = "";
       const chatStartTime = Date.now();
@@ -575,11 +402,11 @@ function setupIPC(): void {
         {
           onChunk: (chunk) => {
             fullResponse += chunk;
-            safeSend(event, "chat-chunk", chunk);
+            event.sender.send("chat-chunk", chunk);
           },
           onDone: (sessionId) => {
             currentChatAbort = null;
-            safeSend(event, "chat-done", sessionId || "");
+            event.sender.send("chat-done", sessionId || "");
             resolveChat({ response: fullResponse, sessionId });
             // Desktop notification when window is not focused and response took >10s
             if (
@@ -599,7 +426,7 @@ function setupIPC(): void {
           },
           onError: (error) => {
             currentChatAbort = null;
-            safeSend(event, "chat-error", error);
+            event.sender.send("chat-error", error);
             rejectChat(new Error(error));
             // Notify on error too if window not focused
             if (mainWindow && !mainWindow.isFocused()) {
@@ -610,10 +437,10 @@ function setupIPC(): void {
             }
           },
           onToolProgress: (tool) => {
-            safeSend(event, "chat-tool-progress", tool);
+            event.sender.send("chat-tool-progress", tool);
           },
           onUsage: (usage) => {
-            safeSend(event, "chat-usage", usage);
+            event.sender.send("chat-usage", usage);
           },
         },
         profile,
@@ -621,18 +448,7 @@ function setupIPC(): void {
         history,
       );
 
-      // If already cancelled during preparation, abort the handle immediately
-      if (chatController.signal.aborted) {
-        handle.abort();
-        currentChatAbort = null;
-        return promise;
-      }
-      // Chain real abort with the placeholder controller
-      const origAbort = handle.abort.bind(handle);
-      currentChatAbort = () => {
-        chatController.abort();
-        origAbort();
-      };
+      currentChatAbort = handle.abort;
       return promise;
     },
   );
@@ -645,41 +461,20 @@ function setupIPC(): void {
   });
 
   // Gateway
-  ipcMain.handle("start-gateway", async () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) { await sshStartGateway(conn.ssh); return true; }
-    return startGateway();
-  });
-  ipcMain.handle("stop-gateway", async () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) {
-      await sshStopGateway(conn.ssh);
-      markApiServerUnavailable();
-      return true;
-    }
+  ipcMain.handle("start-gateway", () => startGateway());
+  ipcMain.handle("stop-gateway", () => {
     stopGateway(true);
     return true;
   });
-  ipcMain.handle("gateway-status", () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGatewayStatus(conn.ssh);
-    return isGatewayRunning();
-  });
+  ipcMain.handle("gateway-status", () => isGatewayRunning());
 
   // Platform toggles (config.yaml platforms section)
-  ipcMain.handle("get-platform-enabled", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetPlatformEnabled(conn.ssh, profile);
-    return getPlatformEnabled(profile);
-  });
+  ipcMain.handle("get-platform-enabled", (_event, profile?: string) =>
+    getPlatformEnabled(profile),
+  );
   ipcMain.handle(
     "set-platform-enabled",
-    async (_event, platform: string, enabled: boolean, profile?: string) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) {
-        await sshSetPlatformEnabled(conn.ssh, platform, enabled, profile);
-        return true;
-      }
+    (_event, platform: string, enabled: boolean, profile?: string) => {
       setPlatformEnabled(platform, enabled, profile);
       // Restart gateway so it picks up the new platform config
       if (isGatewayRunning()) {
@@ -691,153 +486,95 @@ function setupIPC(): void {
 
   // Sessions
   ipcMain.handle("list-sessions", (_event, limit?: number, offset?: number) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshListSessions(conn.ssh, limit, offset);
     return listSessions(limit, offset);
   });
 
   ipcMain.handle("get-session-messages", (_event, sessionId: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetSessionMessages(conn.ssh, sessionId);
     return getSessionMessages(sessionId);
   });
 
   // Profiles
-  ipcMain.handle("list-profiles", async () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshListProfiles(conn.ssh);
-    return listProfiles();
-  });
-  ipcMain.handle("create-profile", (_event, name: string, clone: boolean) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshCreateProfile(conn.ssh, name, clone);
-    return createProfile(name, clone);
-  });
-  ipcMain.handle("delete-profile", (_event, name: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshDeleteProfile(conn.ssh, name);
-    return deleteProfile(name);
-  });
+  ipcMain.handle("list-profiles", async () => listProfiles());
+  ipcMain.handle("create-profile", (_event, name: string, clone: boolean) =>
+    createProfile(name, clone),
+  );
+  ipcMain.handle("delete-profile", (_event, name: string) =>
+    deleteProfile(name),
+  );
   ipcMain.handle("set-active-profile", (_event, name: string) => {
-    if (getConnectionConfig().mode !== "ssh") setActiveProfile(name);
+    setActiveProfile(name);
     return true;
   });
 
   // Memory
-  ipcMain.handle("read-memory", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshReadMemory(conn.ssh, profile);
-    return readMemory(profile);
-  });
+  ipcMain.handle("read-memory", (_event, profile?: string) =>
+    readMemory(profile),
+  );
   ipcMain.handle(
     "add-memory-entry",
-    (_event, content: string, profile?: string) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshAddMemoryEntry(conn.ssh, content, profile);
-      return addMemoryEntry(content, profile);
-    },
+    (_event, content: string, profile?: string) =>
+      addMemoryEntry(content, profile),
   );
   ipcMain.handle(
     "update-memory-entry",
-    (_event, index: number, content: string, profile?: string) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshUpdateMemoryEntry(conn.ssh, index, content, profile);
-      return updateMemoryEntry(index, content, profile);
-    },
+    (_event, index: number, content: string, profile?: string) =>
+      updateMemoryEntry(index, content, profile),
   );
   ipcMain.handle(
     "remove-memory-entry",
-    (_event, index: number, profile?: string) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshRemoveMemoryEntry(conn.ssh, index, profile);
-      return removeMemoryEntry(index, profile);
-    },
+    (_event, index: number, profile?: string) =>
+      removeMemoryEntry(index, profile),
   );
   ipcMain.handle(
     "write-user-profile",
-    (_event, content: string, profile?: string) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshWriteUserProfile(conn.ssh, content, profile);
-      return writeUserProfile(content, profile);
-    },
+    (_event, content: string, profile?: string) =>
+      writeUserProfile(content, profile),
   );
 
   // Soul
-  ipcMain.handle("read-soul", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshReadSoul(conn.ssh, profile);
-    return readSoul(profile);
-  });
+  ipcMain.handle("read-soul", (_event, profile?: string) => readSoul(profile));
   ipcMain.handle("write-soul", (_event, content: string, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshWriteSoul(conn.ssh, content, profile);
     return writeSoul(content, profile);
   });
-  ipcMain.handle("reset-soul", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshResetSoul(conn.ssh, profile);
-    return resetSoul(profile);
-  });
+  ipcMain.handle("reset-soul", (_event, profile?: string) =>
+    resetSoul(profile),
+  );
 
   // Tools
-  ipcMain.handle("get-toolsets", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetToolsets(conn.ssh, profile);
-    return getToolsets(profile);
-  });
+  ipcMain.handle("get-toolsets", (_event, profile?: string) =>
+    getToolsets(profile),
+  );
   ipcMain.handle(
     "set-toolset-enabled",
     (_event, key: string, enabled: boolean, profile?: string) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshSetToolsetEnabled(conn.ssh, key, enabled, profile);
       return setToolsetEnabled(key, enabled, profile);
     },
   );
 
   // Skills
-  ipcMain.handle("list-installed-skills", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshListInstalledSkills(conn.ssh, profile);
-    return listInstalledSkills(profile);
-  });
-  ipcMain.handle("list-bundled-skills", () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshListBundledSkills(conn.ssh);
-    return listBundledSkills();
-  });
-  ipcMain.handle("get-skill-content", (_event, skillPath: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshGetSkillContent(conn.ssh, skillPath);
-    return getSkillContent(skillPath);
-  });
+  ipcMain.handle("list-installed-skills", (_event, profile?: string) =>
+    listInstalledSkills(profile),
+  );
+  ipcMain.handle("list-bundled-skills", () => listBundledSkills());
+  ipcMain.handle("get-skill-content", (_event, skillPath: string) =>
+    getSkillContent(skillPath),
+  );
   ipcMain.handle(
     "install-skill",
-    (_event, identifier: string, _profile?: string) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshInstallSkill(conn.ssh, identifier);
-      return installSkill(identifier, _profile);
-    },
+    (_event, identifier: string, profile?: string) =>
+      installSkill(identifier, profile),
   );
-  ipcMain.handle("uninstall-skill", (_event, name: string, _profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshUninstallSkill(conn.ssh, name);
-    return uninstallSkill(name, _profile);
-  });
+  ipcMain.handle("uninstall-skill", (_event, name: string, profile?: string) =>
+    uninstallSkill(name, profile),
+  );
 
   // Session cache (fast local cache with generated titles)
   ipcMain.handle(
     "list-cached-sessions",
-    (_event, limit?: number, offset?: number) => {
-      const conn = getConnectionConfig();
-      if (conn.mode === "ssh" && conn.ssh) return sshListCachedSessions(conn.ssh, limit, offset);
-      return listCachedSessions(limit, offset);
-    },
+    (_event, limit?: number, offset?: number) =>
+      listCachedSessions(limit, offset),
   );
-  ipcMain.handle("sync-session-cache", () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshListCachedSessions(conn.ssh, 50);
-    return syncSessionCache();
-  });
+  ipcMain.handle("sync-session-cache", () => syncSessionCache());
   ipcMain.handle(
     "update-session-title",
     (_event, sessionId: string, title: string) =>
@@ -845,11 +582,9 @@ function setupIPC(): void {
   );
 
   // Session search
-  ipcMain.handle("search-sessions", (_event, query: string, limit?: number) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshSearchSessions(conn.ssh, query, limit);
-    return searchSessions(query, limit);
-  });
+  ipcMain.handle("search-sessions", (_event, query: string, limit?: number) =>
+    searchSessions(query, limit),
+  );
 
   // Credential Pool
   ipcMain.handle("get-credential-pool", () => getCredentialPool());
@@ -866,11 +601,7 @@ function setupIPC(): void {
   );
 
   // Models
-  ipcMain.handle("list-models", () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshListModels(conn.ssh);
-    return listModels();
-  });
+  ipcMain.handle("list-models", () => listModels());
   ipcMain.handle(
     "add-model",
     (_event, name: string, provider: string, model: string, baseUrl: string) =>
@@ -889,7 +620,7 @@ function setupIPC(): void {
   ipcMain.handle("claw3d-setup", async (event) => {
     try {
       await setupClaw3d((progress: Claw3dSetupProgress) => {
-        safeSend(event, "claw3d-setup-progress", progress);
+        event.sender.send("claw3d-setup-progress", progress);
       });
       return { success: true };
     } catch (err) {
@@ -959,7 +690,7 @@ function setupIPC(): void {
 
   // Shell
   ipcMain.handle("open-external", (_event, url: string) => {
-    safeOpenExternal(url);
+    openExternalUrl(url);
   });
 
   // Backup / Import
@@ -973,274 +704,22 @@ function setupIPC(): void {
   );
 
   // Debug dump
-  ipcMain.handle("run-hermes-dump", () => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshRunDump(conn.ssh);
-    return runHermesDump();
-  });
+  ipcMain.handle("run-hermes-dump", () => runHermesDump());
 
   // MCP servers
   ipcMain.handle("list-mcp-servers", (_event, profile?: string) =>
     listMcpServers(profile),
   );
 
-  ipcMain.handle(
-    "add-mcp-server",
-    async (
-      _event,
-      params: { name: string; type: "stdio" | "http"; command?: string; args?: string[]; url?: string },
-      profile?: string,
-    ) => addMcpServer(params, profile),
-  );
-
-  ipcMain.handle(
-    "remove-mcp-server",
-    async (_event, name: string, profile?: string) => removeMcpServer(name, profile),
-  );
-
-  ipcMain.handle(
-    "toggle-mcp-server",
-    (_event, name: string, enabled: boolean, profile?: string) =>
-      toggleMcpServer(name, enabled, profile),
-  );
-
-  ipcMain.handle(
-    "test-mcp-server",
-    async (event, name: string) => {
-      const safeSend = (channel: string, ...args: unknown[]) => {
-        if (!event.sender.isDestroyed()) event.sender.send(channel, ...args);
-      };
-      const result = await testMcpServer(name, (chunk) => {
-        safeSend("mcp-test-output", chunk);
-      });
-      if (result.success) {
-        safeSend("mcp-test-done", result);
-      } else {
-        safeSend("mcp-test-error", result);
-      }
-      return result;
-    },
-  );
-
   // Memory providers
-  ipcMain.handle("discover-memory-providers", (_event, profile?: string) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshDiscoverMemoryProviders(conn.ssh, profile);
-    return discoverMemoryProviders(profile);
-  });
+  ipcMain.handle("discover-memory-providers", (_event, profile?: string) =>
+    discoverMemoryProviders(profile),
+  );
 
   // Log viewer
-  ipcMain.handle("read-logs", (_event, logFile?: string, lines?: number) => {
-    const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) return sshReadLogs(conn.ssh, logFile, lines);
-    return readLogs(logFile, lines);
-  });
-
-  // AgentMonitor — gateway state
-  ipcMain.handle("get-gateway-state", async () => {
-    const { join } = await import("path");
-    const { readFileSync, existsSync } = await import("fs");
-    const { homedir } = await import("os");
-    const p = join(homedir(), ".hermes", "gateway_state.json");
-    if (!existsSync(p)) return null;
-    try { return JSON.parse(readFileSync(p, "utf-8")); } catch { return null; }
-  });
-
-  // AgentMonitor — vault file listing (grouped by relative subdirectory, newest first)
-  ipcMain.handle("list-vault-files", async () => {
-    const { join } = await import("path");
-    const { readdirSync, statSync, existsSync } = await import("fs");
-    const { homedir } = await import("os");
-    const vaultDir = join(homedir(), ".hermes", "vault");
-    if (!existsSync(vaultDir)) return [];
-
-    type VFile = { path: string; name: string; size: number; mtime: number };
-    const groups = new Map<string, VFile[]>();
-
-    const walk = (dirPath: string, relDir: string): void => {
-      for (const entry of readdirSync(dirPath)) {
-        const fullPath = join(dirPath, entry);
-        const st = statSync(fullPath);
-        if (st.isDirectory()) {
-          walk(fullPath, relDir ? join(relDir, entry) : entry);
-          continue;
-        }
-        if (!st.isFile() || !entry.endsWith(".md")) continue;
-
-        const dir = relDir || ".";
-        const files = groups.get(dir) || [];
-        files.push({
-          path: relDir ? join(relDir, entry) : entry,
-          name: entry,
-          size: st.size,
-          mtime: st.mtimeMs,
-        });
-        groups.set(dir, files);
-      }
-    };
-
-    walk(vaultDir, "");
-
-    const result = Array.from(groups.entries()).map(([dir, files]) => {
-      files.sort((a, b) => b.mtime - a.mtime);
-      return { dir, files };
-    });
-    result.sort((a, b) => {
-      const newestA = a.files[0]?.mtime || 0;
-      const newestB = b.files[0]?.mtime || 0;
-      return newestB - newestA;
-    });
-    return result;
-  });
-
-  // Vault — file content reading
-  ipcMain.handle("read-vault-file", async (_event, filePath: string) => {
-    const { join } = await import("path");
-    const { readFileSync, existsSync } = await import("fs");
-    const { homedir } = await import("os");
-    const vaultDir = join(homedir(), ".hermes", "vault");
-
-    const normalized = join(vaultDir, filePath);
-    if (!normalized.startsWith(vaultDir + "/") || filePath.includes("..")) {
-      return { error: "Invalid path" };
-    }
-    if (!existsSync(normalized)) {
-      return { error: "File not found" };
-    }
-
-    const content = readFileSync(normalized, "utf-8");
-    const frontmatter = parseFrontmatter(content);
-    return { content: frontmatter.body, frontmatter: frontmatter.data, path: filePath };
-  });
-
-  ipcMain.handle("get-vault-stats", async () => {
-    const { join } = await import("path");
-    const { readdirSync, statSync, existsSync } = await import("fs");
-    const { homedir } = await import("os");
-    const vaultDir = join(homedir(), ".hermes", "vault");
-    if (!existsSync(vaultDir)) return { totalFiles: 0, totalSize: 0, directories: [] };
-
-    let totalFiles = 0;
-    let totalSize = 0;
-    const directories: Array<{ name: string; fileCount: number; latestUpdate: string }> = [];
-
-    const directoryStats = new Map<string, { fileCount: number; latestUpdate: string }>();
-
-    const walk = (dirPath: string, relDir: string): void => {
-      for (const entry of readdirSync(dirPath)) {
-        const fullPath = join(dirPath, entry);
-        const st = statSync(fullPath);
-        if (st.isDirectory()) {
-          walk(fullPath, relDir ? join(relDir, entry) : entry);
-          continue;
-        }
-        if (!st.isFile() || !entry.endsWith(".md")) continue;
-
-        const dir = relDir || ".";
-        const current = directoryStats.get(dir) || { fileCount: 0, latestUpdate: "" };
-        current.fileCount++;
-        totalFiles++;
-        totalSize += st.size;
-        const mtime = st.mtime.toISOString();
-        if (mtime > current.latestUpdate) current.latestUpdate = mtime;
-        directoryStats.set(dir, current);
-      }
-    };
-
-    walk(vaultDir, "");
-    for (const [name, stat] of directoryStats.entries()) {
-      directories.push({ name, fileCount: stat.fileCount, latestUpdate: stat.latestUpdate });
-    }
-    directories.sort((a, b) => b.fileCount - a.fileCount);
-    return { totalFiles: totalFiles, totalSize: totalSize, directories: directories };
-  });
-
-  function parseFrontmatter(text) {
-    const match = text.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
-    if (!match) return { data: null, body: text };
-    const data = {};
-    for (const line of match[1].split("\n")) {
-      const sep = line.indexOf(":");
-      if (sep > 0) {
-        const key = line.slice(0, sep).trim();
-        let val = line.slice(sep + 1).trim();
-        if (val === "true") val = true;
-        else if (val === "false") val = false;
-        else if (val === "null") val = null;
-        else if (
-          (val.startsWith("\"") && val.endsWith("\"")) ||
-          (val.startsWith("'") && val.endsWith("'"))
-        ) {
-          val = val.slice(1, -1);
-        }
-        else if (val !== "" && !isNaN(Number(val))) val = Number(val);
-        data[key] = val;
-      }
-    }
-    return { data: data, body: text.slice(match[0].length) };
-  }
-  // AgentMonitor — cron job output history (recent runs per job)
-  ipcMain.handle("get-cron-job-history", async (_e, limit = 50) => {
-    const { join } = await import("path");
-    const { readdirSync, readFileSync, statSync, existsSync } = await import("fs");
-    const { homedir } = await import("os");
-    const cronDir = join(homedir(), ".hermes", "cron", "output");
-    if (!existsSync(cronDir)) return [];
-
-    type CronRun = { jobId: string; time: string; failed: boolean; preview: string };
-    const result: CronRun[] = [];
-
-    for (const entry of readdirSync(cronDir)) {
-      const fullPath = join(cronDir, entry);
-      if (!statSync(fullPath).isDirectory()) continue;
-      const runs = readdirSync(fullPath)
-        .filter(f => f.endsWith(".md") || f.endsWith(".json"))
-        .sort()
-        .reverse()
-        .slice(0, 5);
-      for (const runFile of runs) {
-        const fp = join(fullPath, runFile);
-        const content = readFileSync(fp, "utf-8").slice(0, 200);
-        const failed = content.includes("FAILED");
-        const m = runFile.match(/_(\d{4})_(\d{2})_(\d{2})_(\d{2})_(\d{2})_(\d{2})/);
-        const isoTime = m
-          ? new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`).toISOString()
-          : new Date(statSync(fp).mtimeMs).toISOString();
-        result.push({ jobId: entry, time: isoTime, failed, preview: content.slice(0, 80).replace(/\n/g, " ") });
-      }
-    }
-    return result.sort((a, b) => (a.time > b.time ? -1 : 1)).slice(0, limit);
-  });
-
-  // AgentMonitor — events timeline
-  ipcMain.handle("get-events", async (_event, limit = 50) => {
-    const { join } = await import("path");
-    const { readFileSync, existsSync } = await import("fs");
-    const { homedir } = await import("os");
-    const p = join(homedir(), ".hermes", "chronicles", "events.jsonl");
-    if (!existsSync(p)) return [];
-    try {
-      const text = readFileSync(p, "utf-8");
-      const lines = text.trim().split("\n").filter(Boolean).slice(-limit);
-      return lines.map(line => {
-        try { return JSON.parse(line); }
-        catch { console.warn("[events] bad line:", line.slice(0, 80)); return null; }
-      }).filter(Boolean);
-    } catch { return []; }
-  });
-
-  // AgentMonitor — gateway health check via main process
-  ipcMain.handle("check-gateway-health", async () => {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2000);
-      const r = await fetch("http://127.0.0.1:8643/health", { signal: controller.signal });
-      clearTimeout(timeout);
-      return { status: r.status, ok: r.ok };
-    } catch {
-      return { status: 0, ok: false };
-    }
-  });
+  ipcMain.handle("read-logs", (_event, logFile?: string, lines?: number) =>
+    readLogs(logFile, lines),
+  );
 }
 
 function buildMenu(): void {
@@ -1330,15 +809,13 @@ function buildMenu(): void {
         {
           label: "Hermes Agent on GitHub",
           click: (): void => {
-            shell.openExternal("https://github.com/NousResearch/hermes-agent/");
+            openExternalUrl("https://github.com/NousResearch/hermes-agent/");
           },
         },
         {
           label: "Report an Issue",
           click: (): void => {
-            shell.openExternal(
-              "https://github.com/fathah/hermes-desktop/issues",
-            );
+            openExternalUrl("https://github.com/fathah/hermes-desktop/issues");
           },
         },
       ],
@@ -1349,7 +826,7 @@ function buildMenu(): void {
   Menu.setApplicationMenu(menu);
 }
 
-async function setupUpdater(): Promise<void> {
+function setupUpdater(): void {
   // IPC handlers must always be registered to avoid invoke errors
   ipcMain.handle("get-app-version", () => app.getVersion());
 
@@ -1361,7 +838,11 @@ async function setupUpdater(): Promise<void> {
     return;
   }
 
-  const { autoUpdater } = await import("electron-updater");
+  // Dynamic import to avoid electron-updater issues in dev mode
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { autoUpdater } = require("electron-updater") as {
+    autoUpdater: AppUpdater;
+  };
 
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -1410,113 +891,6 @@ async function setupUpdater(): Promise<void> {
   }, 5000);
 }
 
-// --------------- Playbook Runner IPCs ---------------
-import { getPlaybooks, runPlaybook } from "./playbook-runner";
-
-ipcMain.handle("list-playbooks", () => {
-  return getPlaybooks().map((pb) => ({
-    id: pb.id,
-    name: pb.name,
-    description: pb.description,
-    version: pb.version,
-    steps: pb.steps.map((s) => ({
-      id: s.id,
-      label: s.label,
-      hccStage: s.hccStage,
-    })),
-  }));
-});
-
-ipcMain.handle("run-playbook", async (_event, playbookId: string) => {
-  const win = mainWindow;
-  const emit = (step: { id: string; label: string; hccStage: string; status: string; error?: string; output?: string }) => {
-    win?.webContents.send("playbook-step", step);
-  };
-
-  try {
-    const result = await runPlaybook(playbookId, emit);
-    win?.webContents.send("playbook-done", result);
-    return result;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    win?.webContents.send("playbook-error", message);
-    return { finalStatus: "failed", error: message };
-  }
-});
-// --------------- end Playbook Runner ---------------
-
-// --------------- LLM Checker IPCs ---------------
-import { runLlmChecker, understandAnything } from "./playbook-runner";
-
-ipcMain.handle("run-llm-checker", async (_event, task?: string) => {
-  try {
-    const result = await runLlmChecker(task);
-    return result;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { status: "fail" as const, reason: message };
-  }
-});
-
-// --------------- Understand-Anything IPCs ---------------
-ipcMain.handle("understand-anything", async (_event, input: string, filePath?: string) => {
-  try {
-    const result = await understandAnything(input, filePath);
-    return result;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { error: message };
-  }
-});
-
-ipcMain.handle("list-understanding-history", async () => {
-  try {
-    const { existsSync, readdirSync, statSync } = await import("fs");
-    const vaultDir = join(process.env.HOME || "~", ".hermes", "vault", "wiki", "understand");
-    if (!existsSync(vaultDir)) {
-      return { files: [] };
-    }
-    const files = readdirSync(vaultDir)
-      .filter((f) => f.endsWith(".md"))
-      .map((f) => {
-        const stats = statSync(join(vaultDir, f));
-        return {
-          filename: f,
-          modified: stats.mtime.toISOString(),
-          size: stats.size,
-        };
-      })
-      .sort((a, b) => b.modified.localeCompare(a.modified));
-    return { files };
-  } catch {
-    return { files: [] };
-  }
-});
-
-ipcMain.handle("read-understanding-history", async (_event, filename: string) => {
-  try {
-    const { existsSync, readFileSync } = await import("fs");
-    const filepath = join(
-      process.env.HOME || "~",
-      ".hermes",
-      "vault",
-      "wiki",
-      "understand",
-      filename,
-    );
-    if (!existsSync(filepath)) {
-      return { error: "File not found" };
-    }
-    const content = readFileSync(filepath, "utf-8");
-    return { content };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { error: message };
-  }
-});
-// --------------- end Understand-Anything ---------------
-// --------------- end LLM Checker ---------------
-
 app.whenReady().then(() => {
   app.name = "Hermes";
   electronApp.setAppUserModelId("com.nousresearch.hermes");
@@ -1530,21 +904,6 @@ app.whenReady().then(() => {
   createWindow();
   setupUpdater();
 
-  // Auto-start SSH tunnel if configured
-  const conn = getConnectionConfig();
-  if (conn.mode === "ssh" && conn.ssh.host) {
-    (async () => {
-      if (!await sshGatewayStatus(conn.ssh)) {
-        await sshStartGateway(conn.ssh);
-      }
-      await startSshTunnel(conn.ssh);
-      const key = await sshReadRemoteApiKey(conn.ssh);
-      setSshRemoteApiKey(key);
-    })().catch((err) => {
-      console.error("[SSH TUNNEL] Failed to start on launch:", err);
-    });
-  }
-
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -1553,7 +912,6 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     stopGateway();
-    stopSshTunnel();
     stopClaw3d();
     app.quit();
   }
@@ -1565,7 +923,6 @@ app.on("before-quit", () => {
     currentChatAbort();
     currentChatAbort = null;
   }
-  stopGateway(true);
-  stopSshTunnel();
+  stopGateway();
   stopClaw3d();
 });
