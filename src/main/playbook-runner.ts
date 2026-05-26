@@ -54,6 +54,10 @@ function getVaultDir(): string {
   return join(process.env.HOME || "~", ".hermes", "vault", "wiki", "understand");
 }
 
+function yamlString(value: string): string {
+  return JSON.stringify(value);
+}
+
 function saveToVault(result: UnderstandingResult, originalInput?: string): boolean {
   try {
     const vaultDir = getVaultDir();
@@ -65,7 +69,18 @@ function saveToVault(result: UnderstandingResult, originalInput?: string): boole
     const filename = `understanding-${timestamp}.md`;
     const filepath = join(vaultDir, filename);
 
-    const content = `# Understanding Result
+    const content = `---
+type: "understanding"
+created_at: ${yamlString(result.metadata.timestamp)}
+source: ${yamlString(result.metadata.source)}
+content_type: ${yamlString(result.metadata.type)}
+length: ${result.metadata.length}
+suggested_playbook: ${yamlString(result.suggested_playbook || "")}
+confidence: ${typeof result.confidence === "number" ? result.confidence.toFixed(3) : 0}
+tags: "understand,auto-generated"
+---
+
+# Understanding Result
 
 **Timestamp**: ${result.metadata.timestamp}
 **Source**: ${result.metadata.source} (${result.metadata.type})

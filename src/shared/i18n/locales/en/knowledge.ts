@@ -17,4 +17,10 @@ export default {
   vault: "Vault",
   vaultEmpty: "No vault files",
   vaultLoadError: "Failed to load file",
+  gbrainPages: "Pages",
+  gbrainChunks: "Chunks",
+  gbrainTypeDistribution: "Type Distribution",
+  gbrainRecentActivity: "Recent Activity",
+  gbrainSource: "Source",
+  gbrainNoData: "No data",
 } as const;

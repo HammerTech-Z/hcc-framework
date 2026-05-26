@@ -534,6 +534,16 @@ interface HermesAPI {
     message?: string;
   }>;
 
+  // GBrain stats
+  getGbrainStats: () => Promise<{
+    total_pages: number;
+    total_chunks: number;
+    by_type: Record<string, number>;
+    timeline: Array<{ week: string; count: number }>;
+    source: string;
+    generated_at: string;
+  }>;
+
   // Playbook Runner
   listPlaybooks: () => Promise<
     Array<{

@@ -780,6 +780,17 @@ const hermesAPI = {
   knowledgeIngest: (title: string, content: string): Promise<{ status: string; path?: string; message?: string }> =>
     fetch("http://127.0.0.1:8643/knowledge/ingest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, content }) }).then(r => r.json()),
 
+  // GBrain stats (direct GET to gateway)
+  getGbrainStats: (): Promise<{
+    total_pages: number;
+    total_chunks: number;
+    by_type: Record<string, number>;
+    timeline: Array<{ week: string; count: number }>;
+    source: string;
+    generated_at: string;
+  }> =>
+    fetch("http://127.0.0.1:8643/knowledge/stats").then(r => r.json()),
+
   // Playbook Runner
   listPlaybooks: (): Promise<Array<{ id: string; name: string; description: string; version: number; steps: Array<{ id: string; label: string; hccStage: string }> }>> =>
     ipcRenderer.invoke("list-playbooks"),

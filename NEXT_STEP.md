@@ -1,13 +1,14 @@
 # Hermes Pro — 下一步行动指南
 
 > 最后更新：2026-05-26
-> 当前状态：v1.5-final（V2 迭代已完成）
+> 当前状态：V3 进行中（V3.5 已完成，待提交）
 
 ## 当前状态
 
-V1.0 → V1.5 → V2 已全部完成。详见：
+V1.0 → V1.5 → V2 已全部完成，V3.1 → V3.5 已完成。详见：
 - V1.5 完成报告：[V1.5-COMPLETION.md](./V1.5-COMPLETION.md)
 - V2 状态追踪：[docs/v2-status.md](./docs/v2-status.md)
+- V3 状态追踪：[docs/v3-status.md](./docs/v3-status.md)
 - Confidence 设计：[docs/confidence-design.md](./docs/confidence-design.md)
 - CSS 审计：[docs/css-audit-2026-05-26.md](./docs/css-audit-2026-05-26.md)
 - 归档文档：[docs/archive/README.md](./docs/archive/README.md)
@@ -26,19 +27,28 @@ V1.0 → V1.5 → V2 已全部完成。详见：
 
 V3 计划任务：**GBrain 增强 + 知识可视化 + Horizon**
 
-⚠️ V2 的经验：快照描述与实际代码多次不符。启动 V3 前必须先做现状调查。
+V3 当前进度：
+
+| 任务 | 状态 |
+|------|------|
+| V3.1 Knowledge 页面重修 | ✅ 完成 |
+| V3.2 Vault 增强 | ✅ 完成 |
+| V3.3 Recharts 图表升级 | ✅ 完成 |
+| V3.4 Understand → Vault 打通 | ✅ 完成，待提交 |
+| V3.5 GBrain 统计面板 | ✅ 完成，待提交 |
+| V3.6 Horizon 集成面板 | ⏳ 待确认 |
 
 ### 已知的 V3 前置问题
 
-1. **桌面端无 GBrain 查询接口** — V2.2 调查确认，GBrain 状态仅在 Hermes agent 端
+1. **GBrain stats 已接入桌面端** — Gateway `/knowledge/stats` + Knowledge GBrain tab
 2. **pipeline-runs 无自动清理** — V1 限制 #4
-3. **Understand-Anything 仍为 heuristic 模式** — V1 限制 #5
+3. **Understand-Anything 已接 vault，但 LLM 仍依赖本地 `ollama run llama3.2` 可用性**
 4. **HCC 阶段 1-4 未在代码中定义**
 5. **BaiLongma** — 需要设计定义后再排期（范围/ACUI 协议/视觉方案/集成方案）
 
 ## 待决事项
 
-- [ ] V3 各任务现状调查（启动前）
-- [ ] GBrain 桌面端接口方案
+- [ ] 提交 V3.4/V3.5 当前工作区改动
+- [ ] Horizon 集成面板现状调查
 - [ ] BaiLongma 设计文档
 - [ ] HANDOFF.md 历史内容归档清理

@@ -17,4 +17,10 @@ export default {
   vault: "知识库",
   vaultEmpty: "没有知识库文件",
   vaultLoadError: "文件加载失败",
+  gbrainPages: "页面",
+  gbrainChunks: "分块",
+  gbrainTypeDistribution: "类型分布",
+  gbrainRecentActivity: "近期活动",
+  gbrainSource: "来源",
+  gbrainNoData: "暂无数据",
 } as const;

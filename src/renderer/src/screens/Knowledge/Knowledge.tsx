@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Search, Plus } from "../../assets/icons";
+import { Search, Plus, Brain } from "../../assets/icons";
 import { Check, Loader2, FileText } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
 
@@ -20,6 +20,15 @@ interface VaultStats {
   directories: Array<{ name: string; fileCount: number; latestUpdate: string }>;
 }
 
+interface GBrainStats {
+  total_pages: number;
+  total_chunks: number;
+  by_type: Record<string, number>;
+  timeline: Array<{ week: string; count: number }>;
+  source: string;
+  generated_at: string;
+}
+
 const DIR_ICON: Record<string, string> = {
   wiki: "📚",
   skills: "🛠️",
@@ -37,7 +46,7 @@ function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-type KnowledgeTab = "search" | "ingest" | "vault";
+type KnowledgeTab = "search" | "ingest" | "vault" | "gbrain";
 
 export default function Knowledge() {
   const { t } = useI18n();
@@ -58,6 +67,11 @@ export default function Knowledge() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [fileLoading, setFileLoading] = useState(false);
+
+  // GBrain stats state
+  const [gbrainStats, setGbrainStats] = useState<GBrainStats | null>(null);
+  const [gbrainLoading, setGbrainLoading] = useState(false);
+  const [gbrainError, setGbrainError] = useState<string | null>(null);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
@@ -131,6 +145,20 @@ export default function Knowledge() {
     }
   }, [selectedFile]);
 
+  // GBrain stats loading
+  const loadGBrain = useCallback(async () => {
+    setGbrainLoading(true);
+    setGbrainError(null);
+    try {
+      const stats = await window.hermesAPI.getGbrainStats();
+      setGbrainStats(stats);
+    } catch (err) {
+      setGbrainError(err instanceof Error ? err.message : "加载失败");
+    } finally {
+      setGbrainLoading(false);
+    }
+  }, []);
+
   return (
     <div className="knowledge-container">
       {/* Tab bar */}
@@ -158,6 +186,14 @@ export default function Knowledge() {
         >
           <FileText size={14} />
           {t("knowledge.vault")}
+        </button>
+        <button
+          type="button"
+          onClick={() => { setActiveTab("gbrain"); loadGBrain(); }}
+          className={`knowledge-tab${activeTab === "gbrain" ? " active" : ""}`}
+        >
+          <Brain size={14} />
+          GBrain
         </button>
       </div>
 
@@ -308,6 +344,83 @@ export default function Knowledge() {
                   ))}
                 </div>
               ))
+            )}
+          </>
+        )}
+
+        {activeTab === "gbrain" && (
+          <>
+            {gbrainLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: 32 }}>
+                <div className="loading-spinner" />
+              </div>
+            ) : gbrainError ? (
+              <div className="knowledge-error">{gbrainError}</div>
+            ) : gbrainStats ? (
+              <div>
+                {/* Summary cards */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+                  <div className="knowledge-result-item" style={{ textAlign: "center", padding: 16 }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent)" }}>
+                      {gbrainStats.total_pages.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("knowledge.gbrainPages")}</div>
+                  </div>
+                  <div className="knowledge-result-item" style={{ textAlign: "center", padding: 16 }}>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: "var(--accent)" }}>
+                      {gbrainStats.total_chunks.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("knowledge.gbrainChunks")}</div>
+                  </div>
+                </div>
+
+                {/* Type distribution */}
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>
+                  {t("knowledge.gbrainTypeDistribution")}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+                  {Object.entries(gbrainStats.by_type).map(([type, count]) => (
+                    <div key={type} style={{
+                      padding: "4px 10px",
+                      background: "var(--bg-tertiary)",
+                      borderRadius: 6,
+                      fontSize: 12,
+                    }}>
+                      <span style={{ color: "var(--text-secondary)" }}>{type}</span>
+                      <span style={{ color: "var(--text-primary)", fontWeight: 600, marginLeft: 6 }}>
+                        {count.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Timeline */}
+                {gbrainStats.timeline.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8 }}>
+                      {t("knowledge.gbrainRecentActivity")}
+                    </div>
+                    <div className="knowledge-result-item" style={{ padding: 12 }}>
+                      {gbrainStats.timeline.map((entry, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "4px 0" }}>
+                          <span style={{ color: "var(--text-secondary)" }}>
+                            {entry.week.split(" ")[0]}
+                          </span>
+                          <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+                            {entry.count.toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 12, textAlign: "center" }}>
+                  {t("knowledge.gbrainSource")}: {gbrainStats.source} · {new Date(gbrainStats.generated_at).toLocaleString()}
+                </div>
+              </div>
+            ) : (
+              <p className="knowledge-empty">{t("knowledge.gbrainNoData")}</p>
             )}
           </>
         )}

@@ -24,4 +24,6 @@ export default {
   close: "Close",
   bytes: "bytes",
   loadError: "Error loading file",
+  savedToVault: "Saved to vault",
+  saveFailed: "Vault save failed",
 } as const;

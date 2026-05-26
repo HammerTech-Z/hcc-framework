@@ -18,4 +18,10 @@ export default {
   vault: "Cofre",
   vaultEmpty: "Nenhum arquivo no cofre",
   vaultLoadError: "Falha ao carregar arquivo",
+  gbrainPages: "Páginas",
+  gbrainChunks: "Blocos",
+  gbrainTypeDistribution: "Distribuição por tipo",
+  gbrainRecentActivity: "Atividade recente",
+  gbrainSource: "Fonte",
+  gbrainNoData: "Sem dados",
 } as const;

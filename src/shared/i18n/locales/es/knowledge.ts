@@ -18,4 +18,10 @@ export default {
   vault: "Bóveda",
   vaultEmpty: "No hay archivos en la bóveda",
   vaultLoadError: "Error al cargar el archivo",
+  gbrainPages: "Páginas",
+  gbrainChunks: "Fragmentos",
+  gbrainTypeDistribution: "Distribución por tipo",
+  gbrainRecentActivity: "Actividad reciente",
+  gbrainSource: "Fuente",
+  gbrainNoData: "Sin datos",
 } as const;

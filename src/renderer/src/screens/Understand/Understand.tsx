@@ -100,6 +100,18 @@ export default function Understand(): React.JSX.Element {
         <span>{t("understand.length")}: {data.metadata.length} {t("understand.chars")}</span>
       </div>
 
+      {typeof data.saved_to_vault === "boolean" && (
+        <div className={data.saved_to_vault ? "understand-card" : "card-risk"}>
+          <div
+            className="understand-card-label"
+            style={{ color: data.saved_to_vault ? "var(--success)" : "var(--error)" }}
+          >
+            {data.saved_to_vault ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+            {data.saved_to_vault ? t("understand.savedToVault") : t("understand.saveFailed")}
+          </div>
+        </div>
+      )}
+
       {data.key_points.length > 0 && (
         <div className="understand-card">
           <h3 className="understand-card-label">

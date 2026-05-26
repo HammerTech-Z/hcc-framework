@@ -1046,7 +1046,7 @@ function setupIPC(): void {
     try { return JSON.parse(readFileSync(p, "utf-8")); } catch { return null; }
   });
 
-  // AgentMonitor — vault file listing (grouped by subdirectory, newest first)
+  // AgentMonitor — vault file listing (grouped by relative subdirectory, newest first)
   ipcMain.handle("list-vault-files", async () => {
     const { join } = await import("path");
     const { readdirSync, statSync, existsSync } = await import("fs");
@@ -1055,21 +1055,41 @@ function setupIPC(): void {
     if (!existsSync(vaultDir)) return [];
 
     type VFile = { path: string; name: string; size: number; mtime: number };
-    const result: { dir: string; files: VFile[] }[] = [];
+    const groups = new Map<string, VFile[]>();
 
-    for (const dir of readdirSync(vaultDir)) {
-      const fullDir = join(vaultDir, dir);
-      if (!statSync(fullDir).isDirectory()) continue;
-      const files: VFile[] = [];
-      for (const f of readdirSync(fullDir)) {
-        if (!f.endsWith(".md")) continue;
-        const fp = join(fullDir, f);
-        const st = statSync(fp);
-        if (st.isFile()) files.push({ path: join(dir, f), name: f, size: st.size, mtime: st.mtimeMs });
+    const walk = (dirPath: string, relDir: string): void => {
+      for (const entry of readdirSync(dirPath)) {
+        const fullPath = join(dirPath, entry);
+        const st = statSync(fullPath);
+        if (st.isDirectory()) {
+          walk(fullPath, relDir ? join(relDir, entry) : entry);
+          continue;
+        }
+        if (!st.isFile() || !entry.endsWith(".md")) continue;
+
+        const dir = relDir || ".";
+        const files = groups.get(dir) || [];
+        files.push({
+          path: relDir ? join(relDir, entry) : entry,
+          name: entry,
+          size: st.size,
+          mtime: st.mtimeMs,
+        });
+        groups.set(dir, files);
       }
+    };
+
+    walk(vaultDir, "");
+
+    const result = Array.from(groups.entries()).map(([dir, files]) => {
       files.sort((a, b) => b.mtime - a.mtime);
-      result.push({ dir, files });
-    }
+      return { dir, files };
+    });
+    result.sort((a, b) => {
+      const newestA = a.files[0]?.mtime || 0;
+      const newestB = b.files[0]?.mtime || 0;
+      return newestB - newestA;
+    });
     return result;
   });
 
@@ -1104,33 +1124,39 @@ function setupIPC(): void {
     let totalSize = 0;
     const directories: Array<{ name: string; fileCount: number; latestUpdate: string }> = [];
 
-    for (const dir of readdirSync(vaultDir)) {
-      const fullDir = join(vaultDir, dir);
-      if (!statSync(fullDir).isDirectory()) continue;
-      let fileCount = 0;
-      let latestUpdate = "";
-      for (const f of readdirSync(fullDir)) {
-        if (!f.endsWith(".md")) continue;
-        const fp = join(fullDir, f);
-        const st = statSync(fp);
-        if (st.isFile()) {
-          fileCount++;
-          totalSize += st.size;
-          const mtime = st.mtime.toISOString();
-          if (mtime > latestUpdate) latestUpdate = mtime;
+    const directoryStats = new Map<string, { fileCount: number; latestUpdate: string }>();
+
+    const walk = (dirPath: string, relDir: string): void => {
+      for (const entry of readdirSync(dirPath)) {
+        const fullPath = join(dirPath, entry);
+        const st = statSync(fullPath);
+        if (st.isDirectory()) {
+          walk(fullPath, relDir ? join(relDir, entry) : entry);
+          continue;
         }
+        if (!st.isFile() || !entry.endsWith(".md")) continue;
+
+        const dir = relDir || ".";
+        const current = directoryStats.get(dir) || { fileCount: 0, latestUpdate: "" };
+        current.fileCount++;
+        totalFiles++;
+        totalSize += st.size;
+        const mtime = st.mtime.toISOString();
+        if (mtime > current.latestUpdate) current.latestUpdate = mtime;
+        directoryStats.set(dir, current);
       }
-      if (fileCount > 0) {
-        totalFiles += fileCount;
-        directories.push({ name: dir, fileCount: fileCount, latestUpdate: latestUpdate });
-      }
+    };
+
+    walk(vaultDir, "");
+    for (const [name, stat] of directoryStats.entries()) {
+      directories.push({ name, fileCount: stat.fileCount, latestUpdate: stat.latestUpdate });
     }
     directories.sort((a, b) => b.fileCount - a.fileCount);
     return { totalFiles: totalFiles, totalSize: totalSize, directories: directories };
   });
 
   function parseFrontmatter(text) {
-    const match = text.match(/^---s*n([sS]*?)n---s*n/);
+    const match = text.match(/^---\s*\n([\s\S]*?)\n---\s*\n/);
     if (!match) return { data: null, body: text };
     const data = {};
     for (const line of match[1].split("\n")) {
@@ -1140,6 +1166,13 @@ function setupIPC(): void {
         let val = line.slice(sep + 1).trim();
         if (val === "true") val = true;
         else if (val === "false") val = false;
+        else if (val === "null") val = null;
+        else if (
+          (val.startsWith("\"") && val.endsWith("\"")) ||
+          (val.startsWith("'") && val.endsWith("'"))
+        ) {
+          val = val.slice(1, -1);
+        }
         else if (val !== "" && !isNaN(Number(val))) val = Number(val);
         data[key] = val;
       }

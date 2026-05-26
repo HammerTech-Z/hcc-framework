@@ -24,4 +24,6 @@ export default {
   close: "关闭",
   bytes: "字节",
   loadError: "加载文件出错",
+  savedToVault: "已保存到知识库",
+  saveFailed: "知识库保存失败",
 } as const;
