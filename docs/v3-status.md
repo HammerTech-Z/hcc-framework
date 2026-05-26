@@ -9,7 +9,7 @@
 |--------|------|------|------|
 | 1 | Knowledge 页面重修（CSS + i18n） | 桌面端独立 | ✅ 2 commits: CSS 类化 + i18n 4 语言 |
 | 2 | Vault 增强（文件读取 + 统计） | 桌面端独立 | ✅ 2 commits: IPC + Vault tab (文件浏览/预览/统计) |
-| 3 | recharts 引入 + AgentMonitor 图表升级 | 桌面端独立 | 待启动 |
+| 3 | recharts 引入 + AgentMonitor 图表升级 | 桌面端独立 | ✅ recharts 3.x + Session Trends BarChart + 主题感知 useChartColors hook |
 | 4 | Understand → Vault 打通 | 桌面端独立 | 待启动 |
 | 5 | GBrain 统计面板 | 需 Gateway 扩展 | 阻塞：缺 /knowledge/stats |
 | 6 | Horizon 集成面板 | 需 Gateway + MCP | 阻塞：Horizon 稳定性待确认 |
