@@ -26,6 +26,7 @@ import soulEn from "./locales/en/soul";
 import memoryEn from "./locales/en/memory";
 import installEn from "./locales/en/install";
 import constantsEn from "./locales/en/constants";
+import monitorEn from "./locales/en/monitor";
 import understandEn from "./locales/en/understand";
 import commonEs from "./locales/es/common";
 import navigationEs from "./locales/es/navigation";
@@ -47,6 +48,7 @@ import soulEs from "./locales/es/soul";
 import memoryEs from "./locales/es/memory";
 import installEs from "./locales/es/install";
 import constantsEs from "./locales/es/constants";
+import monitorEs from "./locales/es/monitor";
 import understandEs from "./locales/es/understand";
 import commonZh from "./locales/zh-CN/common";
 import navigationZh from "./locales/zh-CN/navigation";
@@ -69,6 +71,7 @@ import memoryZh from "./locales/zh-CN/memory";
 import installZh from "./locales/zh-CN/install";
 import constantsZh from "./locales/zh-CN/constants";
 import understandZh from "./locales/zh-CN/understand";
+import monitorZh from "./locales/zh-CN/monitor";
 import commonPt from "./locales/pt-BR/common";
 import navigationPt from "./locales/pt-BR/navigation";
 import welcomePt from "./locales/pt-BR/welcome";
@@ -89,6 +92,7 @@ import soulPt from "./locales/pt-BR/soul";
 import memoryPt from "./locales/pt-BR/memory";
 import installPt from "./locales/pt-BR/install";
 import constantsPt from "./locales/pt-BR/constants";
+import monitorPt from "./locales/pt-BR/monitor";
 import understandPt from "./locales/pt-BR/understand";
 
 export const resources = {
@@ -114,6 +118,7 @@ export const resources = {
       memory: memoryEn,
       install: installEn,
       constants: constantsEn,
+      monitor: monitorEn,
       understand: understandEn,
     },
   },
@@ -139,6 +144,7 @@ export const resources = {
       memory: memoryEs,
       install: installEs,
       constants: constantsEs,
+      monitor: monitorEs,
       understand: understandEs,
     },
   },
@@ -164,6 +170,7 @@ export const resources = {
       memory: memoryZh,
       install: installZh,
       constants: constantsZh,
+      monitor: monitorZh,
       understand: understandZh,
     },
   },
@@ -189,6 +196,7 @@ export const resources = {
       memory: memoryPt,
       install: installPt,
       constants: constantsPt,
+      monitor: monitorPt,
       understand: understandPt,
     },
   },

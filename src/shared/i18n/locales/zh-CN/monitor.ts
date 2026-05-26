@@ -1,0 +1,61 @@
+export default {
+  title: "P4 监控",
+  subtitle: "网关 · 趋势 · 飞轮 · 知识 · 事件",
+  loading: "正在加载监控...",
+  summary: {
+    activeDays: "活跃天数（14天）",
+    sessions: "会话数（14天）",
+    messages: "消息数（14天）",
+    gateway: "网关 8643",
+    activeAgents: "活跃 Agent",
+  },
+  status: {
+    online: "在线",
+    offline: "离线",
+    down: "宕机",
+    active: "活跃",
+    failed: "失败",
+    completed: "已完成",
+    running: "运行中",
+    idle: "空闲",
+  },
+  time: {
+    seconds: "{{count}}秒前",
+    minutes: "{{count}}分钟前",
+    hours: "{{count}}小时前",
+    days: "{{count}}天前",
+    updated: "更新于 {{time}}",
+    today: "今天",
+    yesterday: "昨天",
+  },
+  charts: {
+    sessionTrends: "📈 会话趋势（14天）",
+  },
+  system: {
+    title: "⚡ 系统状态",
+    gateway: "网关：{{state}}",
+    pid: "（PID {{pid}}）",
+    health: "8643 健康检查",
+  },
+  flywheel: {
+    title: "🔄 知识飞轮",
+    empty: "暂无定时任务记录",
+  },
+  knowledge: {
+    title: "📥 最近知识",
+    empty: "暂无知识库内容",
+  },
+  events: {
+    title: "📊 事件",
+    empty: "暂无事件",
+  },
+  execution: {
+    title: "▶ 当前执行",
+    noActive: "没有正在执行的 playbook",
+    running: "运行中",
+    completed: "已完成",
+    failed: "失败",
+    elapsed: "已用时间：{{time}}",
+    step: "第 {{current}} / {{total}} 步",
+  },
+} as const;

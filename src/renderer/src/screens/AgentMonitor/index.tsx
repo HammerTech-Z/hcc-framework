@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "../../components/useI18n";
 
 interface GatewayState {
   pid: number;
@@ -73,7 +74,7 @@ function fmtMtime(ms: number): string {
   return d.toLocaleDateString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-function buildTrends(sessions: CachedSession[]): DailyTrend[] {
+function buildTrends(sessions: CachedSession[], t: (key: string) => string): DailyTrend[] {
   const days: Record<string, { sessions: number; messages: number; label: string }> = {};
   const now = Date.now();
   for (let i = 13; i >= 0; i--) {
@@ -81,9 +82,9 @@ function buildTrends(sessions: CachedSession[]): DailyTrend[] {
     const key = d.toISOString().slice(0, 10);
     const label =
       i === 0
-        ? "Today"
+        ? t("monitor.time.today")
         : i === 1
-          ? "Yest"
+          ? t("monitor.time.yesterday")
           : d.toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
     days[key] = { sessions: 0, messages: 0, label };
   }
@@ -98,6 +99,7 @@ function buildTrends(sessions: CachedSession[]): DailyTrend[] {
 }
 
 export default function AgentMonitor() {
+  const { t } = useI18n();
   const [gw, setGw] = useState<GatewayState | null>(null);
   const [vault, setVault] = useState<VaultGroup[]>([]);
   const [cronHistory, setCronHistory] = useState<CronRun[]>([]);
@@ -124,7 +126,7 @@ export default function AgentMonitor() {
         if (vaultRes) setVault(vaultRes);
         if (cronRes) setCronHistory(cronRes);
         if (evRes) setEvents(evRes);
-        if (sessions) setTrends(buildTrends(sessions));
+        if (sessions) setTrends(buildTrends(sessions, t));
         setError(null);
       } catch (e) {
         if (!cancelled) setError(String(e));
@@ -163,7 +165,7 @@ export default function AgentMonitor() {
         className="flex items-center justify-center h-full"
         style={{ color: "var(--text-muted)" }}
       >
-        Loading monitor...
+        {t("monitor.loading")}
       </div>
     );
   }
@@ -179,10 +181,10 @@ export default function AgentMonitor() {
       <div className="monitor-header">
         <div>
           <h1 style={{ fontSize: "20px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-            P4 Monitor
+            {t("monitor.title")}
           </h1>
           <p className="monitor-summary-label" style={{ margin: "2px 0 0" }}>
-            Gateway · Trends · Flywheel · Knowledge · Events
+            {t("monitor.subtitle")}
           </p>
         </div>
       </div>
@@ -192,15 +194,15 @@ export default function AgentMonitor() {
       {/* Summary row */}
       <div className="monitor-summary-row">
         {[
-          { label: "Active Days (14d)", value: activeDays.toString() },
-          { label: "Sessions (14d)", value: totalSessions.toLocaleString() },
-          { label: "Messages (14d)", value: totalMessages.toLocaleString() },
+          { label: t("monitor.summary.activeDays"), value: activeDays.toString() },
+          { label: t("monitor.summary.sessions"), value: totalSessions.toLocaleString() },
+          { label: t("monitor.summary.messages"), value: totalMessages.toLocaleString() },
           {
-            label: "Gateway 8643",
-            value: health === 200 ? "Online" : health === null ? "..." : "Offline",
+            label: t("monitor.summary.gateway"),
+            value: health === 200 ? t("monitor.status.online") : health === null ? "..." : t("monitor.status.offline"),
             valueColor: health === 200 ? "var(--success)" : "var(--error)",
           },
-          { label: "Active Agents", value: (gw?.active_agents ?? "?").toString() },
+          { label: t("monitor.summary.activeAgents"), value: (gw?.active_agents ?? "?").toString() },
         ].map((m) => (
           <div key={m.label} className="monitor-summary-card">
             <div
@@ -216,7 +218,7 @@ export default function AgentMonitor() {
 
       {/* Session Trends */}
       <div className="settings-section">
-        <div className="settings-section-title">📈 Session Trends (14 days)</div>
+        <div className="settings-section-title">{t("monitor.charts.sessionTrends")}</div>
         <div className="monitor-chart-container">
           <div className="monitor-chart">
             {trends.map((t) => {
@@ -254,17 +256,17 @@ export default function AgentMonitor() {
 
       {/* System Status */}
       <div className="settings-section">
-        <div className="settings-section-title">⚡ System Status</div>
+        <div className="settings-section-title">{t("monitor.system.title")}</div>
         <div className="monitor-badge-group">
           <MonitorBadge
-            label={`Gateway: ${gw?.gateway_state || "unknown"}`}
+            label={t("monitor.system.gateway", { state: gw?.gateway_state || "unknown" })}
             ok={gw?.gateway_state === "running"}
-            suffix={gw?.pid ? `(PID ${gw.pid})` : undefined}
+            suffix={gw?.pid ? t("monitor.system.pid", { pid: gw.pid }) : undefined}
           />
           <MonitorBadge
-            label="8643 Health"
+            label={t("monitor.system.health")}
             ok={health === 200}
-            suffix={health === 200 ? "200" : health === null ? "..." : "DOWN"}
+            suffix={health === 200 ? "200" : health === null ? "..." : t("monitor.status.down")}
           />
           {gw?.platforms &&
             Object.entries(gw.platforms).map(([name, p]) => {
@@ -280,7 +282,7 @@ export default function AgentMonitor() {
         </div>
         {gw?.updated_at && (
           <div className="monitor-updated-at">
-            Updated {timeAgo(gw.updated_at)} ago
+            {t("monitor.time.updated", { time: timeAgo(gw.updated_at) })}
           </div>
         )}
       </div>
@@ -288,7 +290,7 @@ export default function AgentMonitor() {
       {/* Flywheel + Knowledge */}
       <div className="monitor-row">
         <div className="settings-section monitor-panel">
-          <div className="settings-section-title">🔄 Knowledge Flywheel</div>
+          <div className="settings-section-title">{t("monitor.flywheel.title")}</div>
           <div className="monitor-list">
             {(cronHistory || []).slice(0, 20).map((run, i) => (
               <div key={i} className="monitor-list-item">
@@ -312,13 +314,13 @@ export default function AgentMonitor() {
               </div>
             ))}
             {(!cronHistory || cronHistory.length === 0) && (
-              <div className="monitor-empty">No cron history</div>
+              <div className="monitor-empty">{t("monitor.flywheel.empty")}</div>
             )}
           </div>
         </div>
 
         <div className="settings-section monitor-panel">
-          <div className="settings-section-title">📥 Recent Knowledge</div>
+          <div className="settings-section-title">{t("monitor.knowledge.title")}</div>
           <div className="monitor-list">
             {[...vault]
               .flatMap((g) => (g.files || []).map((f) => ({ ...f, dir: g.dir })))
@@ -334,7 +336,7 @@ export default function AgentMonitor() {
                 </div>
               ))}
             {vault.length === 0 && (
-              <div className="monitor-empty">No vault content</div>
+              <div className="monitor-empty">{t("monitor.knowledge.empty")}</div>
             )}
           </div>
         </div>
@@ -342,7 +344,7 @@ export default function AgentMonitor() {
 
       {/* Events */}
       <div className="settings-section">
-        <div className="settings-section-title">📊 Events</div>
+        <div className="settings-section-title">{t("monitor.events.title")}</div>
         <div className="monitor-list" style={{ maxHeight: "200px" }}>
           {(events || []).filter(Boolean).map((ev, i) => {
             const isFailure = ev.event?.includes("fail") || ev.event?.includes("error");
@@ -361,7 +363,7 @@ export default function AgentMonitor() {
             );
           })}
           {(!events || events.length === 0) && (
-            <div className="monitor-empty">No events yet</div>
+            <div className="monitor-empty">{t("monitor.events.empty")}</div>
           )}
         </div>
       </div>
