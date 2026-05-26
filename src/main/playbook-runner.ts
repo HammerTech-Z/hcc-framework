@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { spawn, execSync } from "child_process";
 import { existsSync, mkdirSync, writeFileSync, statSync, readFileSync } from "fs";
 import { join } from "path";
 import { cwd } from "process";
@@ -607,35 +607,72 @@ export async function runPlaybook(
     const artifactPath = join(pipelineDir, `${step.id}.log`);
 
     if (def.command) {
-      try {
-        const output = execSync(def.command, {
-          cwd: def.cwd || cwd(),
-          timeout: def.timeout ?? 60_000,
-          encoding: "utf-8",
-          maxBuffer: 1024 * 1024,
-        });
-        step.status = "success";
-        step.output = output.trim().substring(0, 2000);
-        writeFileSync(artifactPath, output);
-      } catch (err: unknown) {
-        const message =
-          err instanceof Error
-            ? err.message.substring(0, 500)
-            : String(err).substring(0, 500);
-        step.status = "failed";
-        step.error = message;
-        const stdOut =
-          err &&
-          typeof err === "object" &&
-          "stdout" in err &&
-          typeof (err as { stdout: unknown }).stdout === "string"
-            ? (err as { stdout: string }).stdout
-            : "";
-        writeFileSync(artifactPath, stdOut || message);
-        finalStatus = "failed";
+      // Use spawn for non-blocking, streaming execution
+      const child = spawn(def.command, {
+        cwd: def.cwd || cwd(),
+        shell: true,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+
+      let stdout = "";
+      let stderr = "";
+      const timer = def.timeout
+        ? setTimeout(() => {
+            child.kill();
+            step.status = "failed";
+            step.error = `timeout after ${def.timeout}ms`;
+            writeFileSync(artifactPath, `TIMEOUT after ${def.timeout}ms\n${stdout}`);
+          }, def.timeout)
+        : null;
+
+      // Wire external abort signal to kill the child
+      const onAbort = () => { child.kill(); };
+      signal?.addEventListener("abort", onAbort, { once: true });
+
+      child.stdout?.on("data", (chunk: Buffer) => {
+        stdout += chunk.toString();
+        step.status = "running";
+        step.output = stdout.trim().substring(0, 2000);
         onStep({ ...step });
-        break;
-      }
+      });
+
+      child.stderr?.on("data", (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+
+      await new Promise<void>((resolve) => {
+        child.on("close", (code) => {
+          signal?.removeEventListener("abort", onAbort);
+          if (timer) clearTimeout(timer);
+
+          const output = stdout + (stderr ? `\nstderr:\n${stderr}` : "");
+          writeFileSync(artifactPath, output);
+
+          if (code === 0) {
+            step.status = "success";
+            step.output = stdout.trim().substring(0, 2000);
+          } else {
+            step.status = "failed";
+            step.error = (stderr || stdout || `exit code ${code}`).trim().substring(0, 500);
+            finalStatus = "failed";
+          }
+          resolve();
+        });
+
+        child.on("error", (err) => {
+          signal?.removeEventListener("abort", onAbort);
+          if (timer) clearTimeout(timer);
+
+          step.status = "failed";
+          step.error = err.message.substring(0, 500);
+          writeFileSync(artifactPath, err.message);
+          finalStatus = "failed";
+          resolve();
+        });
+      });
+
+      onStep({ ...step });
+      if (finalStatus !== "success") break;
     } else {
       step.status = "success";
       step.output = "Step completed (no command)";
