@@ -109,6 +109,26 @@ export default function AgentMonitor() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Current execution tracking
+  interface ExecStep {
+    id: string;
+    label: string;
+    status: string;
+    hccStage?: string;
+    output?: string;
+    error?: string;
+  }
+  interface ExecState {
+    steps: ExecStep[];
+    overallStatus: "running" | "done" | "error";
+    startTime: number;
+    endTime?: number;
+    errorMessage?: string;
+    runId?: string;
+    playbookName?: string;
+  }
+  const [exec, setExec] = useState<ExecState | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -159,6 +179,61 @@ export default function AgentMonitor() {
     };
   }, []);
 
+  // Subscribe to playbook execution events
+  useEffect(() => {
+    const cleanups: Array<() => void> = [];
+
+    if (window.hermesAPI?.onPlaybookStep) {
+      cleanups.push(
+        window.hermesAPI.onPlaybookStep((step) => {
+          setExec((prev) => {
+            const now = Date.now();
+            // First step starts a new tracking session
+            if (!prev || prev.overallStatus === "done" || prev.overallStatus === "error") {
+              return {
+                steps: [{
+                  id: step.id,
+                  label: step.label,
+                  status: step.status,
+                  hccStage: step.hccStage,
+                  output: step.output,
+                  error: step.error,
+                }],
+                overallStatus: "running",
+                startTime: now,
+              };
+            }
+            // Update existing step or append new one
+            const idx = prev.steps.findIndex((s) => s.id === step.id);
+            const entry = { id: step.id, label: step.label, status: step.status, hccStage: step.hccStage, output: step.output, error: step.error };
+            const steps = idx >= 0
+              ? prev.steps.map((s, i) => (i === idx ? entry : s))
+              : [...prev.steps, entry];
+            return { ...prev, steps };
+          });
+        }),
+      );
+    }
+
+    if (window.hermesAPI?.onPlaybookDone) {
+      cleanups.push(
+        window.hermesAPI.onPlaybookDone((result) => {
+          setExec((prev) => prev ? { ...prev, overallStatus: "done", endTime: Date.now(), runId: result.runId } : null);
+        }),
+      );
+    }
+
+    if (window.hermesAPI?.onPlaybookError) {
+      cleanups.push(
+        window.hermesAPI.onPlaybookError((err) => {
+          setExec((prev) => prev ? { ...prev, overallStatus: "error", endTime: Date.now(), errorMessage: err } : null);
+        }),
+      );
+    }
+
+    return () => cleanups.forEach((fn) => fn());
+  }, []);
+
   if (loading) {
     return (
       <div
@@ -174,6 +249,19 @@ export default function AgentMonitor() {
   const totalMessages = trends.reduce((s, t) => s + t.messages, 0);
   const activeDays = trends.filter((t) => t.sessions > 0).length;
   const maxSessions = Math.max(1, ...trends.map((t) => t.sessions));
+
+  function fmtElapsed(start: number, end?: number): string {
+    const sec = Math.floor(((end ?? Date.now()) - start) / 1000);
+    if (sec < 60) return `${sec}s`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}m ${sec % 60}s`;
+    return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
+  }
+
+  const HCC_COLORS: Record<string, string> = {
+    stage_5_codex_execute: "#7C3AED",
+    stage_6_review_test: "#D97706",
+    stage_7_delivery: "#059669",
+  };
 
   return (
     <div className="monitor-container custom-scrollbar">
@@ -214,6 +302,96 @@ export default function AgentMonitor() {
             <div className="monitor-summary-label">{m.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Current Execution */}
+      <div className="settings-section">
+        <div className="settings-section-title">{t("monitor.execution.title")}</div>
+        {!exec ? (
+          <div className="monitor-empty">{t("monitor.execution.noActive")}</div>
+        ) : (
+          <>
+            <div className="monitor-exec-header">
+              <span className="monitor-exec-name">
+                {exec.playbookName || `Run ${exec.runId || ""}`}
+              </span>
+              <span
+                className="monitor-exec-status"
+                style={{
+                  color: exec.overallStatus === "running"
+                    ? "var(--accent-text)"
+                    : exec.overallStatus === "done"
+                      ? "var(--success)"
+                      : "var(--error)",
+                }}
+              >
+                {exec.overallStatus === "running"
+                  ? t("monitor.execution.running")
+                  : exec.overallStatus === "done"
+                    ? t("monitor.execution.completed")
+                    : t("monitor.execution.failed")}
+                {exec.overallStatus === "running" && ` · ${fmtElapsed(exec.startTime)}`}
+                {exec.endTime && ` · ${fmtElapsed(exec.startTime, exec.endTime)}`}
+              </span>
+            </div>
+            <div className="monitor-exec-steps">
+              {exec.steps.map((step) => (
+                <div key={step.id} className="monitor-exec-step">
+                  <span
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: "50%",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 10,
+                      color: "#fff",
+                      flexShrink: 0,
+                      background:
+                        step.status === "success"
+                          ? "var(--success)"
+                          : step.status === "failed"
+                            ? "var(--error)"
+                            : step.status === "running"
+                              ? "var(--accent)"
+                              : "var(--text-muted)",
+                    }}
+                  >
+                    {step.status === "success" ? "✓" : step.status === "failed" ? "✗" : ""}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="monitor-exec-step-label">
+                      {step.label}
+                      {step.hccStage && HCC_COLORS[step.hccStage] && (
+                        <span
+                          className="monitor-hcc-badge"
+                          style={{
+                            background: `${HCC_COLORS[step.hccStage]}22`,
+                            color: HCC_COLORS[step.hccStage],
+                          }}
+                        >
+                          {step.hccStage.replace("stage_5", "HCC-5").replace("stage_6", "HCC-6").replace("stage_7", "HCC-7")}
+                        </span>
+                      )}
+                    </div>
+                    {step.output && (
+                      <div className="monitor-exec-step-output">{step.output}</div>
+                    )}
+                    {step.error && (
+                      <div className="monitor-exec-step-error">{step.error}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {exec.errorMessage && (
+              <div className="monitor-exec-step-error" style={{ marginTop: 8 }}>
+                {exec.errorMessage}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Session Trends */}
