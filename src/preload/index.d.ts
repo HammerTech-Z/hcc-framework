@@ -457,6 +457,121 @@ interface HermesAPI {
     logFile?: string,
     lines?: number,
   ) => Promise<{ content: string; path: string }>;
+
+  // AgentMonitor — gateway state
+  getGatewayState: () => Promise<{
+    pid: number;
+    kind: string;
+    gateway_state: string;
+    active_agents: number;
+    platforms: Record<string, { state: string }>;
+    updated_at: string;
+  } | null>;
+
+  // AgentMonitor — vault file listing
+  listVaultFiles: () => Promise<
+    { dir: string; files: { path: string; name: string; size: number; mtime: number }[] }[]
+  >;
+
+  // AgentMonitor — cron job output history
+  getCronJobHistory: (limit?: number) => Promise<
+    { jobId: string; time: string; failed: boolean; preview: string }[]
+  >;
+
+  // AgentMonitor — events timeline
+  getEvents: (limit?: number) => Promise<
+    { ts: string; event: string; task_id?: string; role?: string; [k: string]: unknown }[]
+  >;
+
+  // AgentMonitor — gateway health via main process
+  checkGatewayHealth: () => Promise<{ status: number; ok: boolean }>;
+
+  // Knowledge gateway search
+  knowledgeSearch: (query: string, limit?: number) => Promise<{
+    status: string;
+    results: { file: string; score: number; preview: string }[];
+  }>;
+
+  // Knowledge gateway ingest
+  knowledgeIngest: (title: string, content: string) => Promise<{
+    status: string;
+    path?: string;
+    message?: string;
+  }>;
+
+  // Playbook Runner
+  listPlaybooks: () => Promise<
+    Array<{
+      id: string;
+      name: string;
+      description: string;
+      version: number;
+      steps: Array<{ id: string; label: string; hccStage: string }>;
+    }>
+  >;
+
+  runPlaybook: (playbookId: string) => Promise<{
+    steps?: Array<{
+      id: string;
+      label: string;
+      hccStage: string;
+      status: string;
+      error?: string;
+      output?: string;
+    }>;
+    finalStatus: string;
+    error?: string;
+  }>;
+
+  onPlaybookStep: (
+    callback: (step: {
+      id: string;
+      label: string;
+      hccStage: string;
+      status: string;
+      error?: string;
+      output?: string;
+    }) => void,
+  ) => () => void;
+
+  onPlaybookDone: (
+    callback: (result: { finalStatus: string; runId?: string }) => void,
+  ) => () => void;
+
+  onPlaybookError: (callback: (error: string) => void) => () => void;
+
+  runLlmChecker: (task?: string) => Promise<{
+    status: "pass" | "warning" | "fail";
+    reason: string;
+    models?: Array<{
+      name: string;
+      size: string;
+      score: number;
+      useCase: string;
+      command: string;
+      status: "installed" | "recommended";
+    }>;
+    details?: string;
+  }>;
+
+  understandAnything: (
+    input: string,
+    filePath?: string,
+  ) => Promise<{
+    summary: string;
+    key_points: string[];
+    entities: string[];
+    risks: string[];
+    todos: string[];
+    suggested_playbook: string | null;
+    metadata: {
+      source: "inline" | "file";
+      type: string;
+      length: number;
+      timestamp: string;
+    };
+    error?: string;
+  }>;
 }
 
 declare global {

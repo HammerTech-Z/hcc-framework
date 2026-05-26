@@ -7,8 +7,27 @@ import {
   Notification,
 } from "electron";
 import { join } from "path";
-import { electronApp, optimizer, is } from "@electron-toolkit/utils";
-import type { AppUpdater } from "electron-updater";
+
+// replaced @electron-toolkit/utils import (broken in Electron 39)
+const is = {
+  get dev() {
+    return !!process.env.ELECTRON_RENDERER_URL;
+  },
+};
+const electronApp = {
+  setAppUserModelId(id: string) {
+    if (process.platform === "win32") app.setAppUserModelId(id);
+  },
+};
+const optimizer = {
+  watchWindowShortcuts(window: BrowserWindow) {
+    window.webContents.on("before-input-event", (_event, input) => {
+      if (input.key === "F12" || (input.control && input.shift && input.key === "I")) {
+        window.webContents.toggleDevTools();
+      }
+    });
+  },
+};
 import icon from "../../resources/icon.png?asset";
 import {
   checkInstallStatus,
@@ -40,6 +59,7 @@ import {
   restartGateway,
   ensureSshTunnelIfNeeded,
   setSshRemoteApiKey,
+  markApiServerUnavailable,
 } from "./hermes";
 import {
   startSshTunnel,
@@ -174,6 +194,18 @@ process.on("unhandledRejection", (reason) => {
 let mainWindow: BrowserWindow | null = null;
 let currentChatAbort: (() => void) | null = null;
 
+const ALLOWED_EXTERNAL_SCHEMES = new Set(["http:", "https:", "mailto:", "vscode:"]);
+function safeOpenExternal(rawUrl: string): void {
+  try {
+    const u = new URL(rawUrl);
+    if (ALLOWED_EXTERNAL_SCHEMES.has(u.protocol)) {
+      shell.openExternal(u.toString());
+    }
+  } catch {
+    // invalid URL — skip silently
+  }
+}
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1100,
@@ -195,7 +227,7 @@ function createWindow(): void {
   });
 
   mainWindow.on("ready-to-show", () => {
-    mainWindow!.show();
+    mainWindow?.show();
   });
 
   mainWindow.webContents.on("render-process-gone", (_event, details) => {
@@ -223,7 +255,7 @@ function createWindow(): void {
   );
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url);
+    safeOpenExternal(details.url);
     return { action: "deny" };
   });
 
@@ -235,6 +267,11 @@ function createWindow(): void {
 }
 
 function setupIPC(): void {
+  /** Guard against sending IPC after renderer is destroyed. */
+  const safeSend = (event: Electron.IpcMainInvokeEvent, channel: string, ...args: unknown[]): void => {
+    if (!event.sender.isDestroyed()) event.sender.send(channel, ...args);
+  };
+
   // Installation
   ipcMain.handle("check-install", () => {
     return checkInstallStatus();
@@ -245,7 +282,7 @@ function setupIPC(): void {
   ipcMain.handle("start-install", async (event) => {
     try {
       await runInstall((progress: InstallProgress) => {
-        event.sender.send("install-progress", progress);
+        safeSend(event, "install-progress", progress);
       }, mainWindow);
       return { success: true };
     } catch (err) {
@@ -274,7 +311,7 @@ function setupIPC(): void {
     try {
       const conn = getConnectionConfig();
       if (conn.mode === "ssh" && conn.ssh) {
-        event.sender.send("install-progress", {
+        safeSend(event, "install-progress", {
           step: 1,
           totalSteps: 1,
           title: "Updating remote Hermes Agent",
@@ -289,7 +326,7 @@ function setupIPC(): void {
         return { success: true };
       }
       await runHermesUpdate((progress: InstallProgress) => {
-        event.sender.send("install-progress", progress);
+        safeSend(event, "install-progress", progress);
       });
       return { success: true };
     } catch (err) {
@@ -302,7 +339,7 @@ function setupIPC(): void {
   ipcMain.handle("run-claw-migrate", async (event) => {
     try {
       await runClawMigrate((progress: InstallProgress) => {
-        event.sender.send("install-progress", progress);
+        safeSend(event, "install-progress", progress);
       });
       return { success: true };
     } catch (err) {
@@ -332,11 +369,8 @@ function setupIPC(): void {
       }
       setEnvValue(key, value, profile);
       // Restart gateway so it picks up the new API key
-      if (
-        (isGatewayRunning() && key.endsWith("_API_KEY")) ||
-        key.endsWith("_TOKEN") ||
-        key === "HF_TOKEN"
-      ) {
+      const isCredentialKey = key.endsWith("_API_KEY") || key.endsWith("_TOKEN") || key === "HF_TOKEN";
+      if (isCredentialKey && isGatewayRunning()) {
         restartGateway(profile);
       }
       return true;
@@ -357,8 +391,7 @@ function setupIPC(): void {
         await sshSetConfigValue(conn.ssh, key, value, profile);
         return true;
       }
-      setConfigValue(key, value, profile);
-      return true;
+      return setConfigValue(key, value, profile);
     },
   );
 
@@ -513,9 +546,12 @@ function setupIPC(): void {
         }
       }
 
+      // Cancel previous chat and immediately occupy the slot before any await
       if (currentChatAbort) {
         currentChatAbort();
       }
+      const chatController = new AbortController();
+      currentChatAbort = () => chatController.abort();
 
       let fullResponse = "";
       const chatStartTime = Date.now();
@@ -533,11 +569,11 @@ function setupIPC(): void {
         {
           onChunk: (chunk) => {
             fullResponse += chunk;
-            event.sender.send("chat-chunk", chunk);
+            safeSend(event, "chat-chunk", chunk);
           },
           onDone: (sessionId) => {
             currentChatAbort = null;
-            event.sender.send("chat-done", sessionId || "");
+            safeSend(event, "chat-done", sessionId || "");
             resolveChat({ response: fullResponse, sessionId });
             // Desktop notification when window is not focused and response took >10s
             if (
@@ -557,7 +593,7 @@ function setupIPC(): void {
           },
           onError: (error) => {
             currentChatAbort = null;
-            event.sender.send("chat-error", error);
+            safeSend(event, "chat-error", error);
             rejectChat(new Error(error));
             // Notify on error too if window not focused
             if (mainWindow && !mainWindow.isFocused()) {
@@ -568,10 +604,10 @@ function setupIPC(): void {
             }
           },
           onToolProgress: (tool) => {
-            event.sender.send("chat-tool-progress", tool);
+            safeSend(event, "chat-tool-progress", tool);
           },
           onUsage: (usage) => {
-            event.sender.send("chat-usage", usage);
+            safeSend(event, "chat-usage", usage);
           },
         },
         profile,
@@ -579,7 +615,18 @@ function setupIPC(): void {
         history,
       );
 
-      currentChatAbort = handle.abort;
+      // If already cancelled during preparation, abort the handle immediately
+      if (chatController.signal.aborted) {
+        handle.abort();
+        currentChatAbort = null;
+        return promise;
+      }
+      // Chain real abort with the placeholder controller
+      const origAbort = handle.abort.bind(handle);
+      currentChatAbort = () => {
+        chatController.abort();
+        origAbort();
+      };
       return promise;
     },
   );
@@ -599,7 +646,11 @@ function setupIPC(): void {
   });
   ipcMain.handle("stop-gateway", async () => {
     const conn = getConnectionConfig();
-    if (conn.mode === "ssh" && conn.ssh) { await sshStopGateway(conn.ssh); return true; }
+    if (conn.mode === "ssh" && conn.ssh) {
+      await sshStopGateway(conn.ssh);
+      markApiServerUnavailable();
+      return true;
+    }
     stopGateway(true);
     return true;
   });
@@ -832,7 +883,7 @@ function setupIPC(): void {
   ipcMain.handle("claw3d-setup", async (event) => {
     try {
       await setupClaw3d((progress: Claw3dSetupProgress) => {
-        event.sender.send("claw3d-setup-progress", progress);
+        safeSend(event, "claw3d-setup-progress", progress);
       });
       return { success: true };
     } catch (err) {
@@ -902,7 +953,7 @@ function setupIPC(): void {
 
   // Shell
   ipcMain.handle("open-external", (_event, url: string) => {
-    shell.openExternal(url);
+    safeOpenExternal(url);
   });
 
   // Backup / Import
@@ -939,6 +990,106 @@ function setupIPC(): void {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh) return sshReadLogs(conn.ssh, logFile, lines);
     return readLogs(logFile, lines);
+  });
+
+  // AgentMonitor — gateway state
+  ipcMain.handle("get-gateway-state", async () => {
+    const { join } = await import("path");
+    const { readFileSync, existsSync } = await import("fs");
+    const { homedir } = await import("os");
+    const p = join(homedir(), ".hermes", "gateway_state.json");
+    if (!existsSync(p)) return null;
+    try { return JSON.parse(readFileSync(p, "utf-8")); } catch { return null; }
+  });
+
+  // AgentMonitor — vault file listing (grouped by subdirectory, newest first)
+  ipcMain.handle("list-vault-files", async () => {
+    const { join } = await import("path");
+    const { readdirSync, statSync, existsSync } = await import("fs");
+    const { homedir } = await import("os");
+    const vaultDir = join(homedir(), ".hermes", "vault");
+    if (!existsSync(vaultDir)) return [];
+
+    type VFile = { path: string; name: string; size: number; mtime: number };
+    const result: { dir: string; files: VFile[] }[] = [];
+
+    for (const dir of readdirSync(vaultDir)) {
+      const fullDir = join(vaultDir, dir);
+      if (!statSync(fullDir).isDirectory()) continue;
+      const files: VFile[] = [];
+      for (const f of readdirSync(fullDir)) {
+        if (!f.endsWith(".md")) continue;
+        const fp = join(fullDir, f);
+        const st = statSync(fp);
+        if (st.isFile()) files.push({ path: join(dir, f), name: f, size: st.size, mtime: st.mtimeMs });
+      }
+      files.sort((a, b) => b.mtime - a.mtime);
+      result.push({ dir, files });
+    }
+    return result;
+  });
+
+  // AgentMonitor — cron job output history (recent runs per job)
+  ipcMain.handle("get-cron-job-history", async (_e, limit = 50) => {
+    const { join } = await import("path");
+    const { readdirSync, readFileSync, statSync, existsSync } = await import("fs");
+    const { homedir } = await import("os");
+    const cronDir = join(homedir(), ".hermes", "cron", "output");
+    if (!existsSync(cronDir)) return [];
+
+    type CronRun = { jobId: string; time: string; failed: boolean; preview: string };
+    const result: CronRun[] = [];
+
+    for (const entry of readdirSync(cronDir)) {
+      const fullPath = join(cronDir, entry);
+      if (!statSync(fullPath).isDirectory()) continue;
+      const runs = readdirSync(fullPath)
+        .filter(f => f.endsWith(".md") || f.endsWith(".json"))
+        .sort()
+        .reverse()
+        .slice(0, 5);
+      for (const runFile of runs) {
+        const fp = join(fullPath, runFile);
+        const content = readFileSync(fp, "utf-8").slice(0, 200);
+        const failed = content.includes("FAILED");
+        const m = runFile.match(/_(\d{4})_(\d{2})_(\d{2})_(\d{2})_(\d{2})_(\d{2})/);
+        const isoTime = m
+          ? new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}`).toISOString()
+          : new Date(statSync(fp).mtimeMs).toISOString();
+        result.push({ jobId: entry, time: isoTime, failed, preview: content.slice(0, 80).replace(/\n/g, " ") });
+      }
+    }
+    return result.sort((a, b) => (a.time > b.time ? -1 : 1)).slice(0, limit);
+  });
+
+  // AgentMonitor — events timeline
+  ipcMain.handle("get-events", async (_event, limit = 50) => {
+    const { join } = await import("path");
+    const { readFileSync, existsSync } = await import("fs");
+    const { homedir } = await import("os");
+    const p = join(homedir(), ".hermes", "chronicles", "events.jsonl");
+    if (!existsSync(p)) return [];
+    try {
+      const text = readFileSync(p, "utf-8");
+      const lines = text.trim().split("\n").filter(Boolean).slice(-limit);
+      return lines.map(line => {
+        try { return JSON.parse(line); }
+        catch { console.warn("[events] bad line:", line.slice(0, 80)); return null; }
+      }).filter(Boolean);
+    } catch { return []; }
+  });
+
+  // AgentMonitor — gateway health check via main process
+  ipcMain.handle("check-gateway-health", async () => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2000);
+      const r = await fetch("http://127.0.0.1:8643/health", { signal: controller.signal });
+      clearTimeout(timeout);
+      return { status: r.status, ok: r.ok };
+    } catch {
+      return { status: 0, ok: false };
+    }
   });
 }
 
@@ -1048,7 +1199,7 @@ function buildMenu(): void {
   Menu.setApplicationMenu(menu);
 }
 
-function setupUpdater(): void {
+async function setupUpdater(): Promise<void> {
   // IPC handlers must always be registered to avoid invoke errors
   ipcMain.handle("get-app-version", () => app.getVersion());
 
@@ -1060,11 +1211,7 @@ function setupUpdater(): void {
     return;
   }
 
-  // Dynamic import to avoid electron-updater issues in dev mode
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { autoUpdater } = require("electron-updater") as {
-    autoUpdater: AppUpdater;
-  };
+  const { autoUpdater } = await import("electron-updater");
 
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -1112,6 +1259,67 @@ function setupUpdater(): void {
     autoUpdater.checkForUpdates().catch(() => {});
   }, 5000);
 }
+
+// --------------- Playbook Runner IPCs ---------------
+import { getPlaybooks, runPlaybook } from "./playbook-runner";
+
+ipcMain.handle("list-playbooks", () => {
+  return getPlaybooks().map((pb) => ({
+    id: pb.id,
+    name: pb.name,
+    description: pb.description,
+    version: pb.version,
+    steps: pb.steps.map((s) => ({
+      id: s.id,
+      label: s.label,
+      hccStage: s.hccStage,
+    })),
+  }));
+});
+
+ipcMain.handle("run-playbook", async (_event, playbookId: string) => {
+  const mainWindow = BrowserWindow.getFocusedWindow();
+  const emit = (step: { id: string; label: string; hccStage: string; status: string; error?: string; output?: string }) => {
+    mainWindow?.webContents.send("playbook-step", step);
+  };
+
+  try {
+    const result = await runPlaybook(playbookId, emit);
+    mainWindow?.webContents.send("playbook-done", result);
+    return result;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    mainWindow?.webContents.send("playbook-error", message);
+    return { finalStatus: "failed", error: message };
+  }
+});
+// --------------- end Playbook Runner ---------------
+
+// --------------- LLM Checker IPCs ---------------
+import { runLlmChecker, understandAnything } from "./playbook-runner";
+
+ipcMain.handle("run-llm-checker", async (_event, task?: string) => {
+  try {
+    const result = await runLlmChecker(task);
+    return result;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { status: "fail" as const, reason: message };
+  }
+});
+
+// --------------- Understand-Anything IPCs ---------------
+ipcMain.handle("understand-anything", async (_event, input: string, filePath?: string) => {
+  try {
+    const result = await understandAnything(input, filePath);
+    return result;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: message };
+  }
+});
+// --------------- end Understand-Anything ---------------
+// --------------- end LLM Checker ---------------
 
 app.whenReady().then(() => {
   app.name = "Hermes";
@@ -1161,7 +1369,7 @@ app.on("before-quit", () => {
     currentChatAbort();
     currentChatAbort = null;
   }
-  stopGateway();
+  stopGateway(true);
   stopSshTunnel();
   stopClaw3d();
 });

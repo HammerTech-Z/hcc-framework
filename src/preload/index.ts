@@ -2,6 +2,35 @@ import { contextBridge, ipcRenderer } from "electron";
 import { electronAPI } from "@electron-toolkit/preload";
 import type { AppLocale } from "../shared/i18n/types";
 
+interface LlmCheckerResult {
+  status: "pass" | "warning" | "fail";
+  reason: string;
+  models?: Array<{
+    name: string;
+    size: string;
+    score: number;
+    useCase: string;
+    command: string;
+    status: "installed" | "recommended";
+  }>;
+  details?: string;
+}
+
+interface UnderstandingResult {
+  summary: string;
+  key_points: string[];
+  entities: string[];
+  risks: string[];
+  todos: string[];
+  suggested_playbook: string | null;
+  metadata: {
+    source: "inline" | "file";
+    type: string;
+    length: number;
+    timestamp: string;
+  };
+}
+
 const hermesAPI = {
   // Installation
   checkInstall: (): Promise<{
@@ -670,6 +699,67 @@ const hermesAPI = {
     lines?: number,
   ): Promise<{ content: string; path: string }> =>
     ipcRenderer.invoke("read-logs", logFile, lines),
+
+  // AgentMonitor — gateway state
+  getGatewayState: (): Promise<{ pid: number; kind: string; gateway_state: string; active_agents: number; platforms: Record<string,{state:string}>; updated_at: string } | null> =>
+    ipcRenderer.invoke("get-gateway-state"),
+
+  // AgentMonitor — vault file listing
+  listVaultFiles: (): Promise<{ dir: string; files: { path: string; name: string; size: number; mtime: number }[] }[]> =>
+    ipcRenderer.invoke("list-vault-files"),
+
+  // AgentMonitor — cron job output history
+  getCronJobHistory: (limit?: number): Promise<{ jobId: string; time: string; failed: boolean; preview: string }[]> =>
+    ipcRenderer.invoke("get-cron-job-history", limit),
+
+  // AgentMonitor — events timeline
+  getEvents: (limit?: number): Promise<{ ts: string; event: string; task_id?: string; role?: string; [k:string]: unknown }[]> =>
+    ipcRenderer.invoke("get-events", limit),
+
+  // AgentMonitor — gateway health via main process
+  checkGatewayHealth: (): Promise<{ status: number; ok: boolean }> =>
+    ipcRenderer.invoke("check-gateway-health"),
+
+  // Knowledge search (direct fetch to gateway)
+  knowledgeSearch: (query: string, limit = 10): Promise<{ status: string; results: Array<{ file: string; score: number; preview: string }> }> =>
+    fetch(`http://127.0.0.1:8643/knowledge/search?q=${encodeURIComponent(query)}&limit=${limit}`).then(r => r.json()),
+
+  // Knowledge ingest (direct POST to gateway)
+  knowledgeIngest: (title: string, content: string): Promise<{ status: string; path?: string; message?: string }> =>
+    fetch("http://127.0.0.1:8643/knowledge/ingest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, content }) }).then(r => r.json()),
+
+  // Playbook Runner
+  listPlaybooks: (): Promise<Array<{ id: string; name: string; description: string; version: number; steps: Array<{ id: string; label: string; hccStage: string }> }>> =>
+    ipcRenderer.invoke("list-playbooks"),
+
+  runPlaybook: (playbookId: string): Promise<{ steps?: Array<{ id: string; label: string; hccStage: string; status: string; error?: string; output?: string }>; finalStatus: string; error?: string }> =>
+    ipcRenderer.invoke("run-playbook", playbookId),
+
+  onPlaybookStep: (callback: (step: { id: string; label: string; hccStage: string; status: string; error?: string; output?: string }) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, step: unknown): void => callback(step as any);
+    ipcRenderer.on("playbook-step", handler);
+    return () => ipcRenderer.removeListener("playbook-step", handler);
+  },
+
+  onPlaybookDone: (callback: (result: { finalStatus: string; runId?: string }) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, result: unknown): void => callback(result as any);
+    ipcRenderer.on("playbook-done", handler);
+    return () => ipcRenderer.removeListener("playbook-done", handler);
+  },
+
+  onPlaybookError: (callback: (error: string) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, error: string): void => callback(error);
+    ipcRenderer.on("playbook-error", handler);
+    return () => ipcRenderer.removeListener("playbook-error", handler);
+  },
+
+  // LLM Checker
+  runLlmChecker: (task?: string): Promise<LlmCheckerResult> =>
+    ipcRenderer.invoke("run-llm-checker", task),
+
+  // Understand-Anything
+  understandAnything: (input: string, filePath?: string): Promise<UnderstandingResult> =>
+    ipcRenderer.invoke("understand-anything", input, filePath),
 };
 
 if (process.contextIsolated) {

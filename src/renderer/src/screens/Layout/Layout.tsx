@@ -8,7 +8,10 @@ import Soul from "../Soul/Soul";
 import Memory from "../Memory/Memory";
 import Tools from "../Tools/Tools";
 import Gateway from "../Gateway/Gateway";
+import AgentMonitor from "../AgentMonitor";
 import Office from "../Office/Office";
+import Playbooks from "../Playbooks/Playbooks";
+import Understand from "../Understand/Understand";
 import Models from "../Models/Models";
 import Providers from "../Providers/Providers";
 import Schedules from "../Schedules/Schedules";
@@ -29,6 +32,7 @@ import {
   KeyRound,
   Timer,
   Download,
+  Monitor,
 } from "../../assets/icons";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
@@ -46,6 +50,9 @@ type View =
   | "tools"
   | "schedules"
   | "gateway"
+  | "monitor"
+  | "playbooks"
+  | "understand"
   | "settings";
 
 const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
@@ -61,6 +68,9 @@ const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "tools", icon: Wrench, labelKey: "navigation.tools" },
   { view: "schedules", icon: Timer, labelKey: "navigation.schedules" },
   { view: "gateway", icon: Signal, labelKey: "navigation.gateway" },
+  { view: "monitor", icon: Monitor, labelKey: "navigation.monitor" },
+  { view: "playbooks", icon: Layers, labelKey: "navigation.playbooks" },
+  { view: "understand", icon: Sparkles, labelKey: "navigation.understand" },
   { view: "settings", icon: SettingsIcon, labelKey: "navigation.settings" },
 ];
 
@@ -181,7 +191,7 @@ function Layout(): React.JSX.Element {
           <img src={hermeslogo} height={30} alt="" />
         </div>
 
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav overflow-y-auto custom-scrollbar">
           {NAV_ITEMS.map(({ view: v, icon: Icon, labelKey }) => (
             <button
               key={v}
@@ -339,6 +349,28 @@ function Layout(): React.JSX.Element {
             ) : (
               <Gateway profile={activeProfile} />
             )}
+          </div>
+        )}
+
+        {visitedViews.has("monitor") && (
+          <div style={paneStyle("monitor")}>
+            {remoteMode ? (
+              <RemoteNotice feature="Monitor" />
+            ) : (
+              <AgentMonitor />
+            )}
+          </div>
+        )}
+
+        {visitedViews.has("playbooks") && (
+          <div style={paneStyle("playbooks")}>
+            <Playbooks />
+          </div>
+        )}
+
+        {visitedViews.has("understand") && (
+          <div style={paneStyle("understand")}>
+            <Understand />
           </div>
         )}
 
