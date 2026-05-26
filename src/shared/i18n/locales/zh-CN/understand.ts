@@ -5,7 +5,7 @@ export default {
   entities: "实体",
   risks: "风险",
   todos: "待办",
-  suggestedPlaybook: "建议剧本",
+  suggestedPlaybook: "建议工作流",
   inlineText: "内联文本",
   filePath: "文件路径",
   textPlaceholder: "在此粘贴 Markdown、文本或代码...",
@@ -21,4 +21,7 @@ export default {
   runPlaybook: "运行",
   history: "历史",
   noHistory: "暂无历史",
+  close: "关闭",
+  bytes: "字节",
+  loadError: "加载文件出错",
 } as const;

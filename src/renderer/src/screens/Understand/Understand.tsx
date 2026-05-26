@@ -79,7 +79,7 @@ export default function Understand(): React.JSX.Element {
     if (res.content) {
       setHistoryContent(res.content);
     } else {
-      setHistoryContent("Error loading file");
+      setHistoryContent(t("understand.loadError"));
     }
   };
 
@@ -183,7 +183,7 @@ export default function Understand(): React.JSX.Element {
         <div className="understand-history-panel" style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{t("understand.history")}</h3>
-            <button type="button" aria-label="Close" onClick={() => setShowHistory(false)}
+            <button type="button" aria-label={t("understand.close")} onClick={() => setShowHistory(false)}
               style={{ color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}>
               <X size={14} />
             </button>
@@ -197,7 +197,7 @@ export default function Understand(): React.JSX.Element {
                   onClick={() => handleViewHistory(f.filename)}>
                   <div>{f.filename}</div>
                   <div className="understand-history-meta">
-                    {new Date(f.modified).toLocaleString()} &bull; {f.size} bytes
+                    {new Date(f.modified).toLocaleString()} &bull; {f.size} {t("understand.bytes")}
                   </div>
                 </button>
               ))}
@@ -211,7 +211,7 @@ export default function Understand(): React.JSX.Element {
           <div className="understand-modal">
             <div className="understand-modal-header">
               <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{selectedHistory}</h3>
-              <button type="button" aria-label="Close"
+              <button type="button" aria-label={t("understand.close")}
                 onClick={() => { setSelectedHistory(null); setHistoryContent(null); }}
                 style={{ color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}>
                 <X size={14} />

@@ -21,4 +21,7 @@ export default {
   runPlaybook: "Run",
   history: "History",
   noHistory: "No history yet",
+  close: "Close",
+  bytes: "bytes",
+  loadError: "Error loading file",
 } as const;
