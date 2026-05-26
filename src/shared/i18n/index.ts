@@ -47,6 +47,7 @@ import soulEs from "./locales/es/soul";
 import memoryEs from "./locales/es/memory";
 import installEs from "./locales/es/install";
 import constantsEs from "./locales/es/constants";
+import understandEs from "./locales/es/understand";
 import commonZh from "./locales/zh-CN/common";
 import navigationZh from "./locales/zh-CN/navigation";
 import welcomeZh from "./locales/zh-CN/welcome";
@@ -88,6 +89,7 @@ import soulPt from "./locales/pt-BR/soul";
 import memoryPt from "./locales/pt-BR/memory";
 import installPt from "./locales/pt-BR/install";
 import constantsPt from "./locales/pt-BR/constants";
+import understandPt from "./locales/pt-BR/understand";
 
 export const resources = {
   en: {
@@ -137,6 +139,7 @@ export const resources = {
       memory: memoryEs,
       install: installEs,
       constants: constantsEs,
+      understand: understandEs,
     },
   },
   "zh-CN": {
@@ -186,6 +189,7 @@ export const resources = {
       memory: memoryPt,
       install: installPt,
       constants: constantsPt,
+      understand: understandPt,
     },
   },
 } satisfies Resource;
