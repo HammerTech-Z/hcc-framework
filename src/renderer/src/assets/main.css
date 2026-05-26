@@ -5272,3 +5272,68 @@ body {
   align-items: center;
   gap: 12px;
 }
+
+/* ========================================================================
+   MCP SERVERS
+   ======================================================================== */
+.mcp-server-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mcp-server-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mcp-server-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcp-form-container {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.mcp-type-selector {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.mcp-type-option {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.mcp-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mcp-add-btn {
+  margin-top: 12px;
+}
+
+.mcp-error {
+  color: var(--error);
+  font-size: 13px;
+  margin-bottom: 12px;
+}

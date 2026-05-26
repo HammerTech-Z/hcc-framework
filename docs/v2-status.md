@@ -28,7 +28,7 @@
 |--------|------|--------|-----------|------|
 | 1 | Theme 选择器 | 待开发 | ✅ 已有完整实现 | 仅需记录，无需开发 |
 | 2 | AgentMonitor 增强 | 待启动 | ✅ 3 commits: CSS 类化 + i18n 四语言 + 实时执行面板 | |
-| 3 | MCP 管理 UI | 待启动 | 待启动 | |
+| 3 | MCP 管理 UI | 待启动 | ✅ 5 commits: IPC 四通道 + i18n + Settings section + CRUD + 测试连接 | |
 | 4 | Memory 编辑器 | 待启动 | 待启动 | 需 schema 设计先行 |
 | 5 | BaiLongma 落地 | 待启动 | 待启动 | 风险最高，放最后 |
 
