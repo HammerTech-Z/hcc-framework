@@ -13,8 +13,8 @@
 | **V1** | 基础可用 | ✅ 已完成 | tag hermes-pro-1.0 |
 | **V1.5** | 修复阶段 | ✅ 已完成 | tag v1.5-final，10 commits |
 | **V2** | 效率提升 | ✅ 4/5 完成 | Theme/AgentMonitor/MCP/Memory 完成，BaiLongma 移出 |
-| **V3** | 知识赋能 | ⏳ 待启动 | GBrain 增强 + 知识可视化 + Horizon |
-| **V4** | 生态融合 | ⏳ 待启动 | CLI-Anything + Mano-P + Ruflo |
+| **V3** | 知识赋能 | ✅ 已完成（6/6） | Knowledge/Vault/Recharts/Understand→Vault/GBrain/Horizon |
+| **V4** | 生态融合 | ⏳ 明天启动调查 | CLI-Anything + Mano-P + Ruflo |
 | **V5** | 变现检验 | ⏳ 待启动 | AI 视频 + 语音 Dograh |
 
 ---
@@ -60,22 +60,38 @@
 
 ---
 
-## V3 — 知识赋能（⏳ 待启动）
+## V3 — 知识赋能（✅ 已完成，6/6）
 
-原始计划保留。⚠️ 启动前必须做现状调查（V2 的经验）。
+V3 已在 2026-05-26 全部完成并提交。实际落地范围：
 
-已知的 V3 前置问题（2026-05-26 调查）：
-1. 桌面端无 GBrain 查询接口
-2. pipeline-runs 无自动清理
-3. Understand-Anything 仍为 heuristic 模式
-4. HCC 阶段 1-4 未在代码中定义
-5. BaiLongma 需要设计定义后再排期
+| 任务 | 状态 |
+|------|------|
+| Knowledge 页面重修 | ✅ 完成 |
+| Vault 增强 | ✅ 完成 |
+| Recharts 图表升级 | ✅ 完成 |
+| Understand → Vault 打通 | ✅ 完成 |
+| GBrain 统计面板 | ✅ 完成 |
+| Horizon 集成面板 | ✅ 完成 |
+
+保留的后续事项：
+1. pipeline-runs 无自动清理，后续按技术债处理。
+2. HCC 阶段 1-4 未在代码中定义，进入流程治理时再补。
+3. BaiLongma 需要设计定义后再排期，不混入 V4。
 
 ---
 
-## V4 — 生态融合（⏳ 待启动）
+## V4 — 生态融合（⏳ 明天启动调查）
 
-原始计划保留。⚠️ 启动前需做现状调查。
+今天不启动实现。V4 明天先做现状调查，不直接写 UI、不新增依赖。
+
+调查对象：CLI-Anything / Mano-P / Ruflo loop-workers。
+
+调查范围：
+1. 本地是否存在源码或安装目录。
+2. 是否已接入 Hermes / MCP / cron / launchd。
+3. 是否能启动或已有运行记录。
+4. Hermes Pro 桌面端的最小集成点。
+5. 风险、前置条件、推荐优先级。
 
 ---
 
