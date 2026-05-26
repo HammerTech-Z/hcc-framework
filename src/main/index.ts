@@ -1073,6 +1073,79 @@ function setupIPC(): void {
     return result;
   });
 
+  // Vault — file content reading
+  ipcMain.handle("read-vault-file", async (_event, filePath: string) => {
+    const { join } = await import("path");
+    const { readFileSync, existsSync } = await import("fs");
+    const { homedir } = await import("os");
+    const vaultDir = join(homedir(), ".hermes", "vault");
+
+    const normalized = join(vaultDir, filePath);
+    if (!normalized.startsWith(vaultDir + "/") || filePath.includes("..")) {
+      return { error: "Invalid path" };
+    }
+    if (!existsSync(normalized)) {
+      return { error: "File not found" };
+    }
+
+    const content = readFileSync(normalized, "utf-8");
+    const frontmatter = parseFrontmatter(content);
+    return { content: frontmatter.body, frontmatter: frontmatter.data, path: filePath };
+  });
+
+  ipcMain.handle("get-vault-stats", async () => {
+    const { join } = await import("path");
+    const { readdirSync, statSync, existsSync } = await import("fs");
+    const { homedir } = await import("os");
+    const vaultDir = join(homedir(), ".hermes", "vault");
+    if (!existsSync(vaultDir)) return { totalFiles: 0, totalSize: 0, directories: [] };
+
+    let totalFiles = 0;
+    let totalSize = 0;
+    const directories: Array<{ name: string; fileCount: number; latestUpdate: string }> = [];
+
+    for (const dir of readdirSync(vaultDir)) {
+      const fullDir = join(vaultDir, dir);
+      if (!statSync(fullDir).isDirectory()) continue;
+      let fileCount = 0;
+      let latestUpdate = "";
+      for (const f of readdirSync(fullDir)) {
+        if (!f.endsWith(".md")) continue;
+        const fp = join(fullDir, f);
+        const st = statSync(fp);
+        if (st.isFile()) {
+          fileCount++;
+          totalSize += st.size;
+          const mtime = st.mtime.toISOString();
+          if (mtime > latestUpdate) latestUpdate = mtime;
+        }
+      }
+      if (fileCount > 0) {
+        totalFiles += fileCount;
+        directories.push({ name: dir, fileCount: fileCount, latestUpdate: latestUpdate });
+      }
+    }
+    directories.sort((a, b) => b.fileCount - a.fileCount);
+    return { totalFiles: totalFiles, totalSize: totalSize, directories: directories };
+  });
+
+  function parseFrontmatter(text) {
+    const match = text.match(/^---s*n([sS]*?)n---s*n/);
+    if (!match) return { data: null, body: text };
+    const data = {};
+    for (const line of match[1].split("\n")) {
+      const sep = line.indexOf(":");
+      if (sep > 0) {
+        const key = line.slice(0, sep).trim();
+        let val = line.slice(sep + 1).trim();
+        if (val === "true") val = true;
+        else if (val === "false") val = false;
+        else if (val !== "" && !isNaN(Number(val))) val = Number(val);
+        data[key] = val;
+      }
+    }
+    return { data: data, body: text.slice(match[0].length) };
+  }
   // AgentMonitor — cron job output history (recent runs per job)
   ipcMain.handle("get-cron-job-history", async (_e, limit = 50) => {
     const { join } = await import("path");

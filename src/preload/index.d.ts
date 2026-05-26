@@ -495,6 +495,19 @@ interface HermesAPI {
     { dir: string; files: { path: string; name: string; size: number; mtime: number }[] }[]
   >;
 
+  readVaultFile: (filePath: string) => Promise<{
+    content?: string;
+    frontmatter?: Record<string, unknown> | null;
+    path?: string;
+    error?: string;
+  }>;
+
+  getVaultStats: () => Promise<{
+    totalFiles: number;
+    totalSize: number;
+    directories: Array<{ name: string; fileCount: number; latestUpdate: string }>;
+  }>;
+
   // AgentMonitor — cron job output history
   getCronJobHistory: (limit?: number) => Promise<
     { jobId: string; time: string; failed: boolean; preview: string }[]

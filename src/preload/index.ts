@@ -754,6 +754,12 @@ const hermesAPI = {
   listVaultFiles: (): Promise<{ dir: string; files: { path: string; name: string; size: number; mtime: number }[] }[]> =>
     ipcRenderer.invoke("list-vault-files"),
 
+  readVaultFile: (filePath: string): Promise<{ content?: string; frontmatter?: Record<string, unknown> | null; path?: string; error?: string }> =>
+    ipcRenderer.invoke("read-vault-file", filePath),
+
+  getVaultStats: (): Promise<{ totalFiles: number; totalSize: number; directories: Array<{ name: string; fileCount: number; latestUpdate: string }> }> =>
+    ipcRenderer.invoke("get-vault-stats"),
+
   // AgentMonitor — cron job output history
   getCronJobHistory: (limit?: number): Promise<{ jobId: string; time: string; failed: boolean; preview: string }[]> =>
     ipcRenderer.invoke("get-cron-job-history", limit),
