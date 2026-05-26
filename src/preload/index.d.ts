@@ -554,6 +554,10 @@ interface HermesAPI {
     details?: string;
   }>;
 
+  listUnderstandingHistory: () => Promise<{ files: Array<{ filename: string; modified: string; size: number }> }>;
+
+  readUnderstandingHistory: (filename: string) => Promise<{ content?: string; error?: string }>;
+
   understandAnything: (
     input: string,
     filePath?: string,

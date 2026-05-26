@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { FileText, AlertCircle, CheckCircle, Loader } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { FileText, AlertCircle, CheckCircle, Loader, Clock, X } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
 
 interface UnderstandingResult {
@@ -17,6 +17,12 @@ interface UnderstandingResult {
   };
 }
 
+interface HistoryFile {
+  filename: string;
+  modified: string;
+  size: number;
+}
+
 type InputMode = "inline" | "file";
 
 export default function Understand(): React.JSX.Element {
@@ -27,6 +33,17 @@ export default function Understand(): React.JSX.Element {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<UnderstandingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryFile[]>([]);
+  const [selectedHistory, setSelectedHistory] = useState<string | null>(null);
+  const [historyContent, setHistoryContent] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // Load history on mount
+  useEffect(() => {
+    window.hermesAPI.listUnderstandingHistory().then((res) => {
+      setHistory(res.files || []);
+    });
+  }, []);
 
   const handleAnalyze = useCallback(async () => {
     if (loading) return;
@@ -49,13 +66,26 @@ export default function Understand(): React.JSX.Element {
         setError(res.error);
       } else {
         setResult(res);
+        // Refresh history
+        const hist = await window.hermesAPI.listUnderstandingHistory();
+        setHistory(hist.files || []);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
-  }, [input, filePath, inputMode, loading]);
+  }, [input, filePath, inputMode, loading, t]);
+
+  const handleViewHistory = async (filename: string) => {
+    setSelectedHistory(filename);
+    const res = await window.hermesAPI.readUnderstandingHistory(filename);
+    if (res.content) {
+      setHistoryContent(res.content);
+    } else {
+      setHistoryContent("Error loading file");
+    }
+  };
 
   const renderResult = (data: UnderstandingResult) => (
     <div className="space-y-4">
@@ -171,7 +201,76 @@ export default function Understand(): React.JSX.Element {
         <h2 className="text-lg font-semibold text-white">
           {t("understand.title")}
         </h2>
+        <button
+          type="button"
+          onClick={() => setShowHistory(!showHistory)}
+          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm rounded flex items-center gap-2"
+        >
+          <Clock size={14} />
+          {t("understand.history")} ({history.length})
+        </button>
       </div>
+
+      {/* History Panel */}
+      {showHistory && (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-300">{t("understand.history")}</h3>
+            <button
+              type="button"
+              aria-label="Close history"
+              onClick={() => setShowHistory(false)}
+              className="text-gray-500 hover:text-gray-300"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          {history.length === 0 ? (
+            <p className="text-sm text-gray-500">{t("understand.noHistory")}</p>
+          ) : (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {history.slice(0, 10).map((f) => (
+                <button
+                  key={f.filename}
+                  type="button"
+                  onClick={() => handleViewHistory(f.filename)}
+                  className="w-full text-left px-3 py-2 bg-gray-700/50 hover:bg-gray-700 rounded text-sm"
+                >
+                  <div className="text-gray-300">{f.filename}</div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(f.modified).toLocaleString()} • {f.size} bytes
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* History Content Modal */}
+      {selectedHistory && historyContent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-3xl max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-300">{selectedHistory}</h3>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => {
+                  setSelectedHistory(null);
+                  setHistoryContent(null);
+                }}
+                className="text-gray-500 hover:text-gray-300"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <pre className="text-sm text-gray-400 whitespace-pre-wrap font-mono">
+              {historyContent}
+            </pre>
+          </div>
+        </div>
+      )}
 
       {/* Input Mode Toggle */}
       <div className="flex gap-2">

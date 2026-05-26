@@ -760,6 +760,12 @@ const hermesAPI = {
   // Understand-Anything
   understandAnything: (input: string, filePath?: string): Promise<UnderstandingResult> =>
     ipcRenderer.invoke("understand-anything", input, filePath),
+
+  listUnderstandingHistory: (): Promise<{ files: Array<{ filename: string; modified: string; size: number }> }> =>
+    ipcRenderer.invoke("list-understanding-history"),
+
+  readUnderstandingHistory: (filename: string): Promise<{ content?: string; error?: string }> =>
+    ipcRenderer.invoke("read-understanding-history", filename),
 };
 
 if (process.contextIsolated) {

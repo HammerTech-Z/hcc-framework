@@ -19,4 +19,6 @@ export default {
   length: "长度",
   chars: "字符",
   runPlaybook: "运行",
+  history: "历史",
+  noHistory: "暂无历史",
 } as const;

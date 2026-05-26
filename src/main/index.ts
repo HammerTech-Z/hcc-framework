@@ -1318,6 +1318,52 @@ ipcMain.handle("understand-anything", async (_event, input: string, filePath?: s
     return { error: message };
   }
 });
+
+ipcMain.handle("list-understanding-history", async () => {
+  try {
+    const { existsSync, readdirSync, statSync } = await import("fs");
+    const vaultDir = join(process.env.HOME || "~", ".hermes", "vault", "wiki", "understand");
+    if (!existsSync(vaultDir)) {
+      return { files: [] };
+    }
+    const files = readdirSync(vaultDir)
+      .filter((f) => f.endsWith(".md"))
+      .map((f) => {
+        const stats = statSync(join(vaultDir, f));
+        return {
+          filename: f,
+          modified: stats.mtime.toISOString(),
+          size: stats.size,
+        };
+      })
+      .sort((a, b) => b.modified.localeCompare(a.modified));
+    return { files };
+  } catch {
+    return { files: [] };
+  }
+});
+
+ipcMain.handle("read-understanding-history", async (_event, filename: string) => {
+  try {
+    const { existsSync, readFileSync } = await import("fs");
+    const filepath = join(
+      process.env.HOME || "~",
+      ".hermes",
+      "vault",
+      "wiki",
+      "understand",
+      filename,
+    );
+    if (!existsSync(filepath)) {
+      return { error: "File not found" };
+    }
+    const content = readFileSync(filepath, "utf-8");
+    return { content };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: message };
+  }
+});
 // --------------- end Understand-Anything ---------------
 // --------------- end LLM Checker ---------------
 

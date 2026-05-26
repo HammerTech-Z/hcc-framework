@@ -19,4 +19,6 @@ export default {
   length: "Length",
   chars: "chars",
   runPlaybook: "Run",
+  history: "History",
+  noHistory: "No history yet",
 } as const;
