@@ -15,4 +15,7 @@ export default {
   ingestSuccess: "Agregado exitosamente",
   ingestFailed: "Error al agregar: {{error}}",
   gatewayOffline: "Servicio de conocimiento no disponible",
+  vault: "Bóveda",
+  vaultEmpty: "No hay archivos en la bóveda",
+  vaultLoadError: "Error al cargar el archivo",
 } as const;

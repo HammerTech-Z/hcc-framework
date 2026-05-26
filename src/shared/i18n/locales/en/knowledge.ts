@@ -14,4 +14,7 @@ export default {
   ingestSuccess: "Successfully added to knowledge base",
   ingestFailed: "Failed to add: {{error}}",
   gatewayOffline: "Knowledge service unavailable",
+  vault: "Vault",
+  vaultEmpty: "No vault files",
+  vaultLoadError: "Failed to load file",
 } as const;

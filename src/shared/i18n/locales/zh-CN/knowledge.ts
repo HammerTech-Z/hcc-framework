@@ -14,4 +14,7 @@ export default {
   ingestSuccess: "已存入知识库",
   ingestFailed: "存入失败：{{error}}",
   gatewayOffline: "知识库服务不可用",
+  vault: "知识库",
+  vaultEmpty: "没有知识库文件",
+  vaultLoadError: "文件加载失败",
 } as const;

@@ -15,4 +15,7 @@ export default {
   ingestSuccess: "Adicionado com sucesso",
   ingestFailed: "Falha ao adicionar: {{error}}",
   gatewayOffline: "Serviço de conhecimento indisponível",
+  vault: "Cofre",
+  vaultEmpty: "Nenhum arquivo no cofre",
+  vaultLoadError: "Falha ao carregar arquivo",
 } as const;

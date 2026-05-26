@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Search, Plus } from "../../assets/icons";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, FileText } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
 
 interface SearchResult {
@@ -8,6 +8,36 @@ interface SearchResult {
   score: number;
   preview: string;
 }
+
+interface VaultGroup {
+  dir: string;
+  files: Array<{ path: string; name: string; size: number; mtime: number }>;
+}
+
+interface VaultStats {
+  totalFiles: number;
+  totalSize: number;
+  directories: Array<{ name: string; fileCount: number; latestUpdate: string }>;
+}
+
+const DIR_ICON: Record<string, string> = {
+  wiki: "📚",
+  skills: "🛠️",
+  "failure-lessons": "💥",
+  raw: "📋",
+};
+
+function fmtSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
+}
+
+function fmtDate(ts: number): string {
+  return new Date(ts).toLocaleDateString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+type KnowledgeTab = "search" | "ingest" | "vault";
 
 export default function Knowledge() {
   const { t } = useI18n();
@@ -19,7 +49,15 @@ export default function Knowledge() {
   const [ingestContent, setIngestContent] = useState("");
   const [ingesting, setIngesting] = useState(false);
   const [ingestSuccess, setIngestSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState<"search" | "ingest">("search");
+  const [activeTab, setActiveTab] = useState<KnowledgeTab>("search");
+
+  // Vault state
+  const [vaultGroups, setVaultGroups] = useState<VaultGroup[]>([]);
+  const [vaultStats, setVaultStats] = useState<VaultStats | null>(null);
+  const [vaultLoading, setVaultLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileLoading, setFileLoading] = useState(false);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
@@ -57,6 +95,42 @@ export default function Knowledge() {
     }
   }, [ingestTitle, ingestContent]);
 
+  // Vault loading
+  const loadVault = useCallback(async () => {
+    setVaultLoading(true);
+    try {
+      const [groups, stats] = await Promise.all([
+        window.hermesAPI.listVaultFiles(),
+        window.hermesAPI.getVaultStats(),
+      ]);
+      setVaultGroups(groups);
+      setVaultStats(stats);
+    } catch {
+      /* ignore */
+    } finally {
+      setVaultLoading(false);
+    }
+  }, []);
+
+  const handleVaultSelect = useCallback(async (filePath: string) => {
+    if (selectedFile === filePath) {
+      setSelectedFile(null);
+      setFileContent(null);
+      return;
+    }
+    setSelectedFile(filePath);
+    setFileLoading(true);
+    setFileContent(null);
+    try {
+      const res = await window.hermesAPI.readVaultFile(filePath);
+      if (res.content) setFileContent(res.content);
+    } catch {
+      /* ignore */
+    } finally {
+      setFileLoading(false);
+    }
+  }, [selectedFile]);
+
   return (
     <div className="knowledge-container">
       {/* Tab bar */}
@@ -76,6 +150,14 @@ export default function Knowledge() {
         >
           <Plus size={14} />
           {t("knowledge.ingest")}
+        </button>
+        <button
+          type="button"
+          onClick={() => { setActiveTab("vault"); loadVault(); }}
+          className={`knowledge-tab${activeTab === "vault" ? " active" : ""}`}
+        >
+          <FileText size={14} />
+          {t("knowledge.vault")}
         </button>
       </div>
 
@@ -170,6 +252,63 @@ export default function Knowledge() {
               {ingesting && <Loader2 size={14} className="loading-spinner" />}
               {ingesting ? t("knowledge.ingesting") : t("knowledge.ingestBtn")}
             </button>
+          </>
+        )}
+
+        {activeTab === "vault" && (
+          <>
+            {vaultStats && vaultStats.totalFiles > 0 && (
+              <div className="knowledge-result-item" style={{ background: "var(--bg-tertiary)", marginBottom: 12 }}>
+                <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  {vaultStats.totalFiles} files · {fmtSize(vaultStats.totalSize)} · {vaultStats.directories.length} directories
+                </span>
+              </div>
+            )}
+
+            {vaultLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: 32 }}>
+                <div className="loading-spinner" />
+              </div>
+            ) : vaultGroups.length === 0 ? (
+              <p className="knowledge-empty">{t("knowledge.vaultEmpty")}</p>
+            ) : (
+              vaultGroups.map((group) => (
+                <div key={group.dir} style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 8, padding: "0 4px" }}>
+                    {DIR_ICON[group.dir] || "📄"} {group.dir}
+                  </div>
+                  {group.files.map((f) => (
+                    <div key={f.path}>
+                      <div className="knowledge-result-item" style={{ cursor: "pointer", marginBottom: 4 }} onClick={() => handleVaultSelect(f.path)}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                            {f.name.replace(/\.md$/, "")}
+                          </span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, marginLeft: 8 }}>
+                            {fmtDate(f.mtime)}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedFile === f.path && (
+                        <div className="knowledge-result-item" style={{ marginBottom: 8, background: "var(--bg-tertiary)" }}>
+                          {fileLoading ? (
+                            <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
+                              <div className="loading-spinner" />
+                            </div>
+                          ) : fileContent ? (
+                            <pre style={{ fontSize: 12, color: "var(--text-secondary)", whiteSpace: "pre-wrap", wordBreak: "break-all", fontFamily: "var(--font-mono)", maxHeight: 300, overflowY: "auto", margin: 0 }}>
+                              {fileContent.slice(0, 2000)}{fileContent.length > 2000 ? "\n...(truncated)" : ""}
+                            </pre>
+                          ) : (
+                            <p className="knowledge-empty">{t("knowledge.vaultLoadError")}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
           </>
         )}
       </div>
