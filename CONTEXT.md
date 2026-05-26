@@ -1,6 +1,7 @@
 # Hermes Pro — 项目上下文
 
-> 更新: 2026-05-21 | 由: Claude Code
+> 更新：2026-05-26 | 由：Claude Code
+> 当前版本：v1.5-final（V2 迭代已完成）
 
 ## 📌 入口
 
@@ -9,53 +10,77 @@
 
 ## 一句话
 
-Hermes Agent 桌面端 — 自改进 AI 助手 (Electron + React + Vite + Tailwind)
+Hermes Agent 桌面端 — 自改进 AI 助手（Electron + React + TypeScript）
 
-## 当前状态
+## 版本线
 
-- ✅ 工作正常: 聊天、会话、档案(Profiles)、模型、提供商、技能、人格、记忆、工具、计划任务、网关、设置、工作区(Office)
-- ✅ 已修复: 团队/监控/工作流三视图 — IPC 数据读取 + CSS 变量风格(主题自适应)
-- ✅ 导航栏已可上下滚动 (overflow-y: auto)
-- ❌ AgentMonitor 的健康检查端口 8643 需确保 hermes 服务运行
+| 版本 | 口号 | 状态 | 说明 |
+|------|------|------|------|
+| V1.0 | 基础可用 | ✅ tag hermes-pro-1.0 | 启动修复 + PlaybookRunner + U-A/llm-checker |
+| V1.5 | 修复阶段 | ✅ tag v1.5-final, 10 commits | IPC 审计 + any 清理 + execSync→spawn + i18n |
+| V2 | 效率提升 | ✅ 4/5 完成 | Theme/AgentMonitor/MCP/Memory |
+| V3 | 知识赋能 | ⏳ 待启动 | GBrain 增强 + 知识可视化 + Horizon |
+| V4 | 生态融合 | ⏳ 待启动 | CLI-Anything + Mano-P + Ruflo |
+| V5 | 变现检验 | ⏳ 待启动 | AI 视频 + 语音 Dograh |
 
-## 活跃任务
+## 技术栈
 
-- [ ] 团队/监控/工作流的功能可进一步完善 (详情、操作按钮等)
-- [ ] 工作流的「运行」按钮目前只是 setTimeout 占位，需对接 hermes 真实执行
+```
+框架:     Electron 40.x + electron-vite 5.x + React + TypeScript
+样式:     CSS 类体系 + CSS 变量主题（2 套：dark/light）
+状态:     React Context + hooks
+i18n:     i18next，4 语言（en/zh-CN/es/pt-BR）
+后端存储:  SQLite (state.db) + 文件系统 (config.yaml / MEMORY.md)
+数据库:   Postgres 17 + pgvector（Hermes agent 端）
+本地 LLM: Ollama + llama3.2 + nomic-embed-text
+测试:     vitest + better-sqlite3（需 electron-rebuild）
+构建:     electron-vite build → electron-builder
+端口:     8642 (API server), 8643 (gateway health)
+连接模式: local / remote / SSH（隧道 localhost:18642）
+```
 
-## 最近变化 (本轮会话)
+## IPC channels
 
-- 创建 CONTEXT.md — 统一的项目上下文系统，跨 Claude Code/Hermes Agent/Claude Web 共享
-- CLAUDE.md 添加「Universal Project Context」规则：会话开始读 CONTEXT.md，结束更新
-- EmployeeLibrary 从硬编码改为 IPC 读取 `~/.hermes/employees.json`
-- PlaybookRunner 从硬编码改为 IPC 读取 `~/.hermes/playbooks/`
-- AgentMonitor 从 placeholder 恢复完整实现 (IPC 读员工 + 8643 健康检查轮询)
-- 三个视图改用 CSS 变量风格 (--bg-secondary, --border, --text-secondary 等)
-- i18n 修正: playbooks → 工作流, 所有语言补上 monitor 键
-- 删除 src/components/ 下的重复文件
-- sidebar-nav 加上 overflow-y: auto 支持滚动
+约 114 个 `ipcMain.handle()` 注册，三端对齐（main/preload/preload.d.ts）。
+按功能域分组：
 
-## 下一步
+- **安装/更新**: check-install, start-install, verify-install, get-hermes-version, run-hermes-doctor, run-hermes-update
+- **配置**: get/set-locale, get/set-env, get/set-config, get-hermes-home, get/set-model-config
+- **连接**: is-remote-mode, get-connection-config, set-connection-config, set-ssh-config, test-remote-connection, start/stop-ssh-tunnel
+- **聊天**: send-message, abort-chat
+- **Gateway**: start/stop-gateway, gateway-status, get-gateway-state, check-gateway-health
+- **会话**: list-sessions, get-session-messages, search-sessions, sync-session-cache, list-cached-sessions, update-session-title
+- **Memory**: read-memory, add/update/remove-memory-entry, write-user-profile, discover-memory-providers
+- **Soul**: read/write/reset-soul
+- **MCP**: list-mcp-servers, add/remove/toggle-mcp-server, test-mcp-server
+- **Playbook**: list-playbooks, run-playbook
+- **Understand**: understand-anything, list/read-understanding-history
+- **llm-checker**: run-llm-checker
+- **Skills**: list-installed/bundled-skills, get-skill-content, install/uninstall-skill
+- **AgentMonitor**: get-gateway-state, list-vault-files, get-cron-job-history, get-events, check-gateway-health
+- **其他**: open-external, read-logs, get-credential-pool, list-models, add/remove/update-model, claw3d-*
 
-1. 三个视图按需增加交互功能 (编辑员工、执行工作流等)
-2. 运行 Playbook 时对接 hermes 真实后端
-3. 各会话结束后自动更新 CONTEXT.md
+## V2 完成情况
 
-## 关键决策
+| 任务 | 状态 | 关键产出 |
+|------|------|---------|
+| Theme 选择器 | ✅ 已有完整实现 | ThemeProvider (React Context) + Settings 3 按钮 + localStorage |
+| AgentMonitor 增强 | ✅ 3 commits | CSS 类化 + i18n 4 语言 + 实时执行面板 |
+| MCP 管理 UI | ✅ 5 commits | IPC 4 通道 + Settings CRUD + i18n + 测试连接 |
+| Memory 编辑器 | ✅ 已有完整实现 | CRUD + i18n + 容量指示 + 7 providers |
+| BaiLongma 落地 | ⏸️ 移出 V2 | 代码零实现，需设计定义后重新排期 |
 
-- 前端组件样式统一使用 CSS 变量 (var(--xxx))，不用 Tailwind 类名，保证深色/浅色主题自适应
-- 数据通过 Electron IPC 从本地文件/后端读取，而非硬编码
-- 组件路径在 src/renderer/src/components/ 下，src/components/ 不用于 renderer 组件
+## 项目根目录文件说明
 
-## 重要参考
-
-- 主入口: src/main/index.ts
-- IPC 桥接: src/preload/index.ts
-- 渲染层: src/renderer/src/
-- 样式系统: src/renderer/src/assets/main.css (CSS 变量主题)
-- Layout 导航: src/renderer/src/screens/Layout/Layout.tsx
-- 团队数据: ~/.hermes/employees.json
-- 工作流: ~/.hermes/playbooks/
-- 服务端口: 8643 (健康检查)
-- 构建: `npm run build` → `electron-vite build`
-- 运行: `./node_modules/.bin/electron out/main/index.js --no-sandbox`
+| 文件 | 用途 |
+|------|------|
+| `NEXT_STEP.md` | 下一步行动指南（开工先读） |
+| `V1.5-COMPLETION.md` | V1.5 修复阶段完成报告 |
+| `CLAUDE.md` | Claude Code 指令和行为准则 |
+| `LOCK.md` | 物理锁说明 |
+| `STUBS.md` | 存根组件记录 |
+| `docs/v2-status.md` | V2 各任务实际状态 |
+| `docs/confidence-design.md` | confidence 设计规范 |
+| `docs/css-audit-2026-05-26.md` | CSS 类审计报告 |
+| `docs/v2-issues.md` | V2 已知问题（如存在） |
+| `P2-UI-DESIGN.md` | P2 UI 设计稿 |

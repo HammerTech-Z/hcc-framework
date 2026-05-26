@@ -86,6 +86,9 @@ sudo dnf install ./hermes-desktop-<version>.rpm
 - **Hermes Office (Claw3d)** — visual 3D interface with dev server and adapter management
 - **Backup, import & debug dump** — full data backup/restore and system diagnostics from Settings
 - **Log viewer** — view gateway and agent logs directly from the Settings screen
+- **MCP Server management** — add, remove, toggle, and test MCP servers from Settings
+- **Agent Monitor** — real-time gateway health, session trends, execution status, and event timeline
+- **Memory editor** — view/edit agent memory and user profile with 7 third-party providers
 - **Auto-updater** — check for and install updates via electron-updater
 - **i18n ready** — internationalization framework with English locale covering all screens, ready for community translations
 - **Test suite** — SSE parser, IPC handlers, preload API surface, installer utilities, and constants validation with Vitest
@@ -244,11 +247,11 @@ Hermes files are managed in:
 
 ## Tech Stack
 
-- **Electron** 39 — cross-platform desktop shell
+- **Electron** 40 — cross-platform desktop shell
 - **React** 19 — UI framework
 - **TypeScript** 5.9 — type safety across main and renderer processes
-- **Tailwind CSS** 4 — utility-first styling
-- **Vite** 7 + electron-vite — fast dev server and build tooling
+- **CSS 变量主题** — 2 themes (dark/light) with 38+ design tokens via data-theme attribute
+- **electron-vite** — fast dev server and build tooling
 - **better-sqlite3** — local session storage with FTS5 full-text search
 - **i18next** — internationalization framework
 - **Vitest** — test runner
