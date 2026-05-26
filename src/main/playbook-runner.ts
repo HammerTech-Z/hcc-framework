@@ -12,7 +12,8 @@ export interface UnderstandingResult {
   risks: string[];
   todos: string[];
   suggested_playbook: string | null;
-  suggested_playbook_reasoning?: string; // TODO: populate from LLM analysis
+  suggested_playbook_reasoning?: string;
+  confidence?: number;
   metadata: {
     source: "inline" | "file";
     type: string;
@@ -21,6 +22,33 @@ export interface UnderstandingResult {
   };
   saved_to_vault?: boolean;
 }
+
+interface PlaybookSuggestion {
+  playbook: string | null;
+  confidence: number;
+  reasoning: string;
+  ruleName?: string;
+  matchedKeywords?: string[];
+}
+
+interface PlaybookRule {
+  id: string;
+  keywords: string[];
+  name: string;
+}
+
+const PLAYBOOK_RULES: PlaybookRule[] = [
+  {
+    id: "code_dev",
+    keywords: ["code", "function", "class", "typescript", "javascript", "react"],
+    name: "code_dev_keyword_match",
+  },
+  {
+    id: "manga_industrial",
+    keywords: ["manga", "animation", "video", "asset", "sprite"],
+    name: "manga_keyword_match",
+  },
+];
 
 function getVaultDir(): string {
   return join(process.env.HOME || "~", ".hermes", "vault", "wiki", "understand");
@@ -164,17 +192,53 @@ function detectTodos(content: string): string[] {
   return [...new Set(todos)].slice(0, 10);
 }
 
-function suggestPlaybook(content: string): string | null {
+export function suggestPlaybookHeuristic(content: string): PlaybookSuggestion {
   const lower = content.toLowerCase();
-  if (lower.includes("code") || lower.includes("function") || lower.includes("class") ||
-      lower.includes("typescript") || lower.includes("javascript") || lower.includes("react")) {
-    return "code_dev";
+
+  for (const rule of PLAYBOOK_RULES) {
+    const matchedKeywords = rule.keywords.filter((kw) => lower.includes(kw));
+    if (matchedKeywords.length > 0) {
+      return {
+        playbook: rule.id,
+        confidence: matchedKeywords.length / rule.keywords.length,
+        reasoning: `匹配规则: ${rule.name}, 命中关键词: [${matchedKeywords.join(", ")}], 推荐 playbook: ${rule.id}`,
+        ruleName: rule.name,
+        matchedKeywords,
+      };
+    }
   }
-  if (lower.includes("manga") || lower.includes("animation") || lower.includes("video") ||
-      lower.includes("asset") || lower.includes("sprite")) {
-    return "manga_industrial";
+
+  return { playbook: null, confidence: 0, reasoning: "无匹配规则" };
+}
+
+export async function recommendPlaybookLlm(content: string): Promise<PlaybookSuggestion> {
+  const truncated = content.slice(0, 1000);
+  try {
+    const ollamaPrompt = `分析以下用户输入，推荐最合适的 playbook。
+返回 JSON 格式：
+{"suggested_playbook": "playbook_id 或 null","confidence": 0.0-1.0 之间的浮点数,"reasoning": "用一两句话说明推荐理由"}
+
+用户输入：${truncated.slice(0, 500)}`;
+    const result = execSync(
+      `ollama run llama3.2 ${JSON.stringify(ollamaPrompt)} 2>&1 | head -10`,
+      { encoding: "utf-8", timeout: 15_000, maxBuffer: 2048 },
+    );
+
+    const jsonMatch = result.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      const confidence = Math.max(0, Math.min(1, parsed.confidence ?? 0));
+      return {
+        playbook: parsed.suggested_playbook || null,
+        confidence,
+        reasoning: parsed.reasoning || "LLM 推荐未提供理由",
+      };
+    }
+  } catch {
+    // Ollama not available or JSON parse failure
   }
-  return null;
+
+  return { playbook: null, confidence: 0, reasoning: "LLM 不可用或返回解析失败" };
 }
 
 function generateHeuristicSummary(content: string, headings: string[]): string {
@@ -240,7 +304,22 @@ export async function understandAnything(
   const entities = extractEntities(content);
   const risks = detectRisks(content);
   const todos = detectTodos(content);
-  const suggestedPlaybook = suggestPlaybook(content);
+
+  // Playbook suggestion: heuristic first, then LLM fallback
+  let suggestion = suggestPlaybookHeuristic(content);
+
+  if (!suggestion.playbook || suggestion.confidence < 0.3) {
+    const llmSuggestion = await recommendPlaybookLlm(content);
+    if (llmSuggestion.playbook || llmSuggestion.confidence > suggestion.confidence) {
+      suggestion = llmSuggestion;
+    }
+  }
+  // NOTE: heuristic 与 LLM 模式的 confidence 不可直接比较，详见 docs/confidence-design.md (待写)
+  // When both modes fail, produce a combined fallback message
+  const bothFailed = !suggestion.playbook && suggestion.confidence === 0;
+  if (bothFailed) {
+    suggestion = { playbook: null, confidence: 0, reasoning: "无匹配规则且 LLM 不可用" };
+  }
 
   // Build summary - try LLM first, fall back to heuristic
   const llmSummary = await generateLlmSummary(content);
@@ -261,7 +340,9 @@ export async function understandAnything(
     entities: entities,
     risks: risks,
     todos: todos,
-    suggested_playbook: suggestedPlaybook,
+    suggested_playbook: suggestion.playbook,
+    suggested_playbook_reasoning: suggestion.reasoning,
+    confidence: suggestion.confidence,
     metadata: {
       source,
       type: fileType,
@@ -274,7 +355,9 @@ export async function understandAnything(
       entities,
       risks,
       todos,
-      suggested_playbook: suggestedPlaybook,
+      suggested_playbook: suggestion.playbook,
+      suggested_playbook_reasoning: suggestion.reasoning,
+      confidence: suggestion.confidence,
       metadata: {
         source,
         type: fileType,
