@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "../../components/useI18n";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import { useChartColors } from "../../hooks/useChartColors";
 
 interface GatewayState {
   pid: number;
@@ -100,6 +110,7 @@ function buildTrends(sessions: CachedSession[], t: (key: string) => string): Dai
 
 export default function AgentMonitor() {
   const { t } = useI18n();
+  const chartColors = useChartColors();
   const [gw, setGw] = useState<GatewayState | null>(null);
   const [vault, setVault] = useState<VaultGroup[]>([]);
   const [cronHistory, setCronHistory] = useState<CronRun[]>([]);
@@ -248,7 +259,6 @@ export default function AgentMonitor() {
   const totalSessions = trends.reduce((s, t) => s + t.sessions, 0);
   const totalMessages = trends.reduce((s, t) => s + t.messages, 0);
   const activeDays = trends.filter((t) => t.sessions > 0).length;
-  const maxSessions = Math.max(1, ...trends.map((t) => t.sessions));
 
   function fmtElapsed(start: number, end?: number): string {
     const sec = Math.floor(((end ?? Date.now()) - start) / 1000);
@@ -398,37 +408,40 @@ export default function AgentMonitor() {
       <div className="settings-section">
         <div className="settings-section-title">{t("monitor.charts.sessionTrends")}</div>
         <div className="monitor-chart-container">
-          <div className="monitor-chart">
-            {trends.map((t) => {
-              const barHeight = Math.max(2, (t.sessions / maxSessions) * 80);
-              const isToday = t.label === "Today";
-              return (
-                <div key={t.date} className="monitor-chart-bar-col">
-                  <div
-                    className="monitor-chart-bar"
-                    style={{
-                      height: `${barHeight}px`,
-                      background: isToday
-                        ? "var(--accent, #8fb6d8)"
-                        : t.sessions > 0
-                          ? "var(--text-secondary)"
-                          : "var(--bg-tertiary)",
-                      opacity: isToday ? 1 : t.sessions > 0 ? 0.5 : 0.3,
-                    }}
-                  >
-                    {t.sessions > 0 && (
-                      <div className="monitor-chart-bar-count">{t.sessions}</div>
-                    )}
-                  </div>
-                  <div
-                    className={`monitor-chart-label${isToday ? " monitor-chart-label-today" : ""}`}
-                  >
-                    {t.label}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={trends} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.background} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: chartColors.muted }}
+                axisLine={{ stroke: chartColors.background }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: chartColors.muted }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "6px",
+                  color: "var(--text-primary)",
+                  fontSize: "12px",
+                }}
+                labelStyle={{ color: chartColors.secondary }}
+                cursor={{ fill: chartColors.background }}
+              />
+              <Bar
+                dataKey="sessions"
+                fill={chartColors.primary}
+                radius={[3, 3, 0, 0]}
+                maxBarSize={32}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

@@ -4997,6 +4997,7 @@ body {
   margin-top: 4px;
 }
 
+/* DEPRECATED: replaced by recharts BarChart in V3.3 (2026-05-26) */
 .monitor-chart-container {
   padding-top: 8px;
 }
