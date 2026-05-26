@@ -568,6 +568,7 @@ interface HermesAPI {
     risks: string[];
     todos: string[];
     suggested_playbook: string | null;
+    suggested_playbook_reasoning?: string;
     metadata: {
       source: "inline" | "file";
       type: string;

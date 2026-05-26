@@ -12,6 +12,7 @@ export interface UnderstandingResult {
   risks: string[];
   todos: string[];
   suggested_playbook: string | null;
+  suggested_playbook_reasoning?: string; // TODO: populate from LLM analysis
   metadata: {
     source: "inline" | "file";
     type: string;

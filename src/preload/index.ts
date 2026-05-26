@@ -738,13 +738,15 @@ const hermesAPI = {
     ipcRenderer.invoke("run-playbook", playbookId),
 
   onPlaybookStep: (callback: (step: { id: string; label: string; hccStage: string; status: string; error?: string; output?: string }) => void): (() => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, step: unknown): void => callback(step as any);
+    const handler = (_event: Electron.IpcRendererEvent, step: unknown): void =>
+      callback(step as { id: string; label: string; hccStage: string; status: string; error?: string; output?: string });
     ipcRenderer.on("playbook-step", handler);
     return () => ipcRenderer.removeListener("playbook-step", handler);
   },
 
   onPlaybookDone: (callback: (result: { finalStatus: string; runId?: string }) => void): (() => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, result: unknown): void => callback(result as any);
+    const handler = (_event: Electron.IpcRendererEvent, result: unknown): void =>
+      callback(result as { finalStatus: string; runId?: string });
     ipcRenderer.on("playbook-done", handler);
     return () => ipcRenderer.removeListener("playbook-done", handler);
   },
