@@ -29,6 +29,7 @@ interface UnderstandingResult {
     length: number;
     timestamp: string;
   };
+  saved_to_vault?: boolean;
 }
 
 const hermesAPI = {
@@ -37,6 +38,7 @@ const hermesAPI = {
     installed: boolean;
     configured: boolean;
     hasApiKey: boolean;
+    verified: boolean;
   }> => ipcRenderer.invoke("check-install"),
 
   verifyInstall: (): Promise<boolean> => ipcRenderer.invoke("verify-install"),

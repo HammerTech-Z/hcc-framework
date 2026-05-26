@@ -1278,18 +1278,18 @@ ipcMain.handle("list-playbooks", () => {
 });
 
 ipcMain.handle("run-playbook", async (_event, playbookId: string) => {
-  const mainWindow = BrowserWindow.getFocusedWindow();
+  const win = mainWindow;
   const emit = (step: { id: string; label: string; hccStage: string; status: string; error?: string; output?: string }) => {
-    mainWindow?.webContents.send("playbook-step", step);
+    win?.webContents.send("playbook-step", step);
   };
 
   try {
     const result = await runPlaybook(playbookId, emit);
-    mainWindow?.webContents.send("playbook-done", result);
+    win?.webContents.send("playbook-done", result);
     return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    mainWindow?.webContents.send("playbook-error", message);
+    win?.webContents.send("playbook-error", message);
     return { finalStatus: "failed", error: message };
   }
 });

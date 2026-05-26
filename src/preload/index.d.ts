@@ -574,6 +574,7 @@ interface HermesAPI {
       length: number;
       timestamp: string;
     };
+    saved_to_vault?: boolean;
     error?: string;
   }>;
 }
