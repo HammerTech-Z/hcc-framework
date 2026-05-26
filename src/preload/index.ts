@@ -697,6 +697,48 @@ const hermesAPI = {
     Array<{ name: string; type: string; enabled: boolean; detail: string }>
   > => ipcRenderer.invoke("list-mcp-servers", profile),
 
+  addMcpServer: (
+    params: { name: string; type: "stdio" | "http"; command?: string; args?: string[]; url?: string },
+    profile?: string,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("add-mcp-server", params, profile),
+
+  removeMcpServer: (
+    name: string,
+    profile?: string,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("remove-mcp-server", name, profile),
+
+  toggleMcpServer: (
+    name: string,
+    enabled: boolean,
+    profile?: string,
+  ): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("toggle-mcp-server", name, enabled, profile),
+
+  testMcpServer: (name: string): Promise<{ success: boolean; error?: string }> =>
+    ipcRenderer.invoke("test-mcp-server", name),
+
+  onMcpTestOutput: (callback: (output: string) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, output: string): void => callback(output);
+    ipcRenderer.on("mcp-test-output", handler);
+    return () => ipcRenderer.removeListener("mcp-test-output", handler);
+  },
+
+  onMcpTestDone: (callback: (result: { success: boolean }) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, result: unknown): void =>
+      callback(result as { success: boolean });
+    ipcRenderer.on("mcp-test-done", handler);
+    return () => ipcRenderer.removeListener("mcp-test-done", handler);
+  },
+
+  onMcpTestError: (callback: (result: { success: boolean; error?: string }) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, result: unknown): void =>
+      callback(result as { success: boolean; error?: string });
+    ipcRenderer.on("mcp-test-error", handler);
+    return () => ipcRenderer.removeListener("mcp-test-error", handler);
+  },
+
   // Log viewer
   readLogs: (
     logFile?: string,

@@ -452,6 +452,28 @@ interface HermesAPI {
     Array<{ name: string; type: string; enabled: boolean; detail: string }>
   >;
 
+  addMcpServer: (
+    params: { name: string; type: "stdio" | "http"; command?: string; args?: string[]; url?: string },
+    profile?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+
+  removeMcpServer: (
+    name: string,
+    profile?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+
+  toggleMcpServer: (
+    name: string,
+    enabled: boolean,
+    profile?: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+
+  testMcpServer: (name: string) => Promise<{ success: boolean; error?: string }>;
+
+  onMcpTestOutput: (callback: (output: string) => void) => () => void;
+  onMcpTestDone: (callback: (result: { success: boolean }) => void) => () => void;
+  onMcpTestError: (callback: (result: { success: boolean; error?: string }) => void) => () => void;
+
   // Log viewer
   readLogs: (
     logFile?: string,

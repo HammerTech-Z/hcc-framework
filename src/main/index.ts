@@ -139,6 +139,12 @@ import {
 import { getAppLocale, setAppLocale } from "./locale";
 import type { AppLocale } from "../shared/i18n/types";
 import {
+  addMcpServer,
+  removeMcpServer,
+  toggleMcpServer,
+  testMcpServer,
+} from "./mcp";
+import {
   sshListInstalledSkills,
   sshGetSkillContent,
   sshInstallSkill,
@@ -976,6 +982,44 @@ function setupIPC(): void {
   // MCP servers
   ipcMain.handle("list-mcp-servers", (_event, profile?: string) =>
     listMcpServers(profile),
+  );
+
+  ipcMain.handle(
+    "add-mcp-server",
+    async (
+      _event,
+      params: { name: string; type: "stdio" | "http"; command?: string; args?: string[]; url?: string },
+      profile?: string,
+    ) => addMcpServer(params, profile),
+  );
+
+  ipcMain.handle(
+    "remove-mcp-server",
+    async (_event, name: string, profile?: string) => removeMcpServer(name, profile),
+  );
+
+  ipcMain.handle(
+    "toggle-mcp-server",
+    (_event, name: string, enabled: boolean, profile?: string) =>
+      toggleMcpServer(name, enabled, profile),
+  );
+
+  ipcMain.handle(
+    "test-mcp-server",
+    async (event, name: string) => {
+      const safeSend = (channel: string, ...args: unknown[]) => {
+        if (!event.sender.isDestroyed()) event.sender.send(channel, ...args);
+      };
+      const result = await testMcpServer(name, (chunk) => {
+        safeSend("mcp-test-output", chunk);
+      });
+      if (result.success) {
+        safeSend("mcp-test-done", result);
+      } else {
+        safeSend("mcp-test-error", result);
+      }
+      return result;
+    },
   );
 
   // Memory providers
