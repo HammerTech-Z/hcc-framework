@@ -97,6 +97,117 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
   // Network settings
   const [forceIpv4, setForceIpv4] = useState(false);
   const [httpProxy, setHttpProxy] = useState("");
+
+  // MCP servers
+  interface McpServerInfo {
+    name: string;
+    type: string;
+    enabled: boolean;
+    detail: string;
+  }
+  const [mcpServers, setMcpServers] = useState<McpServerInfo[]>([]);
+  const [mcpShowForm, setMcpShowForm] = useState(false);
+  const [mcpFormName, setMcpFormName] = useState("");
+  const [mcpFormType, setMcpFormType] = useState<"stdio" | "http">("stdio");
+  const [mcpFormCommand, setMcpFormCommand] = useState("");
+  const [mcpFormArgs, setMcpFormArgs] = useState("");
+  const [mcpFormUrl, setMcpFormUrl] = useState("");
+  const [mcpSaving, setMcpSaving] = useState(false);
+  const [mcpError, setMcpError] = useState<string | null>(null);
+  const [mcpTestingServer, setMcpTestingServer] = useState<string | null>(null);
+  const [mcpTestResult, setMcpTestResult] = useState<string | null>(null);
+
+  async function loadMcpServers(): Promise<void> {
+    try {
+      const list = await window.hermesAPI.listMcpServers(profile);
+      setMcpServers(list);
+    } catch { /* ignore */ }
+  }
+
+  async function handleMcpToggle(name: string, enabled: boolean): Promise<void> {
+    const res = await window.hermesAPI.toggleMcpServer(name, !enabled, profile);
+    if (res.success) {
+      await loadMcpServers();
+    } else {
+      setMcpError(t("mcp.errors.toggleFailed", { error: res.error }));
+    }
+  }
+
+  async function handleMcpRemove(name: string): Promise<void> {
+    if (!window.confirm(t("mcp.actions.confirmRemove", { name }))) return;
+    const res = await window.hermesAPI.removeMcpServer(name, profile);
+    if (res.success) {
+      await loadMcpServers();
+    } else {
+      setMcpError(t("mcp.errors.removeFailed", { error: res.error }));
+    }
+  }
+
+  async function handleMcpAdd(): Promise<void> {
+    setMcpError(null);
+    if (!mcpFormName.trim()) { setMcpError(t("mcp.errors.nameRequired")); return; }
+    if (mcpFormType === "stdio" && !mcpFormCommand.trim()) { setMcpError(t("mcp.errors.commandRequired")); return; }
+    if (mcpFormType === "http" && !mcpFormUrl.trim()) { setMcpError(t("mcp.errors.urlRequired")); return; }
+
+    setMcpSaving(true);
+    const params: { name: string; type: "stdio" | "http"; command?: string; args?: string[]; url?: string } = {
+      name: mcpFormName.trim(),
+      type: mcpFormType,
+    };
+    if (mcpFormType === "stdio") {
+      params.command = mcpFormCommand.trim();
+      const args = mcpFormArgs.trim().split(/\s+/).filter(Boolean);
+      if (args.length > 0) params.args = args;
+    } else {
+      params.url = mcpFormUrl.trim();
+    }
+
+    const res = await window.hermesAPI.addMcpServer(params, profile);
+    setMcpSaving(false);
+    if (res.success) {
+      setMcpShowForm(false);
+      setMcpFormName("");
+      setMcpFormCommand("");
+      setMcpFormArgs("");
+      setMcpFormUrl("");
+      setMcpFormType("stdio");
+      await loadMcpServers();
+    } else {
+      setMcpError(t("mcp.errors.addFailed", { error: res.error }));
+    }
+  }
+
+  function handleMcpTest(name: string): void {
+    setMcpTestingServer(name);
+    setMcpTestResult(null);
+
+    const cleanups: Array<() => void> = [];
+    if (window.hermesAPI.onMcpTestOutput) {
+      cleanups.push(window.hermesAPI.onMcpTestOutput((_output) => { /* streaming */ }));
+    }
+    if (window.hermesAPI.onMcpTestDone) {
+      cleanups.push(window.hermesAPI.onMcpTestDone(() => {
+        setMcpTestingServer(null);
+        setMcpTestResult("success");
+        setTimeout(() => setMcpTestResult(null), 3000);
+        cleanups.forEach((fn) => fn());
+      }));
+    }
+    if (window.hermesAPI.onMcpTestError) {
+      cleanups.push(window.hermesAPI.onMcpTestError((res) => {
+        setMcpTestingServer(null);
+        setMcpTestResult(res.error || "failed");
+        setTimeout(() => setMcpTestResult(null), 3000);
+        cleanups.forEach((fn) => fn());
+      }));
+    }
+
+    window.hermesAPI.testMcpServer(name).catch(() => {});
+  }
+
+  useEffect(() => {
+    loadMcpServers();
+  }, [profile]);
   const [networkSaved, setNetworkSaved] = useState(false);
 
   // Debug dump
@@ -702,6 +813,151 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
           </div>
         </div>
       )}
+
+      {/* MCP Servers */}
+      <div className="settings-section">
+        <div className="settings-section-title">
+          {t("mcp.title")}
+        </div>
+        <div className="settings-field">
+          <p className="settings-field-hint">{t("mcp.description")}</p>
+
+          {mcpError && (
+            <div style={{ color: "var(--error)", fontSize: 13, marginBottom: 12 }}>{mcpError}</div>
+          )}
+
+          {mcpServers.length === 0 ? (
+            <div className="monitor-empty">{t("mcp.empty")}</div>
+          ) : (
+            mcpServers.map((srv) => (
+              <div
+                key={srv.name}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "8px 0",
+                  borderBottom: "1px solid var(--border)",
+                }}
+              >
+                <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                  {srv.name}
+                </span>
+                <span className={`monitor-badge ${srv.type === "http" ? "monitor-badge-on" : "monitor-badge-off"}`}
+                  style={{ fontSize: 10, padding: "2px 6px" }}>
+                  {srv.type === "http" ? t("mcp.type.http") : t("mcp.type.stdio")}
+                </span>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {srv.detail}
+                </span>
+                <label className="tools-toggle" style={{ flexShrink: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={srv.enabled}
+                    onChange={() => handleMcpToggle(srv.name, srv.enabled)}
+                  />
+                  <span className="tools-toggle-track" />
+                </label>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  style={{ fontSize: 11, padding: "2px 6px", flexShrink: 0 }}
+                  disabled={mcpTestingServer === srv.name}
+                  onClick={() => handleMcpTest(srv.name)}
+                >
+                  {mcpTestingServer === srv.name
+                    ? t("mcp.status.testing")
+                    : mcpTestResult === "success"
+                      ? t("mcp.status.testSuccess")
+                      : t("mcp.actions.test")}
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  style={{ fontSize: 11, padding: "2px 6px", color: "var(--error)", flexShrink: 0 }}
+                  onClick={() => handleMcpRemove(srv.name)}
+                >
+                  {t("mcp.actions.remove")}
+                </button>
+              </div>
+            ))
+          )}
+
+          {mcpShowForm && (
+            <div style={{ marginTop: 12, padding: 12, background: "var(--bg-tertiary)", borderRadius: "var(--radius-md)" }}>
+              <div className="settings-field">
+                <label className="settings-field-label">{t("mcp.form.name")}</label>
+                <input
+                  className="input"
+                  type="text"
+                  value={mcpFormName}
+                  onChange={(e) => setMcpFormName(e.target.value)}
+                  placeholder={t("mcp.form.namePlaceholder")}
+                />
+              </div>
+              <div className="settings-field">
+                <label className="settings-field-label">{t("mcp.form.type")}</label>
+                <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                  <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                    <input type="radio" name="mcp-type" checked={mcpFormType === "stdio"} onChange={() => setMcpFormType("stdio")} />
+                    {t("mcp.type.stdio")}
+                  </label>
+                  <label style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                    <input type="radio" name="mcp-type" checked={mcpFormType === "http"} onChange={() => setMcpFormType("http")} />
+                    {t("mcp.type.http")}
+                  </label>
+                </div>
+              </div>
+              {mcpFormType === "stdio" ? (
+                <>
+                  <div className="settings-field">
+                    <label className="settings-field-label">{t("mcp.form.command")}</label>
+                    <input
+                      className="input"
+                      type="text"
+                      value={mcpFormCommand}
+                      onChange={(e) => setMcpFormCommand(e.target.value)}
+                      placeholder={t("mcp.form.commandPlaceholder")}
+                    />
+                  </div>
+                  <div className="settings-field">
+                    <label className="settings-field-label">{t("mcp.form.args")}</label>
+                    <input
+                      className="input"
+                      type="text"
+                      value={mcpFormArgs}
+                      onChange={(e) => setMcpFormArgs(e.target.value)}
+                      placeholder={t("mcp.form.argsPlaceholder")}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="settings-field">
+                  <label className="settings-field-label">{t("mcp.form.url")}</label>
+                  <input
+                    className="input"
+                    type="text"
+                    value={mcpFormUrl}
+                    onChange={(e) => setMcpFormUrl(e.target.value)}
+                    placeholder={t("mcp.form.urlPlaceholder")}
+                  />
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button type="button" className="btn btn-primary btn-sm" disabled={mcpSaving} onClick={handleMcpAdd}>
+                  {mcpSaving ? t("common.loadingShort") : t("mcp.form.save")}
+                </button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setMcpShowForm(false); setMcpError(null); }}>
+                  {t("mcp.form.cancel")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!mcpShowForm && (
+            <button type="button" className="btn btn-secondary btn-sm" style={{ marginTop: 12 }} onClick={() => setMcpShowForm(true)}>
+              {t("mcp.actions.add")}
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="settings-section">
         <div className="settings-section-title">
