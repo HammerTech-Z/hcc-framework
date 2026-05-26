@@ -29,11 +29,38 @@
 | 1 | Theme 选择器 | 待开发 | ✅ 已有完整实现 | 仅需记录，无需开发 |
 | 2 | AgentMonitor 增强 | 待启动 | ✅ 3 commits: CSS 类化 + i18n 四语言 + 实时执行面板 | |
 | 3 | MCP 管理 UI | 待启动 | ✅ 5 commits: IPC 四通道 + i18n + Settings section + CRUD + 测试连接 | |
-| 4 | Memory 编辑器 | 待启动 | 待启动 | 需 schema 设计先行 |
-| 5 | BaiLongma 落地 | 待启动 | 待启动 | 风险最高，放最后 |
+| 4 | Memory 编辑器 | 待启动 | ✅ 已有完整实现（CRUD + i18n + 容量指示 + 7 provider 集成） | |
+| 5 | BaiLongma 落地 | 待启动 | ⏳ 待启动（下一个） | 风险最高，放最后 |
+
+---
+
+## V2.4 Memory 编辑器
+
+| 项目 | 内容 |
+|------|------|
+| 快照描述 | "Agent/User 内存可视化编辑" |
+| **实际状态** | ✅ **已有完整实现** |
+| 实现内容 | 后端 `src/main/memory.ts`（207行），5 个 IPC 通道（读/增/改/删/写 profile）；UI `Memory.tsx`（612行），三标签页（Agent Memory / User Profile / Providers）；内联 textarea 编辑 + 新增 + 删除确认 + 保存；容量指示条双条（2000+1375 字符上限）；统计数据（会话数/消息数/条目数）；7 个第三方 Memory Provider 集成（honcho/hindsight/mem0/retaindb/supermemory/byterover/holographic）；i18n 四语言完整覆盖 |
+| 差异原因 | 快照描述与实现基本一致，无需额外开发 |
+| 结论 | V2.4 目标已达成，无需额外开发 |
+
+### 未来增强（非 V2 范围）
+
+- **搜索/筛选**：当前 15 条条目，需求不急迫
+- **自定义排序**：目前按 index 顺序
+- **批量操作**：多选删除/移动
+- **版本历史**：建议放 V3 知识赋能阶段
+- **Understand → Memory 自动写入**：vault 与 memory 打通
+
+---
+
+### 已知问题（非 V2 范围）
+
+⚠️ **存储使用纯文本文件 `MEMORY.md`**，无结构化字段、无索引、无版本。`§` 分隔在内容包含 § 时会出错。建议 V3+ 迁移到 SQLite（已有 `state.db` 可用）。
 
 ## 记录历史
 
 - 2026-05-26：初版创建，基于代码调查校准 V2.1 状态
-
 - 2026-05-26：标记 V2.2 AgentMonitor 增强完成
+- 2026-05-26：标记 V2.3 MCP 管理 UI 完成
+- 2026-05-26：基于代码调查标记 V2.4 Memory 编辑器为已有完整实现
