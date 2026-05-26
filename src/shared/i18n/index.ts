@@ -26,6 +26,7 @@ import soulEn from "./locales/en/soul";
 import memoryEn from "./locales/en/memory";
 import installEn from "./locales/en/install";
 import constantsEn from "./locales/en/constants";
+import understandEn from "./locales/en/understand";
 import commonEs from "./locales/es/common";
 import navigationEs from "./locales/es/navigation";
 import welcomeEs from "./locales/es/welcome";
@@ -66,6 +67,7 @@ import soulZh from "./locales/zh-CN/soul";
 import memoryZh from "./locales/zh-CN/memory";
 import installZh from "./locales/zh-CN/install";
 import constantsZh from "./locales/zh-CN/constants";
+import understandZh from "./locales/zh-CN/understand";
 import commonPt from "./locales/pt-BR/common";
 import navigationPt from "./locales/pt-BR/navigation";
 import welcomePt from "./locales/pt-BR/welcome";
@@ -110,6 +112,7 @@ export const resources = {
       memory: memoryEn,
       install: installEn,
       constants: constantsEn,
+      understand: understandEn,
     },
   },
   es: {
@@ -158,6 +161,7 @@ export const resources = {
       memory: memoryZh,
       install: installZh,
       constants: constantsZh,
+      understand: understandZh,
     },
   },
   "pt-BR": {

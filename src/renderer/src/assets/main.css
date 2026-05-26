@@ -800,6 +800,7 @@ body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  align-items: stretch;
 }
 
 .sidebar {
@@ -809,6 +810,8 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  min-height: 0;
+  max-height: 100%;
 
   border-radius: 16px;
 }
@@ -847,6 +850,17 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
 }
 
 .sidebar-nav-item {
@@ -888,6 +902,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .sidebar-footer-text {
@@ -4075,6 +4090,7 @@ body {
    ======================================================================== */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -4088,6 +4104,38 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-hover);
+}
+
+/* 统一细滚动条样式（按需使用 .custom-scrollbar） */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+  -webkit-appearance: none !important;
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.35) !important;
+  border-radius: 4px;
+  min-height: 30px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.55) !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background-color: rgba(0, 0, 0, 0.7) !important;
 }
 
 /* ========================================================================
@@ -4723,4 +4771,205 @@ body {
 ::selection {
   background: var(--selection);
   color: var(--text-primary);
+}
+
+
+/* ========================================================================
+   UNDERSTAND
+   ======================================================================== */
+.understand-container {
+  padding: 24px 32px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.understand-header {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.understand-area {
+  width: 100%;
+  min-height: 160px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 13px;
+  resize: vertical;
+}
+
+.understand-area:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.understand-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.understand-card-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.understand-card-text {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.understand-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  gap: 16px;
+}
+
+.understand-empty {
+  text-align: center;
+  padding: 48px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.understand-history-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.understand-history-item {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.understand-history-item:hover {
+  background: var(--bg-secondary);
+}
+
+.understand-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.understand-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  max-width: 720px;
+  max-height: 80vh;
+  overflow-y: auto;
+  width: 90%;
+}
+
+/* ========================================================================
+   PLAYBOOKS
+   ======================================================================== */
+.playbooks-container {
+  padding: 24px 32px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.playbooks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.playbooks-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  cursor: pointer;
+}
+
+.playbooks-card:hover {
+  border-color: var(--accent);
+}
+
+.playbooks-card.selected {
+  border-color: var(--accent);
+  background: var(--bg-active);
+}
+
+.playbooks-detail {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.playbooks-detail-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.playbooks-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* ========================================================================
+   COMMON CARD / TAG / MODAL
+   ======================================================================== */
+.card-risk {
+  background: var(--error-bg);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.card-todo {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.tag-entity {
+  padding: 4px 8px;
+  font-size: 11px;
+  background: var(--highlight-bg);
+  color: var(--highlight);
+  border-radius: var(--radius-sm);
+}
+
+.flex-gap-3 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
