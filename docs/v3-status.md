@@ -7,7 +7,7 @@
 
 | 优先级 | 任务 | 类型 | 状态 |
 |--------|------|------|------|
-| 1 | Knowledge 页面重修（CSS + i18n） | 桌面端独立 | ⏳ 进行中 |
+| 1 | Knowledge 页面重修（CSS + i18n） | 桌面端独立 | ✅ 2 commits: CSS 类化 + i18n 4 语言 |
 | 2 | Vault 增强（文件读取 + 统计） | 桌面端独立 | 待启动 |
 | 3 | recharts 引入 + AgentMonitor 图表升级 | 桌面端独立 | 待启动 |
 | 4 | Understand → Vault 打通 | 桌面端独立 | 待启动 |
