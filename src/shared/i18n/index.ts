@@ -28,6 +28,7 @@ import installEn from "./locales/en/install";
 import constantsEn from "./locales/en/constants";
 import monitorEn from "./locales/en/monitor";
 import mcpEn from "./locales/en/mcp";
+import knowledgeEn from "./locales/en/knowledge";
 import understandEn from "./locales/en/understand";
 import commonEs from "./locales/es/common";
 import navigationEs from "./locales/es/navigation";
@@ -51,6 +52,7 @@ import installEs from "./locales/es/install";
 import constantsEs from "./locales/es/constants";
 import monitorEs from "./locales/es/monitor";
 import mcpEs from "./locales/es/mcp";
+import knowledgeEs from "./locales/es/knowledge";
 import understandEs from "./locales/es/understand";
 import commonZh from "./locales/zh-CN/common";
 import navigationZh from "./locales/zh-CN/navigation";
@@ -75,6 +77,7 @@ import constantsZh from "./locales/zh-CN/constants";
 import understandZh from "./locales/zh-CN/understand";
 import monitorZh from "./locales/zh-CN/monitor";
 import mcpZh from "./locales/zh-CN/mcp";
+import knowledgeZh from "./locales/zh-CN/knowledge";
 import commonPt from "./locales/pt-BR/common";
 import navigationPt from "./locales/pt-BR/navigation";
 import welcomePt from "./locales/pt-BR/welcome";
@@ -97,6 +100,7 @@ import installPt from "./locales/pt-BR/install";
 import constantsPt from "./locales/pt-BR/constants";
 import monitorPt from "./locales/pt-BR/monitor";
 import mcpPt from "./locales/pt-BR/mcp";
+import knowledgePt from "./locales/pt-BR/knowledge";
 import understandPt from "./locales/pt-BR/understand";
 
 export const resources = {
@@ -124,6 +128,7 @@ export const resources = {
       constants: constantsEn,
       monitor: monitorEn,
       mcp: mcpEn,
+      knowledge: knowledgeEn,
       understand: understandEn,
     },
   },
@@ -151,6 +156,7 @@ export const resources = {
       constants: constantsEs,
       monitor: monitorEs,
       mcp: mcpEs,
+      knowledge: knowledgeEs,
       understand: understandEs,
     },
   },
@@ -178,6 +184,7 @@ export const resources = {
       constants: constantsZh,
       monitor: monitorZh,
       mcp: mcpZh,
+      knowledge: knowledgeZh,
       understand: understandZh,
     },
   },
@@ -205,6 +212,7 @@ export const resources = {
       constants: constantsPt,
       monitor: monitorPt,
       mcp: mcpPt,
+      knowledge: knowledgePt,
       understand: understandPt,
     },
   },

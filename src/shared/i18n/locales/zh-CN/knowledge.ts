@@ -1,0 +1,17 @@
+export default {
+  search: "搜索知识库",
+  searchPlaceholder: "输入关键词搜索知识库...",
+  searchBtn: "搜索",
+  searching: "搜索中...",
+  noResults: "暂无结果",
+  titleLabel: "标题",
+  titlePlaceholder: "输入笔记标题...",
+  contentLabel: "内容",
+  contentPlaceholder: "输入笔记内容...",
+  ingest: "存入知识库",
+  ingestBtn: "存入",
+  ingesting: "存入中...",
+  ingestSuccess: "已存入知识库",
+  ingestFailed: "存入失败：{{error}}",
+  gatewayOffline: "知识库服务不可用",
+} as const;

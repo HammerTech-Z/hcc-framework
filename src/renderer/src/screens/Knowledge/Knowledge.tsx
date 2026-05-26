@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Search, Plus } from "../../assets/icons";
 import { Check, Loader2 } from "lucide-react";
+import { useI18n } from "../../components/useI18n";
 
 interface SearchResult {
   file: string;
@@ -9,6 +10,7 @@ interface SearchResult {
 }
 
 export default function Knowledge() {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,18 +62,20 @@ export default function Knowledge() {
       {/* Tab bar */}
       <div className="knowledge-tabs">
         <button
+          type="button"
           onClick={() => setActiveTab("search")}
           className={`knowledge-tab${activeTab === "search" ? " active" : ""}`}
         >
           <Search size={14} />
-          搜索
+          {t("knowledge.search")}
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab("ingest")}
           className={`knowledge-tab${activeTab === "ingest" ? " active" : ""}`}
         >
           <Plus size={14} />
-          存入
+          {t("knowledge.ingest")}
         </button>
       </div>
 
@@ -86,16 +90,17 @@ export default function Knowledge() {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !loading && handleSearch()}
                 className="knowledge-search-input"
-                placeholder="输入关键词搜索知识库..."
+                placeholder={t("knowledge.searchPlaceholder")}
                 disabled={loading}
               />
               <button
+                type="button"
                 onClick={handleSearch}
                 disabled={loading || !query.trim()}
                 className="knowledge-search-btn"
               >
                 {loading && <Loader2 size={14} className="loading-spinner" />}
-                {loading ? "搜索中..." : "搜索"}
+                {loading ? t("knowledge.searching") : t("knowledge.searchBtn")}
               </button>
             </div>
 
@@ -103,7 +108,7 @@ export default function Knowledge() {
 
             <div className="knowledge-results">
               {results.length === 0 && !loading && !error && (
-                <p className="knowledge-empty">暂无结果</p>
+                <p className="knowledge-empty">{t("knowledge.noResults")}</p>
               )}
               {results.map((r, i) => (
                 <div key={i} className="knowledge-result-item">
@@ -125,24 +130,24 @@ export default function Knowledge() {
         {activeTab === "ingest" && (
           <>
             <div className="knowledge-form-group">
-              <label className="knowledge-form-label">标题</label>
+              <label className="knowledge-form-label">{t("knowledge.titleLabel")}</label>
               <input
                 type="text"
                 value={ingestTitle}
                 onChange={(e) => setIngestTitle(e.target.value)}
                 className="knowledge-form-input"
-                placeholder="输入笔记标题..."
+                placeholder={t("knowledge.titlePlaceholder")}
                 disabled={ingesting}
               />
             </div>
             <div className="knowledge-form-group">
-              <label className="knowledge-form-label">内容</label>
+              <label className="knowledge-form-label">{t("knowledge.contentLabel")}</label>
               <textarea
                 value={ingestContent}
                 onChange={(e) => setIngestContent(e.target.value)}
                 rows={8}
                 className="knowledge-form-input knowledge-form-textarea"
-                placeholder="输入笔记内容..."
+                placeholder={t("knowledge.contentPlaceholder")}
                 disabled={ingesting}
               />
             </div>
@@ -152,17 +157,18 @@ export default function Knowledge() {
             {ingestSuccess && (
               <div className="knowledge-success">
                 <Check size={16} />
-                已存入知识库
+                {t("knowledge.ingestSuccess")}
               </div>
             )}
 
             <button
+              type="button"
               onClick={handleIngest}
               disabled={ingesting || !ingestTitle.trim() || !ingestContent.trim()}
               className="knowledge-ingest-btn"
             >
               {ingesting && <Loader2 size={14} className="loading-spinner" />}
-              {ingesting ? "存入中..." : "存入知识库"}
+              {ingesting ? t("knowledge.ingesting") : t("knowledge.ingestBtn")}
             </button>
           </>
         )}

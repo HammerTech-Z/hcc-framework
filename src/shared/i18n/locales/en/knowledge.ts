@@ -1,0 +1,17 @@
+export default {
+  search: "Search Knowledge Base",
+  searchPlaceholder: "Enter search query...",
+  searchBtn: "Search",
+  searching: "Searching...",
+  noResults: "No results found",
+  titleLabel: "Title",
+  titlePlaceholder: "Enter note title...",
+  contentLabel: "Content",
+  contentPlaceholder: "Enter note content...",
+  ingest: "Add to Knowledge Base",
+  ingestBtn: "Ingest",
+  ingesting: "Processing...",
+  ingestSuccess: "Successfully added to knowledge base",
+  ingestFailed: "Failed to add: {{error}}",
+  gatewayOffline: "Knowledge service unavailable",
+} as const;

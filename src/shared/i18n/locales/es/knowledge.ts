@@ -1,0 +1,18 @@
+// TODO: verify translations
+export default {
+  search: "Buscar en base de conocimiento",
+  searchPlaceholder: "Ingrese consulta de búsqueda...",
+  searchBtn: "Buscar",
+  searching: "Buscando...",
+  noResults: "Sin resultados",
+  titleLabel: "Título",
+  titlePlaceholder: "Ingrese título de la nota...",
+  contentLabel: "Contenido",
+  contentPlaceholder: "Ingrese contenido de la nota...",
+  ingest: "Agregar a base de conocimiento",
+  ingestBtn: "Ingerir",
+  ingesting: "Procesando...",
+  ingestSuccess: "Agregado exitosamente",
+  ingestFailed: "Error al agregar: {{error}}",
+  gatewayOffline: "Servicio de conocimiento no disponible",
+} as const;
