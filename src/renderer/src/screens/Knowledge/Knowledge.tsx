@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { useI18n } from "../../components/useI18n";
 import { Search, Plus } from "../../assets/icons";
 import { Check, Loader2 } from "lucide-react";
 
@@ -10,7 +9,6 @@ interface SearchResult {
 }
 
 export default function Knowledge() {
-  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,150 +56,115 @@ export default function Knowledge() {
   }, [ingestTitle, ingestContent]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="knowledge-container">
       {/* Tab bar */}
-      <div className="flex border-b border-[var(--border)]">
+      <div className="knowledge-tabs">
         <button
           onClick={() => setActiveTab("search")}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            activeTab === "search"
-              ? "text-[var(--accent)] border-b-2 border-[var(--accent)]"
-              : "text-[var(--text-secondary)] hover:text-[var(--text)]"
-          }`}
+          className={`knowledge-tab${activeTab === "search" ? " active" : ""}`}
         >
-          <div className="flex items-center gap-1.5">
-            <Search size={14} />
-            {t("knowledge.search") || "搜索"}
-          </div>
+          <Search size={14} />
+          搜索
         </button>
         <button
           onClick={() => setActiveTab("ingest")}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            activeTab === "ingest"
-              ? "text-[var(--accent)] border-b-2 border-[var(--accent)]"
-              : "text-[var(--text-secondary)] hover:text-[var(--text)]"
-          }`}
+          className={`knowledge-tab${activeTab === "ingest" ? " active" : ""}`}
         >
-          <div className="flex items-center gap-1.5">
-            <Plus size={14} />
-            {t("knowledge.ingest") || "存入"}
-          </div>
+          <Plus size={14} />
+          存入
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="knowledge-content">
         {activeTab === "search" && (
-          <div className="space-y-4">
-            {/* Search input */}
-            <div className="flex gap-2">
+          <>
+            <div className="knowledge-search-row">
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !loading && handleSearch()}
-                className="flex-1 bg-[var(--bg-secondary)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)]"
-                placeholder={t("knowledge.searchPlaceholder") || "输入关键词搜索知识库..."}
+                className="knowledge-search-input"
+                placeholder="输入关键词搜索知识库..."
                 disabled={loading}
               />
               <button
                 onClick={handleSearch}
                 disabled={loading || !query.trim()}
-                className="px-4 py-2 bg-[var(--accent)] text-white rounded text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                className="knowledge-search-btn"
               >
-                {loading && <Loader2 size={14} className="animate-spin" />}
-                {loading ? (t("knowledge.searching") || "搜索中...") : (t("knowledge.searchBtn") || "搜索")}
+                {loading && <Loader2 size={14} className="loading-spinner" />}
+                {loading ? "搜索中..." : "搜索"}
               </button>
             </div>
 
-            {/* Error */}
-            {error && (
-              <div className="p-3 bg-[var(--error-bg)] border border-[var(--error)] text-[var(--error)] rounded text-sm">
-                {error}
-              </div>
-            )}
+            {error && <div className="knowledge-error">{error}</div>}
 
-            {/* Results */}
-            <div className="space-y-2">
+            <div className="knowledge-results">
               {results.length === 0 && !loading && !error && (
-                <p className="text-[var(--text-secondary)] text-sm text-center py-8">
-                  {t("knowledge.noResults") || "暂无结果"}
-                </p>
+                <p className="knowledge-empty">暂无结果</p>
               )}
               {results.map((r, i) => (
-                <div
-                  key={i}
-                  className="p-3 border border-[var(--border)] rounded bg-[var(--bg-secondary)] hover:border-[var(--accent)] transition-colors"
-                >
-                  <p className="text-sm text-[var(--text)] line-clamp-3">{r.preview}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs text-[var(--text-secondary)] truncate max-w-[70%]">
+                <div key={i} className="knowledge-result-item">
+                  <p className="knowledge-result-preview">{r.preview}</p>
+                  <div className="knowledge-result-footer">
+                    <span className="knowledge-result-file">
                       {r.file.split("/").pop()}
                     </span>
-                    <span className="text-xs text-[var(--accent)] font-mono">
+                    <span className="knowledge-result-score">
                       {(r.score * 100).toFixed(1)}%
                     </span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </>
         )}
 
         {activeTab === "ingest" && (
-          <div className="space-y-4">
-            {/* Ingest form */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--text)] mb-1.5">
-                {t("knowledge.titleLabel") || "标题"}
-              </label>
+          <>
+            <div className="knowledge-form-group">
+              <label className="knowledge-form-label">标题</label>
               <input
                 type="text"
                 value={ingestTitle}
                 onChange={(e) => setIngestTitle(e.target.value)}
-                className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)]"
-                placeholder={t("knowledge.titlePlaceholder") || "输入笔记标题..."}
+                className="knowledge-form-input"
+                placeholder="输入笔记标题..."
                 disabled={ingesting}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-[var(--text)] mb-1.5">
-                {t("knowledge.contentLabel") || "内容"}
-              </label>
+            <div className="knowledge-form-group">
+              <label className="knowledge-form-label">内容</label>
               <textarea
                 value={ingestContent}
                 onChange={(e) => setIngestContent(e.target.value)}
                 rows={8}
-                className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded px-3 py-2 text-sm text-[var(--text)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] resize-none"
-                placeholder={t("knowledge.contentPlaceholder") || "输入笔记内容..."}
+                className="knowledge-form-input knowledge-form-textarea"
+                placeholder="输入笔记内容..."
                 disabled={ingesting}
               />
             </div>
 
-            {/* Error */}
-            {error && (
-              <div className="p-3 bg-[var(--error-bg)] border border-[var(--error)] text-[var(--error)] rounded text-sm">
-                {error}
-              </div>
-            )}
+            {error && <div className="knowledge-error">{error}</div>}
 
-            {/* Success */}
             {ingestSuccess && (
-              <div className="p-3 bg-[var(--success-bg)] border border-[var(--success)] text-[var(--success)] rounded text-sm flex items-center gap-2">
+              <div className="knowledge-success">
                 <Check size={16} />
-                {t("knowledge.ingestSuccess") || "已存入知识库"}
+                已存入知识库
               </div>
             )}
 
             <button
               onClick={handleIngest}
               disabled={ingesting || !ingestTitle.trim() || !ingestContent.trim()}
-              className="w-full px-4 py-2 bg-[var(--accent)] text-white rounded text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5"
+              className="knowledge-ingest-btn"
             >
-              {ingesting && <Loader2 size={14} className="animate-spin" />}
-              {ingesting ? (t("knowledge.ingesting") || "存入中...") : (t("knowledge.ingestBtn") || "存入知识库")}
+              {ingesting && <Loader2 size={14} className="loading-spinner" />}
+              {ingesting ? "存入中..." : "存入知识库"}
             </button>
-          </div>
+          </>
         )}
       </div>
     </div>

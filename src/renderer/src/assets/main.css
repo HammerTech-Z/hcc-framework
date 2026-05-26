@@ -5274,6 +5274,248 @@ body {
 }
 
 /* ========================================================================
+   KNOWLEDGE
+   ======================================================================== */
+.knowledge-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.knowledge-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.knowledge-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition);
+}
+
+.knowledge-tab:hover {
+  color: var(--text-secondary);
+}
+
+.knowledge-tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.knowledge-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.knowledge-search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.knowledge-search-input {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.knowledge-search-input:focus {
+  border-color: var(--border-focus);
+}
+
+.knowledge-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.knowledge-search-btn {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity var(--transition);
+}
+
+.knowledge-search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.knowledge-search-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.knowledge-error {
+  padding: 12px;
+  background: var(--error-bg);
+  border: 1px solid var(--error);
+  color: var(--error);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.knowledge-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.knowledge-result-item {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  transition: border-color var(--transition);
+}
+
+.knowledge-result-item:hover {
+  border-color: var(--accent);
+}
+
+.knowledge-result-preview {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.knowledge-result-footer {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.knowledge-result-file {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+.knowledge-result-score {
+  font-size: 12px;
+  color: var(--accent-text);
+  font-family: var(--font-mono);
+}
+
+.knowledge-empty {
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-align: center;
+  padding: 32px 0;
+}
+
+.knowledge-form-group {
+  margin-bottom: 12px;
+}
+
+.knowledge-form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.knowledge-form-input {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--transition);
+}
+
+.knowledge-form-input:focus {
+  border-color: var(--border-focus);
+}
+
+.knowledge-form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.knowledge-form-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 160px;
+  font-family: var(--font-sans);
+}
+
+.knowledge-ingest-btn {
+  width: 100%;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity var(--transition);
+}
+
+.knowledge-ingest-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.knowledge-ingest-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.knowledge-success {
+  padding: 12px;
+  background: var(--success-bg);
+  border: 1px solid var(--success);
+  color: var(--success);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* ========================================================================
    MCP SERVERS
    ======================================================================== */
 .mcp-server-row {
