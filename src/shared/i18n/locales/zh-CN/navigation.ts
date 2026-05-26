@@ -11,5 +11,8 @@ export default {
   tools: "工具",
   schedules: "计划任务",
   gateway: "网关",
+  monitor: "监控",
+  playbooks: "工作流",
+  understand: "理解",
   settings: "设置",
 } as const;

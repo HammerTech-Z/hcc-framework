@@ -193,9 +193,9 @@ export function setConfigValue(
   key: string,
   value: string,
   profile?: string,
-): void {
+): boolean {
   const { configFile } = profilePaths(profile);
-  if (!existsSync(configFile)) return;
+  if (!existsSync(configFile)) return false;
 
   let content = readFileSync(configFile, "utf-8");
   const regex = new RegExp(
@@ -205,9 +205,11 @@ export function setConfigValue(
 
   if (regex.test(content)) {
     content = content.replace(regex, `$1"${value}"`);
+    safeWriteFile(configFile, content);
+    return true;
   }
 
-  safeWriteFile(configFile, content);
+  return false;
 }
 
 export function getModelConfig(profile?: string): {

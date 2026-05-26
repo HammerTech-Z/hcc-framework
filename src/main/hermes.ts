@@ -200,6 +200,7 @@ function sendMessageViaApi(
   let hasContent = false;
   let finished = false; // guard against double callbacks
   let lastError = ""; // capture embedded error messages
+  let streamClosed = false; // prevent processing after [DONE]
   // Tool progress pattern: `emoji tool_name` or `emoji description`
   const toolProgressRe = /^`([^\s`]+)\s+([^`]+)`$/;
 
@@ -278,7 +279,9 @@ function sendMessageViaApi(
   }
 
   function processSseData(data: string): boolean {
+    if (streamClosed) return true;
     if (data === "[DONE]") {
+      streamClosed = true;
       if (hasContent) {
         finish();
       } else if (lastError) {
@@ -385,6 +388,7 @@ function sendMessageViaApi(
       }
 
       res.on("data", (chunk: Buffer) => {
+        if (streamClosed) return;
         buffer += chunk.toString();
         const parts = buffer.split("\n\n");
         buffer = parts.pop() || "";
@@ -395,6 +399,8 @@ function sendMessageViaApi(
       });
 
       res.on("end", () => {
+        if (streamClosed) return;
+        streamClosed = true;
         if (buffer.trim()) {
           for (const part of buffer.split("\n\n")) {
             if (processSseBlock(part)) return;
@@ -408,7 +414,10 @@ function sendMessageViaApi(
         finish(hasContent ? undefined : lastError);
       });
 
-      res.on("error", (err) => finish(`Stream error: ${err.message}`));
+      res.on("error", (err) => {
+        streamClosed = true;
+        finish(`Stream error: ${err.message}`);
+      });
     },
   );
 
@@ -426,7 +435,7 @@ function sendMessageViaApi(
 
   return {
     abort: () => {
-      controller.abort();
+      controller.abort(new Error("Aborted by user"));
     },
   };
 }
@@ -469,16 +478,14 @@ function sendMessageViaCli(
   };
 
   // Inject all API keys from the profile .env so the CLI can access them
-  const KNOWN_API_KEYS = [
+  // Derive from URL_KEY_MAP to avoid maintaining two lists
+  const knownApiKeys = URL_KEY_MAP.map((m) => m.envKey).concat([
     "OPENROUTER_API_KEY",
-    "OPENAI_API_KEY",
     "ANTHROPIC_API_KEY",
-    "GROQ_API_KEY",
     "GLM_API_KEY",
     "KIMI_API_KEY",
     "MINIMAX_API_KEY",
     "MINIMAX_CN_API_KEY",
-    "HF_TOKEN",
     "EXA_API_KEY",
     "PARALLEL_API_KEY",
     "TAVILY_API_KEY",
@@ -490,8 +497,8 @@ function sendMessageViaCli(
     "VOICE_TOOLS_OPENAI_KEY",
     "TINKER_API_KEY",
     "WANDB_API_KEY",
-  ];
-  for (const key of KNOWN_API_KEYS) {
+  ]);
+  for (const key of knownApiKeys) {
     if (profileEnv[key] && !env[key]) {
       env[key] = profileEnv[key];
     }
@@ -633,25 +640,37 @@ export async function sendMessage(
 
   // Remote mode: always use API, no CLI fallback
   if (isRemoteMode()) {
-    return sendMessageViaApi(message, cb, profile, resumeSessionId);
+    return sendMessageViaApi(message, cb, profile, resumeSessionId, history);
   }
 
   // Check API server availability (cache the result, re-check periodically)
   if (apiServerAvailable === null || apiServerAvailable === false) {
-    apiServerAvailable = await isApiServerReady();
+    apiServerAvailable = await checkApiServer();
   }
 
   if (apiServerAvailable) {
     return sendMessageViaApi(message, cb, profile, resumeSessionId, history);
   }
 
-  // Fallback to CLI
+  // Fallback to CLI — does not support history; warn the caller
+  if (history && history.length > 0) {
+    console.warn("[hermes] history is ignored in CLI fallback mode; conversation context will be lost");
+  }
   return sendMessageViaCli(message, cb, profile, resumeSessionId);
 }
 
 // Lazy init — called on first sendMessage or gateway start
 let _initialized = false;
 let _healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+let _pendingHealthCheck: Promise<boolean> | null = null;
+
+/** Dedup concurrent health checks: concurrent callers share one probe. */
+async function checkApiServer(): Promise<boolean> {
+  if (_pendingHealthCheck) return _pendingHealthCheck;
+  _pendingHealthCheck = isApiServerReady().finally(() => { _pendingHealthCheck = null; });
+  apiServerAvailable = await _pendingHealthCheck;
+  return apiServerAvailable;
+}
 
 function ensureInitialized(): void {
   if (_initialized) return;
@@ -664,13 +683,14 @@ function ensureInitialized(): void {
 
 function startHealthPolling(): void {
   if (_healthCheckInterval) return;
-  _healthCheckInterval = setInterval(async () => {
-    apiServerAvailable = await isApiServerReady();
-    // Stop polling once API is confirmed available — only re-check on demand
-    if (apiServerAvailable && _healthCheckInterval) {
-      clearInterval(_healthCheckInterval);
-      _healthCheckInterval = null;
-    }
+  _healthCheckInterval = setInterval(() => {
+    checkApiServer().then((available) => {
+      // Stop polling once API is confirmed available — only re-check on demand
+      if (available && _healthCheckInterval) {
+        clearInterval(_healthCheckInterval);
+        _healthCheckInterval = null;
+      }
+    });
   }, 15000);
 }
 
@@ -681,12 +701,19 @@ export function stopHealthPolling(): void {
   }
 }
 
+/** Mark API server as unavailable and restart health polling to detect recovery. */
+export function markApiServerUnavailable(): void {
+  apiServerAvailable = false;
+  startHealthPolling();
+}
+
 // ────────────────────────────────────────────────────
 //  Gateway management
 // ────────────────────────────────────────────────────
 
 let gatewayProcess: ChildProcess | null = null;
 let gatewayStartedByApp = false;
+let _readyProbeTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function startGateway(profile?: string): boolean {
   ensureInitialized();
@@ -729,8 +756,10 @@ export function startGateway(profile?: string): boolean {
   gatewayStartedByApp = true;
 
   // Wait a bit then check if API server came up
-  setTimeout(async () => {
-    apiServerAvailable = await isApiServerReady();
+  if (_readyProbeTimer) clearTimeout(_readyProbeTimer);
+  _readyProbeTimer = setTimeout(async () => {
+    apiServerAvailable = await checkApiServer();
+    _readyProbeTimer = null;
   }, 3000);
 
   return true;

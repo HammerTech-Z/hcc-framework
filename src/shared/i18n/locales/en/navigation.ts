@@ -11,5 +11,8 @@ export default {
   tools: "Tools",
   schedules: "Schedules",
   gateway: "Gateway",
+  monitor: "Monitor",
+  playbooks: "Playbooks",
+  understand: "Understand",
   settings: "Settings",
 } as const;

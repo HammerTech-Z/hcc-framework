@@ -11,5 +11,6 @@ export default {
   tools: "Herramientas",
   schedules: "Programaciones",
   gateway: "Gateway",
+  monitor: "Monitor",
   settings: "Configuración",
 } as const;
