@@ -23,4 +23,8 @@ export default {
   gbrainRecentActivity: "近期活动",
   gbrainSource: "来源",
   gbrainNoData: "暂无数据",
+  horizon: "Horizon",
+  horizonEmpty: "暂无 Horizon 报告",
+  horizonRecent: "最近 Horizon 报告",
+  horizonLoadError: "报告加载失败",
 } as const;

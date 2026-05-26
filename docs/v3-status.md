@@ -12,7 +12,7 @@
 | 3 | recharts 引入 + AgentMonitor 图表升级 | 桌面端独立 | ✅ recharts 3.x + Session Trends BarChart + 主题感知 useChartColors hook |
 | 4 | Understand → Vault 打通 | 桌面端独立 | ✅ 递归 Vault 可见 + 保存状态提示 + frontmatter |
 | 5 | GBrain 统计面板 | Gateway + 桌面端 | ✅ Gateway `/knowledge/stats` + Knowledge GBrain tab |
-| 6 | Horizon 集成面板 | 需 Gateway + MCP | 阻塞：Horizon 稳定性待确认 |
+| 6 | Horizon 集成面板 | 桌面端独立 | ✅ Knowledge Horizon tab（只读展示） |
 
 ## V3 前置调查结论（2026-05-26）
 

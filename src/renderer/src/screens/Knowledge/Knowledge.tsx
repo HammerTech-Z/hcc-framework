@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Search, Plus, Brain } from "../../assets/icons";
-import { Check, Loader2, FileText } from "lucide-react";
+import { Check, Loader2, FileText, RadioTower } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
 
 interface SearchResult {
@@ -46,7 +46,7 @@ function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-type KnowledgeTab = "search" | "ingest" | "vault" | "gbrain";
+type KnowledgeTab = "search" | "ingest" | "vault" | "gbrain" | "horizon";
 
 export default function Knowledge() {
   const { t } = useI18n();
@@ -194,6 +194,14 @@ export default function Knowledge() {
         >
           <Brain size={14} />
           GBrain
+        </button>
+        <button
+          type="button"
+          onClick={() => { setActiveTab("horizon"); loadVault(); }}
+          className={`knowledge-tab${activeTab === "horizon" ? " active" : ""}`}
+        >
+          <RadioTower size={14} />
+          {t("knowledge.horizon")}
         </button>
       </div>
 
@@ -345,6 +353,61 @@ export default function Knowledge() {
                 </div>
               ))
             )}
+          </>
+        )}
+
+        {activeTab === "horizon" && (
+          <>
+            {vaultLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: 32 }}>
+                <div className="loading-spinner" />
+              </div>
+            ) : (() => {
+              const horizonGroup = vaultGroups.find(g => g.dir === "wiki/tools");
+              const horizonFiles = horizonGroup
+                ? horizonGroup.files.filter(f => f.name.toLowerCase().includes("horizon"))
+                : [];
+              return horizonFiles.length === 0 ? (
+                <p className="knowledge-empty">{t("knowledge.horizonEmpty")}</p>
+              ) : (
+                <>
+                  <div className="knowledge-result-item" style={{ background: "var(--bg-tertiary)", marginBottom: 12 }}>
+                    <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                      {t("knowledge.horizonRecent")} ({horizonFiles.length})
+                    </span>
+                  </div>
+                  {horizonFiles.map((f) => (
+                    <div key={f.path}>
+                      <div className="knowledge-result-item" style={{ cursor: "pointer", marginBottom: 4 }} onClick={() => handleVaultSelect(f.path)}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                            {f.name.replace(/\.md$/, "")}
+                          </span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0, marginLeft: 8 }}>
+                            {fmtDate(f.mtime)} · {fmtSize(f.size)}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedFile === f.path && (
+                        <div className="knowledge-result-item" style={{ marginBottom: 8, background: "var(--bg-tertiary)" }}>
+                          {fileLoading ? (
+                            <div style={{ display: "flex", justifyContent: "center", padding: 16 }}>
+                              <div className="loading-spinner" />
+                            </div>
+                          ) : fileContent ? (
+                            <pre style={{ fontSize: 12, color: "var(--text-secondary)", whiteSpace: "pre-wrap", wordBreak: "break-all", fontFamily: "var(--font-mono)", maxHeight: 300, overflowY: "auto", margin: 0 }}>
+                              {fileContent.slice(0, 2000)}{fileContent.length > 2000 ? "\n...(truncated)" : ""}
+                            </pre>
+                          ) : (
+                            <p className="knowledge-empty">{t("knowledge.horizonLoadError")}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </>
+              );
+            })()}
           </>
         )}
 

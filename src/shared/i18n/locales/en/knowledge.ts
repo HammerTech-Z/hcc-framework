@@ -23,4 +23,8 @@ export default {
   gbrainRecentActivity: "Recent Activity",
   gbrainSource: "Source",
   gbrainNoData: "No data",
+  horizon: "Horizon",
+  horizonEmpty: "No Horizon reports found",
+  horizonRecent: "Recent Horizon Reports",
+  horizonLoadError: "Failed to load report",
 } as const;

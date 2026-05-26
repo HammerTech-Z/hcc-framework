@@ -24,4 +24,8 @@ export default {
   gbrainRecentActivity: "Actividad reciente",
   gbrainSource: "Fuente",
   gbrainNoData: "Sin datos",
+  horizon: "Horizon",
+  horizonEmpty: "No hay informes de Horizon",
+  horizonRecent: "Informes recientes de Horizon",
+  horizonLoadError: "Error al cargar el informe",
 } as const;
