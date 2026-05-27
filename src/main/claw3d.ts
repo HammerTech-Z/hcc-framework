@@ -6,7 +6,7 @@ import {
   unlinkSync,
   mkdirSync,
 } from "fs";
-import { join, win32 } from "path";
+import { join } from "path";
 import { homedir } from "os";
 import { createConnection } from "net";
 import { getEnhancedPath, HERMES_HOME } from "./installer";
@@ -29,179 +29,6 @@ let adapterLogs = "";
 let devServerError = "";
 let adapterError = "";
 
-<<<<<<< HEAD
-=======
-export interface ResolvedCommand {
-  command: string;
-  windowsScript: boolean;
-}
-
-export interface CommandInvocation {
-  command: string;
-  args: string[];
-  windowsVerbatimArguments?: boolean;
-}
-
-interface NpmInvocationOptions {
-  platform?: NodeJS.Platform;
-  fileExists?: (path: string) => boolean;
-}
-
-type Claw3dScript = "dev" | "hermes-adapter";
-
-const CLAW3D_SCRIPT_ARGS: Record<Claw3dScript, string[]> = {
-  dev: ["server/index.js", "--dev"],
-  "hermes-adapter": ["server/hermes-gateway-adapter.js"],
-};
-
-export function isWindowsCommandScript(command: string): boolean {
-  return /\.(cmd|bat)$/i.test(command);
-}
-
-export function pickWindowsCommandCandidate(
-  candidates: string[],
-): ResolvedCommand | null {
-  const normalized = candidates
-    .map((candidate) => candidate.trim())
-    .filter(Boolean);
-  const executable = normalized.find((candidate) => /\.exe$/i.test(candidate));
-  if (executable) {
-    return { command: executable, windowsScript: false };
-  }
-
-  const script = normalized.find(isWindowsCommandScript);
-  if (script) {
-    return { command: script, windowsScript: true };
-  }
-
-  const fallback = normalized[0];
-  return fallback ? { command: fallback, windowsScript: false } : null;
-}
-
-function resolveCommandOnPath(
-  command: string,
-  envPath: string,
-): ResolvedCommand | null {
-  const lookupCommand = process.platform === "win32" ? "where.exe" : "which";
-  const result = spawnSync(lookupCommand, [command], {
-    encoding: "utf8",
-    env: { ...process.env, PATH: envPath },
-    timeout: 5000,
-    windowsHide: true,
-  });
-
-  if (result.error || result.status !== 0 || !result.stdout) return null;
-
-  const candidates = result.stdout.split(/\r?\n/);
-  if (process.platform === "win32") {
-    return pickWindowsCommandCandidate(candidates);
-  }
-
-  const resolved = candidates
-    .map((candidate) => candidate.trim())
-    .find(Boolean);
-  return resolved ? { command: resolved, windowsScript: false } : null;
-}
-
-function resolveCommand(command: string, envPath: string): ResolvedCommand {
-  const resolved = resolveCommandOnPath(command, envPath);
-  if (resolved) return resolved;
-
-  return {
-    command,
-    windowsScript:
-      process.platform === "win32" && isWindowsCommandScript(command),
-  };
-}
-
-function quoteWindowsCmdArg(value: string): string {
-  return `"${value.replace(/"/g, '\\"')}"`;
-}
-
-export function buildWindowsScriptCommandLine(
-  command: string,
-  args: string[],
-): string {
-  const parts = [quoteWindowsCmdArg(command), ...args.map(quoteWindowsCmdArg)];
-  return `"${parts.join(" ")}"`;
-}
-
-function createCommandInvocation(
-  resolved: ResolvedCommand,
-  args: string[],
-): CommandInvocation {
-  if (resolved.windowsScript) {
-    return {
-      command: process.env.ComSpec || "cmd.exe",
-      args: [
-        "/d",
-        "/s",
-        "/c",
-        buildWindowsScriptCommandLine(resolved.command, args),
-      ],
-      windowsVerbatimArguments: true,
-    };
-  }
-
-  return { command: resolved.command, args };
-}
-
-function createWindowsNpmCliInvocation(
-  npmCommand: string,
-  args: string[],
-  fileExists: (path: string) => boolean,
-): CommandInvocation | null {
-  const npmDir = win32.dirname(npmCommand);
-  const nodeCandidates = [
-    win32.join(npmDir, "node.exe"),
-    win32.join(npmDir, "..", "..", "..", "node.exe"),
-  ];
-  const npmCliCandidates = [
-    win32.join(npmDir, "node_modules", "npm", "bin", "npm-cli.js"),
-    win32.join(npmDir, "npm-cli.js"),
-  ];
-
-  const nodeExe = nodeCandidates.find(fileExists);
-  const npmCli = npmCliCandidates.find(fileExists);
-  if (!npmCli) return null;
-
-  return {
-    command: nodeExe || "node",
-    args: [npmCli, ...args],
-  };
-}
-
-export function createNpmCommandInvocation(
-  resolved: ResolvedCommand,
-  args: string[],
-  options: NpmInvocationOptions = {},
-): CommandInvocation {
-  const platform = options.platform ?? process.platform;
-  const fileExists = options.fileExists ?? existsSync;
-
-  if (platform === "win32") {
-    const directNpm = createWindowsNpmCliInvocation(
-      resolved.command,
-      args,
-      fileExists,
-    );
-    if (directNpm) return directNpm;
-  }
-
-  return createCommandInvocation(resolved, args);
-}
-
-export function createClaw3dScriptInvocation(
-  script: Claw3dScript,
-  nodeCommand = "node",
-): CommandInvocation {
-  return {
-    command: nodeCommand,
-    args: CLAW3D_SCRIPT_ARGS[script],
-  };
-}
-
->>>>>>> c4e2d0c (fix: start Office stack reliably on Windows)
 function getSavedPort(): number {
   try {
     const port = parseInt(readFileSync(PORT_FILE, "utf-8").trim(), 10);
@@ -554,11 +381,7 @@ export async function setupClaw3d(
 
   // Step 2: npm install
   emit(2, "Installing dependencies...", "Running npm install...\n");
-<<<<<<< HEAD
   const npm = findNpm();
-=======
-  const npm = createNpmCommandInvocation(findNpm(env.PATH), ["install"]);
->>>>>>> c4e2d0c (fix: start Office stack reliably on Windows)
 
   await new Promise<void>((resolve, reject) => {
     const proc = spawn(npm, ["install"], {
@@ -624,21 +447,8 @@ export function startDevServer(): boolean {
   devServerError = "";
   devServerLogs = "";
   const port = getSavedPort();
-<<<<<<< HEAD
   const npm = findNpm();
   const proc = spawn(npm, ["run", "dev"], {
-=======
-  const env = {
-    ...process.env,
-    PATH: getEnhancedPath(),
-    HOME: homedir(),
-    TERM: "dumb",
-    PORT: String(port),
-  };
-  const node = resolveCommand("node", env.PATH);
-  const devScript = createClaw3dScriptInvocation("dev", node.command);
-  const proc = spawn(devScript.command, devScript.args, {
->>>>>>> c4e2d0c (fix: start Office stack reliably on Windows)
     cwd: HERMES_OFFICE_DIR,
     env: {
       ...process.env,
@@ -649,11 +459,6 @@ export function startDevServer(): boolean {
     },
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
-<<<<<<< HEAD
-=======
-    windowsHide: true,
-    windowsVerbatimArguments: devScript.windowsVerbatimArguments,
->>>>>>> c4e2d0c (fix: start Office stack reliably on Windows)
   });
 
   devServerProcess = proc;
@@ -717,23 +522,8 @@ export function startAdapter(): boolean {
 
   adapterError = "";
   adapterLogs = "";
-<<<<<<< HEAD
   const npm = findNpm();
   const proc = spawn(npm, ["run", "hermes-adapter"], {
-=======
-  const env = {
-    ...process.env,
-    PATH: getEnhancedPath(),
-    HOME: homedir(),
-    TERM: "dumb",
-  };
-  const node = resolveCommand("node", env.PATH);
-  const adapterScript = createClaw3dScriptInvocation(
-    "hermes-adapter",
-    node.command,
-  );
-  const proc = spawn(adapterScript.command, adapterScript.args, {
->>>>>>> c4e2d0c (fix: start Office stack reliably on Windows)
     cwd: HERMES_OFFICE_DIR,
     env: {
       ...process.env,
@@ -743,11 +533,6 @@ export function startAdapter(): boolean {
     },
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
-<<<<<<< HEAD
-=======
-    windowsHide: true,
-    windowsVerbatimArguments: adapterScript.windowsVerbatimArguments,
->>>>>>> c4e2d0c (fix: start Office stack reliably on Windows)
   });
 
   adapterProcess = proc;

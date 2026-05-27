@@ -54,7 +54,6 @@ import {
   getClaw3dWsUrl,
   Claw3dSetupProgress,
 } from "./claw3d";
-import { startOfficeStack } from "./office-start";
 import {
   readEnv,
   setEnvValue,
@@ -646,18 +645,8 @@ function setupIPC(): void {
     return true;
   });
 
-  ipcMain.handle("claw3d-start-all", (_event, profile?: string) =>
-    startOfficeStack(profile, {
-      getConnectionConfig,
-      isGatewayRunning,
-      startGateway,
-      sshGatewayStatus,
-      sshStartGateway,
-      startSshTunnel,
-      sshReadRemoteApiKey,
-      setSshRemoteApiKey,
-      startClaw3dAll,
-    }),
+  ipcMain.handle("claw3d-start-all", () =>
+    startClaw3dAll(),
   );
   ipcMain.handle("claw3d-stop-all", () => {
     stopClaw3d();
@@ -896,9 +885,15 @@ function setupUpdater(): void {
     }
   });
 
-  ipcMain.handle("download-update", () => {
-    autoUpdater.downloadUpdate();
-    return true;
+  ipcMain.handle("download-update", async () => {
+    try {
+      await autoUpdater.downloadUpdate();
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      mainWindow?.webContents.send("update-error", message);
+      return false;
+    }
   });
 
   ipcMain.handle("install-update", () => {
