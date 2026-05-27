@@ -357,8 +357,14 @@ function setupIPC(): void {
 
   ipcMain.handle(
     "set-connection-config",
-    (_event, mode: "local" | "remote", remoteUrl: string, apiKey?: string) => {
-      setConnectionConfig({ mode, remoteUrl, apiKey: apiKey || "" });
+    (_event, mode: "local" | "remote" | "ssh", remoteUrl: string, apiKey?: string) => {
+      const existing = getConnectionConfig();
+      setConnectionConfig({
+        ...existing,
+        mode,
+        remoteUrl,
+        apiKey: apiKey || existing.apiKey,
+      });
       return true;
     },
   );
