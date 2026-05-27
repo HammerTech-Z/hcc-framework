@@ -69,6 +69,55 @@ export function getEnhancedPath(): string {
   return [...extra, process.env.PATH || ""].join(delimiter);
 }
 
+// Provider env key mappings for install-gate check
+const PROVIDER_ENV_KEYS: Record<string, string> = {
+  openrouter: "OPENROUTER_API_KEY",
+  anthropic: "ANTHROPIC_API_KEY",
+  openai: "OPENAI_API_KEY",
+  google: "GOOGLE_API_KEY",
+  xai: "XAI_API_KEY",
+  groq: "GROQ_API_KEY",
+  deepseek: "DEEPSEEK_API_KEY",
+  together: "TOGETHER_API_KEY",
+  fireworks: "FIREWORKS_API_KEY",
+  cerebras: "CEREBRAS_API_KEY",
+  mistral: "MISTRAL_API_KEY",
+  perplexity: "PERPLEXITY_API_KEY",
+  huggingface: "HF_TOKEN",
+  hf: "HF_TOKEN",
+  qwen: "QWEN_API_KEY",
+  minimax: "MINIMAX_API_KEY",
+  glm: "GLM_API_KEY",
+  kimi: "KIMI_API_KEY",
+  nvidia: "NVIDIA_API_KEY",
+};
+
+const URL_TO_ENV_KEY: Array<[RegExp, string]> = [
+  [/openrouter\.ai/i, "OPENROUTER_API_KEY"],
+  [/anthropic\.com/i, "ANTHROPIC_API_KEY"],
+  [/openai\.com/i, "OPENAI_API_KEY"],
+  [/huggingface\.co/i, "HF_TOKEN"],
+  [/api\.groq\.com/i, "GROQ_API_KEY"],
+  [/api\.deepseek\.com/i, "DEEPSEEK_API_KEY"],
+  [/api\.together\.xyz/i, "TOGETHER_API_KEY"],
+  [/api\.fireworks\.ai/i, "FIREWORKS_API_KEY"],
+  [/api\.cerebras\.ai/i, "CEREBRAS_API_KEY"],
+  [/api\.mistral\.ai/i, "MISTRAL_API_KEY"],
+  [/api\.perplexity\.ai/i, "PERPLEXITY_API_KEY"],
+];
+
+export function expectedEnvKeyForModel(
+  provider: string,
+  baseUrl: string,
+): string | null {
+  const direct = PROVIDER_ENV_KEYS[provider.trim().toLowerCase()];
+  if (direct) return direct;
+  for (const [pattern, envKey] of URL_TO_ENV_KEY) {
+    if (pattern.test(baseUrl)) return envKey;
+  }
+  return null;
+}
+
 /** Resolve the active nvm node version's bin directory. */
 function resolveNvmBin(home: string): string[] {
   const nvmDir = process.env.NVM_DIR || join(home, ".nvm");

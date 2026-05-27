@@ -1,5 +1,5 @@
 import { join, dirname } from "path";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from "fs";
 import { HERMES_HOME } from "./installer";
 
 /**
@@ -41,4 +41,28 @@ export function safeWriteFile(filePath: string, content: string): void {
   const dir = dirname(filePath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   writeFileSync(filePath, content, "utf-8");
+}
+
+export function profilePaths(profile?: string): {
+  envFile: string;
+  configFile: string;
+  home: string;
+} {
+  const home = profileHome(profile);
+  return {
+    envFile: join(home, ".env"),
+    configFile: join(home, "config.yaml"),
+    home,
+  };
+}
+
+export function getActiveProfileNameSync(): string {
+  try {
+    const activeFile = join(HERMES_HOME, "active_profile");
+    if (!existsSync(activeFile)) return "default";
+    const name = readFileSync(activeFile, "utf-8").trim();
+    return name || "default";
+  } catch {
+    return "default";
+  }
 }
