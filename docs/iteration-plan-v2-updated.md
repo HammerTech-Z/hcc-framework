@@ -1,162 +1,220 @@
-# Hermes 迭代计划 V2 — 更新副本
+# Hermes Pro — 锁定版路线图兼容索引（2026-05-28）
 
-> 本文件是 `~/.hermes/docs/Hermes-迭代计划-v2.md` 的更新副本
-> 原始版本日期：2026-05-24 | 本副本更新：2026-05-27
-> 更新原因：原始计划中的 V1/V2 任务状态已与代码事实严重偏离
+> 版本：Locked Roadmap Index v1.0
+> 更新日期：2026-05-28
+> **本文件不是唯一计划入口；唯一计划入口是 [roadmap-locked-2026-05-28.md](./roadmap-locked-2026-05-28.md)。本文件仅为旧引用兼容和阅读索引。**
+> 替换：原 iteration-plan-v2-updated.md（已归档为 archive/iteration-plan-v2-updated-2026-05-28.md）
+> 锁定规则：禁止 Agent 自行修改；变更需新建 ADR + 用户确认
 
 ---
 
-## 2026-05-27 当前事实快照
+## 路线图锁定声明
 
-### Git 状态
+本文档是锁定路线图的兼容副本/索引；唯一计划入口是 [roadmap-locked-2026-05-28.md](./roadmap-locked-2026-05-28.md)。
 
-- 当前分支：`integrate/upstream-2026-05-27`
-- `rescue/eff2566-v3-complete` 已存在，指向 `eff2566`
-- detached HEAD 风险已解除
-- 当前工作区干净
-- `integrate/upstream-2026-05-27` 相对 `main` 多 41 commits
-- 本地 `main` 标记为落后 `origin/main` 319 commits
-- ⚠️ 后续不要直接回旧 `main` 开工，应先决策是否把 `integrate/upstream-2026-05-27` 作为 Hermes Pro 产品主线
+- **知识库内容不自动改变路线图**。vault/Desktop知识/归档文档只能进入候选池，需用户明确批准才能进入锁定主线。
+- **禁止 Agent 自行修改路线图**。任何路线图变更必须新建 ADR，并等待用户确认。
+- **已完成的版本不得回滚**。除非用户明确说"解锁路线图"。
+- **Roadmap Bug Report 通道**：Agent 发现路线图错误时，只能报告给用户，不能自行修改。
 
-### Cron / WeChat 状态
+---
 
-- `~/.hermes/cron/jobs.json` 当前 8 个 jobs
-- 状态分布：3 ok、5 error
-- error 根因：
-  - DeepSeek API key 401（认证失效，需更换 key）
-  - Weixin delivery 持续 `rate limited`（iLink 限流）
-- 行动项：
-  1. **DeepSeek key 修复**：更换有效 API key 或调整调用策略
-  2. **Weixin/iLink 限流策略修复**：评估 iLink rate limit 原因，调整推送频率或队列策略
-
-## 版本总览
+## 版本总览（V1-V7）
 
 | 版本 | 口号 | 状态 | 说明 |
 |------|------|------|------|
-| **V1** | 基础可用 | ✅ 已完成 | tag hermes-pro-1.0 |
-| **V1.5** | 修复阶段 | ✅ 已完成 | tag v1.5-final，10 commits |
+| **V1** | 基础可用 | ✅ 完成 | tag hermes-pro-1.0 |
+| **V1.5** | 修复阶段 | ✅ 完成 | tag v1.5-final，10 commits |
 | **V2** | 效率提升 | ✅ 4/5 完成 | Theme/AgentMonitor/MCP/Memory 完成，BaiLongma 移出 |
-| **V3** | 知识赋能 | ✅ 已完成（6/6） | Knowledge/Vault/Recharts/Understand→Vault/GBrain/Horizon |
-| **V4** | 生态融合 | ✅ 设计闭环完成，POC 待实现评审 | BaiLongma Layer 1-3 + README + cron 诊断 POC Plan 已完成；下一步是只读 POC 实现评审 |
-| **V5** | 变现检验 | ⏳ 待启动 | AI 视频 + 语音 Dograh |
+| **V3** | 知识赋能 | ✅ UI完成 | Knowledge/Vault/Recharts/Understand→Vault/GBrain stats/Horizon tab；自动化 backlog 待补 |
+| **V4** | BaiLongma认知编排 | 🔄 POC-2完成 | Layer 1-3 + POC-1 + POC-2 + typecheck通过；Manual QA待执行 |
+| **V5** | 变现检验 | ⏳ 未启动 | AI视频 + 语音 Dograh |
+| **V6** | 知识自动化补完 | ⏳ 待启动 | 承接V3未完成的自动化任务 |
+| **V7** | 生态工具融合 | ⏳ 待启动 | 承接原V4未完成的生态融合任务 |
 
 ---
 
-## V1 — 基础可用（✅ 已完成）
-
-以下为原始计划中的 V1 任务及其真实状态：
-
-| 任务 | 原始状态 | 实际状态 | 完成日期 |
-|------|---------|---------|---------|
-| K1.5 嵌入修复（GBrain） | ⏳ 待执行 | ✅ 已完成 | 2026-05-25 |
-| hermes-pro 启动修复 | ⏳ 待执行 | ✅ 已完成 | 2026-05-25 |
-| Understand-Anything | ⏳ 待执行 | ✅ 已完成 | V1 阶段 |
-| llm-checker | ⏳ 待执行 | ✅ 已完成 | V1 阶段 |
-| P4 PlaybookRunner 真实化 | ⏳ 待执行 | ✅ 已完成 | V1 阶段 |
-
-### V1.5 修复阶段（额外增加, 2026-05-26）
+## V1 — 基础可用（✅ 完成）
 
 | 任务 | 状态 | 说明 |
 |------|------|------|
-| IPC 三端一致性 | ✅ fix(ipc) | 修复 4 处签名不匹配 |
-| TypeScript any 泄漏 | ✅ refactor(types) | 清除 any 泄漏，创建 shared/types |
-| PlaybookRunner 阻塞 | ✅ refactor(playbook) | execSync → spawn + 流式输出 |
-| Understand UI i18n | ✅ fix(i18n) | 硬编码字符串迁移 |
-| es/pt-BR 语言包 | ✅ feat(i18n) | 补齐 understand.ts |
-| CSS 类审计 | ✅ docs(css) | 12 个候选类；其中动态类名需保留或人工确认 |
-| vitest + better-sqlite3 | ✅ fix(test) | 添加 rebuild 脚本 |
-| reasoning 字段注入 | ✅ feat(understand) | heuristic + LLM 双模式 |
+| K1.5 嵌入修复（GBrain ZeroEntropy 1280d） | ✅ 完成 | GBrain 恢复主线 |
+| hermes-pro 启动修复（electron-vite 兼容） | ✅ 完成 | 启动修复完成 |
+| Understand-Anything 安装 | ✅ 完成 | Understand 集成 |
+| llm-checker 安装 | ✅ 完成 | llm-checker 集成 |
+| P4 PlaybookRunner 真实化（HCC 流程） | ✅ 完成 | PlaybookRunner 重写，HCC 阶段 5-7 支持 |
+
+### V1.5 修复阶段（额外增加）
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| IPC 三端一致性 | ✅ 完成 | 修复 4 处签名不匹配 |
+| TypeScript any 泄漏 | ✅ 完成 | 清除 any 泄漏，创建 shared/types |
+| PlaybookRunner 阻塞 | ✅ 完成 | execSync → spawn + 流式输出 |
+| Understand UI i18n | ✅ 完成 | 硬编码字符串迁移 |
+| es/pt-BR 语言包 | ✅ 完成 | 补齐 understand.ts |
+| CSS 类审计 | ✅ 完成 | 12 个候选类审计 |
+| vitest + better-sqlite3 | ✅ 完成 | 添加 rebuild 脚本 |
+| reasoning 字段注入 | ✅ 完成 | heuristic + LLM 双模式 |
 
 ---
 
 ## V2 — 效率提升（✅ 4/5 完成）
 
-| 任务 | 原始状态 | 实际状态 | 说明 |
-|------|---------|---------|------|
-| Theme 选择器 | 待开发 | ✅ 已有完整实现 | 2 套主题 + system + ThemeProvider + Settings UI |
-| AgentMonitor 增强 | 待启动 | ✅ 3 commits | CSS 类化 + i18n 4 语言 + 实时执行面板 |
-| MCP 管理 UI | 待启动 | ✅ 5 commits | 4 IPC + Settings CRUD + i18n + 测试连接 |
-| Memory 编辑器 | 待启动 | ✅ 功能已实现 | CRUD + i18n + 容量指示 + 7 providers。底层仍以 `MEMORY.md` 为主，SQLite 迁移是后续技术债 |
-| BaiLongma 落地 | 待启动 | ⏸️ 移出 V2 | 代码零实现，需设计定义后重新排期 |
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| Theme 选择器 | ✅ 已有完整实现 | 2 套主题（dark/light）+ system 跟随 |
+| AgentMonitor 增强 | ✅ 3 commits | CSS 类化 + i18n 4 语言 + 实时执行面板 |
+| MCP 管理 UI | ✅ 5 commits | 4 IPC + Settings CRUD + i18n + 测试连接 |
+| Memory 编辑器 | ✅ 已有完整实现 | CRUD + i18n + 容量指示 + 7 providers |
+| BaiLongma 落地 | ⏸️ 移出 V2 | 设计闭环和 POC-2 在 V4 完成，不再是 V2 缺口 |
 
-详见 [docs/v2-status.md](./docs/v2-status.md)。
-
----
-
-## V3 — 知识赋能（✅ 已完成，6/6）
-
-V3 已在 2026-05-26 全部完成并提交。实际落地范围：
-
-| 任务 | 状态 |
-|------|------|
-| Knowledge 页面重修 | ✅ 完成 |
-| Vault 增强 | ✅ 完成 |
-| Recharts 图表升级 | ✅ 完成 |
-| Understand → Vault 打通 | ✅ 完成 |
-| GBrain 统计面板 | ✅ 完成 |
-| Horizon 集成面板 | ✅ 完成 |
-
-保留的后续事项：
-1. pipeline-runs 无自动清理，后续按技术债处理。
-2. HCC 阶段 1-4 未在代码中定义，进入流程治理时再补。
-3. BaiLongma 需要设计定义后再排期，不混入 V4。
+详见 [v2-status.md](./v2-status.md)。
 
 ---
 
-## V4 — BaiLongma 认知编排（✅ 设计闭环完成，POC 待实现评审）
+## V3 — 知识赋能（✅ UI完成，自动化 backlog 待补）
+
+V3 UI 集成已完成，但自动化飞轮未闭环。
+
+### V3 UI 已完成项
+
+| 任务 | 状态 | 提交 |
+|------|------|------|
+| Knowledge 页面重修 | ✅ 完成 | CSS 类化 + i18n |
+| Vault 增强（文件读取 + 统计） | ✅ 完成 | IPC + Vault tab |
+| recharts 图表升级 | ✅ 完成 | Session Trends BarChart |
+| Understand → Vault 打通 | ✅ 完成 | 保存状态 UI + i18n |
+| GBrain 统计面板 | ✅ 完成 | `/knowledge/stats` + GBrain tab |
+| Horizon 集成面板（只读） | ✅ 完成 | Horizon tab（read-only） |
+
+### V3 自动化未完成项 → 迁移到 V6
+
+| 任务 | 状态 | 原因 |
+|------|------|------|
+| GBrain typed links + dream cycle | ❌ 未实现 | 需额外设计定义 |
+| Horizon cron 自动入 vault + 评分阈值 | ❌ 未实现 | 桌面端只有 read-only tab |
+| K3 学习方向每周自动更新 | ❌ 未实现 | cron 存在但 K3 任务未完成自动化闭环 |
+| SQLite/Filesystem/Git MCP 配齐 | ⏳ 部分完成 | MCP UI 已有，但 Filesystem/Git 未配齐 |
+| HCC 流程入主线 | ❌ 未完成 | 阶段 1-4 未在代码中定义 |
+| CodeGraph / codebase-memory-mcp 重新索引 | ❌ 未验证 | 存档文档称 177文件/1222节点，实际 nodes/edges=0 |
+
+详见 [v6-knowledge-automation-plan.md](./v6-knowledge-automation-plan.md)。
+
+---
+
+## V4 — BaiLongma 认知编排
 
 ### BaiLongma 设计闭环
 
-BaiLongma 是 Hermes Pro 的 TICK-aware 任务驾驶舱与认知编排层。Layer 1-4 设计文档已完成：
+BaiLongma 是 Hermes Pro 的 TICK-aware 任务驾驶舱与认知编排层。
 
 | 文件 | 内容 |
 |------|------|
-| [docs/bailongma/01-scope-and-role.md](./docs/bailongma/01-scope-and-role.md) | Layer 1 范围与角色、用户旅程、参考机制边界 |
-| [docs/bailongma/02-acui-protocol.md](./docs/bailongma/02-acui-protocol.md) | Layer 2 ACUI 协议：概念、消息格式、组件命令、任务生命周期、错误模型 |
-| [docs/bailongma/03-visual-and-integration.md](./docs/bailongma/03-visual-and-integration.md) | Layer 3 视觉与集成点：三栏布局、产品位置、ACUI→React 映射 |
-| [docs/bailongma/README.md](./docs/bailongma/README.md) | 设计索引与 POC 决策 |
-| [docs/bailongma/04-poc-plan.md](./docs/bailongma/04-poc-plan.md) | cron 失败诊断只读 POC 计划 |
+| [bailongma/01-scope-and-role.md](./bailongma/01-scope-and-role.md) | Layer 1 范围与角色 |
+| [bailongma/02-acui-protocol.md](./bailongma/02-acui-protocol.md) | Layer 2 ACUI 协议 |
+| [bailongma/03-visual-and-integration.md](./bailongma/03-visual-and-integration.md) | Layer 3 视觉与集成 |
+| [bailongma/04-poc-plan.md](./bailongma/04-poc-plan.md) | POC 计划 |
+| [bailongma/05-poc-implementation-review.md](./bailongma/05-poc-implementation-review.md) | POC 实现评审 |
+| [bailongma/README.md](./bailongma/README.md) | 设计索引 |
 
-详见 [docs/bailongma/README.md](./docs/bailongma/README.md)。
+### POC 实现状态
 
-### 下一步决策点
+| POC | 描述 | 状态 |
+|-----|------|------|
+| POC-1 | 静态只读 screen | ✅ 完成 |
+| POC-2 | 真实 cron 只读数据 | ✅ 完成：`window.hermesAPI.listCronJobs(true, profile)` |
+| Manual QA | 只读数据验证 | ⏳ 待执行 |
+| Productionization | Layer 4 完整实现 | ❌ NOT APPROVED |
 
-1. **是否批准 cron 失败诊断只读 POC？**
-   - 批准 → 按 04-poc-plan.md 实现评审
-   - 不批准 → V4 降级为 V3.5 工程巩固
-2. **POC 是否允许新建 BaiLongma screen？**
-   - 允许 → 修改 Layout.tsx，新增 view
-   - 不允许 → 在现有 AgentMonitor 嵌入
-3. **POC 是否坚持"四不"边界？**
-   - 不新增 IPC、不新增数据库、不启动后台 TICK、不迁移 Memory SQLite
-4. **POC 验收通过后是否进入实现层？**
-   - 是 → Layer 4 完整实现
-   - 否 → 保持文档存档
+### V4 下一步：Manual QA
 
-### V5 候选或环境修复项（不占 V4 主线）
+> **Productionization NOT APPROVED**
+> 当前下一步是 Manual QA，不是生产化。
 
-CLI-Anything / Ruflo / Mano-P 调查结果保留，不作为 V4 主线：
+---
 
-| 项目 | 结论 |
+## V5 — 变现检验（⏳ 未启动）
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| AI 漫剧流水线 | ⏳ 未启动 | 分镜/提示词流水线 |
+| 小说分析 + 编剧辅助 | ⏳ 未启动 | 内容分析工具 |
+| Dograh 语音 Agent | ⏳ 未启动 | 语音交互 |
+| 视频软件操作验证 | ⏳ 未启动 | 视频生成流水线 |
+
+⚠️ 启动前需做现状调查。
+
+---
+
+## V6 — 知识自动化补完（⏳ 待启动）
+
+承接 V3 未完成的自动化任务。
+
+详见 [v6-knowledge-automation-plan.md](./v6-knowledge-automation-plan.md)。
+
+| 任务 | 状态 | 可达性 |
+|------|------|--------|
+| V6-1 GBrain typed links + dream cycle | ❌ 未实现 | 暂缓，需设计定义 |
+| V6-2 Horizon cron 自动入 vault | ❌ 未实现 | 现在可做 |
+| V6-3 K3 学习方向每周自动更新 | ❌ 未实现 | 需要前置修复 cron |
+| V6-4 SQLite/Filesystem/Git MCP 配齐 | ⏳ 部分完成 | 现在可做 |
+| V6-5 HCC 流程入主线 | ❌ 未完成 | 暂缓，需产品决策 |
+| V6-6 CodeGraph 重新索引 | ❌ 未验证 | 现在可做，需先验证 MCP |
+
+---
+
+## V7 — 生态工具融合（⏳ 待启动）
+
+承接原 V4 未完成的生态融合任务。
+
+详见 [v7-ecosystem-integration-plan.md](./v7-ecosystem-integration-plan.md)。
+
+| 任务 | 状态 | 阻塞原因 |
+|------|------|---------|
+| V7-1 CLI-Anything | ❌ 未集成 | Python 3.14 TLS 阻塞 |
+| V7-2 Ruflo loop-workers | ❌ 未接入 | Hermes cron 问题在业务层 |
+| V7-3 Mano-P | ⏸️ 候选暂缓 | 当前 M5 16GB 不满足 Mano-P 本地部署内存要求；UI-TARS Desktop 进入候选试点，不入主线 |
+| V7-4 OpenHuman Memory Tree | ❏ 未启动 | 需设计定义 |
+| V7-5 每日知识摘要 | ❌ 未实现 | iLink rate limit 阻塞 |
+
+**注意**：V7 全部任务当前都是"暂缓"，这是正常状态，不代表放弃。
+
+---
+
+## 路线图变更规则
+
+1. **不允许 Agent 自行改路线图**。发现需变更时，必须新建 ADR 说明原因和建议。
+2. **不允许知识库内容自动改路线图**。vault/归档内容只能进入候选池。
+3. **任何路线图变更必须新建 ADR**，并等待用户确认后才能修改本文档。
+4. **已锁定版本不降级**。已完成的任务标记为完成，不得回滚。
+5. **解锁条件**：用户明确说"解锁路线图"后，方可修改本文档。
+
+---
+
+## 当前唯一下一步
+
+> **P0：BaiLongma Manual QA**
+> - POC-2 只读数据验证，cron 失败诊断 screen 手动测试
+> - Productionization NOT APPROVED
+
+---
+
+## 相关文档
+
+| 文档 | 用途 |
 |------|------|
-| CLI-Anything | Safari harness 受本机 Python/TLS 问题阻塞，不写成已集成 |
-| Ruflo loop-workers | 本地未接入 Hermes cron/launchd/MCP，不替代当前 cron |
-| Mano-P | 受硬件前置限制，暂缓 |
-
-## 当前优先级（2026-05-28）
-
-1. **BaiLongma cron 诊断 POC 实现评审** — 按 04-poc-plan.md 评审是否批准实现
-2. **Cron 根因修复** — DeepSeek key 401 + Weixin/iLink rate limited
-3. **Git / upstream 维护** — 继续保持 hermes-pro-main 与 origin/hermes-pro-main 同步
-4. **技术债清扫** — Theme 持久化（TD-PERSIST-001）、Memory SQLite schema（TD-PERSIST-002）、测试覆盖率
-
----
-
-## V5 — 变现检验（⏳ 待启动）
-
-原始计划保留。⚠️ 启动前需做现状调查。
+| [roadmap-locked-2026-05-28.md](./roadmap-locked-2026-05-28.md) | 锁定版路线图完整架构图 |
+| [v6-knowledge-automation-plan.md](./v6-knowledge-automation-plan.md) | V6 知识自动化计划 |
+| [v7-ecosystem-integration-plan.md](./v7-ecosystem-integration-plan.md) | V7 生态工具计划 |
+| [deprecation-candidates-2026-05-28.md](./deprecation-candidates-2026-05-28.md) | 废弃/过时候选清单 |
+| [NEXT_STEP.md](../NEXT_STEP.md) | 下一步行动指南 |
+| [CONTEXT.md](../CONTEXT.md) | 项目上下文 |
+| [v2-status.md](./v2-status.md) | V2 各任务实际状态 |
+| [v3-status.md](./v3-status.md) | V3 各任务实际状态 |
+| [bailongma/README.md](./bailongma/README.md) | BaiLongma 设计索引 |
+| [archive/iteration-plan-v2-updated-2026-05-28.md](./archive/iteration-plan-v2-updated-2026-05-28.md) | 本文件旧版本归档 |
 
 ---
 
-*本文件是 ~/.hermes/docs/Hermes-迭代计划-v2.md 的更新副本（2026-05-28）。*
-*原始文件保留以提供历史参考。*
+*本文档是锁定版路线图兼容索引（2026-05-28 重基线）。唯一计划入口为 roadmap-locked-2026-05-28.md；任何修改必须通过 ADR + 用户确认。*

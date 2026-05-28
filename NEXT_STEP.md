@@ -1,59 +1,68 @@
 # Hermes Pro — 下一步行动指南
 
-> 最后更新：2026-05-26
-> 当前状态：V3 已全部完成（6/6，已提交）；V4 明天启动，今天休息
+> 最后更新：2026-05-28（锁定版路线图重基线 + UI-TARS 候选补充）
+> 当前状态：V1/V2 完成，V3 UI 完成，V4 BaiLongma POC-2 完成，下一步 Manual QA
 
-## 当前状态
+## 当前真实状态
 
-V1.0 → V1.5 → V2 → V3 已全部完成。详见：
-- V1.5 完成报告：[V1.5-COMPLETION.md](./V1.5-COMPLETION.md)
-- V2 状态追踪：[docs/v2-status.md](./docs/v2-status.md)
-- V3 状态追踪：[docs/v3-status.md](./docs/v3-status.md)
-- Confidence 设计：[docs/confidence-design.md](./docs/confidence-design.md)
-- CSS 审计：[docs/css-audit-2026-05-26.md](./docs/css-audit-2026-05-26.md)
-- 归档文档：[docs/archive/README.md](./docs/archive/README.md)
-
-### V2 完成总结
-
-| 任务 | 状态 | 说明 |
+| 版本 | 状态 | 说明 |
 |------|------|------|
-| Theme 选择器 | ✅ 已有完整实现 | 2 套主题 + system 跟随 |
-| AgentMonitor 增强 | ✅ 3 commits | CSS 类化 + i18n + 实时执行面板 |
-| MCP 管理 UI | ✅ 5 commits | 4 IPC + Settings CRUD + i18n |
-| Memory 编辑器 | ✅ 已有完整实现 | CRUD + i18n + 7 providers |
-| BaiLongma 落地 | ⏸️ 移出 V2 | 代码零实现，待设计定义后重新排期 |
+| V1 | ✅ 完成 | 基础可用 |
+| V1.5 | ✅ 完成 | 修复阶段 |
+| V2 | ✅ 4/5 完成 | Theme/AgentMonitor/MCP/Memory；BaiLongma 已移出到 V4 |
+| V3 | ✅ UI完成 | Knowledge/Vault/Recharts/GBrain/Horizon；自动化 backlog 迁移到 V6 |
+| V4 | 🔄 POC-2完成 | BaiLongma Layer 1-3 + POC-1 + POC-2 + typecheck通过；Manual QA 待执行 |
+| V5-V7 | ⏳ 未启动 | 锁定版路线图后续版本 |
 
-## 当前完成：V3（知识赋能）
-
-V3 计划任务：**GBrain 增强 + 知识可视化 + Horizon**
-
-V3 当前进度：
+### V4 BaiLongma 当前进度
 
 | 任务 | 状态 |
 |------|------|
-| V3.1 Knowledge 页面重修 | ✅ 完成 |
-| V3.2 Vault 增强 | ✅ 完成 |
-| V3.3 Recharts 图表升级 | ✅ 完成 |
-| V3.4 Understand → Vault 打通 | ✅ 完成，已提交 |
-| V3.5 GBrain 统计面板 | ✅ 完成，已提交 |
-| V3.6 Horizon 集成面板 | ✅ 完成，已提交 |
+| Layer 1-3 设计文档 | ✅ 完成 |
+| README + POC Plan | ✅ 完成 |
+| POC-1 静态只读 screen | ✅ 完成 |
+| POC-2 真实 cron 只读数据 | ✅ 完成 |
+| npm run typecheck | ✅ 通过 |
+| Manual QA | ⏳ 待执行 |
+| Productionization | ❌ NOT APPROVED |
 
-### 已知的 V3 前置问题
+---
 
-1. **GBrain stats 已接入桌面端** — Gateway `/knowledge/stats` + Knowledge GBrain tab
-2. **pipeline-runs 无自动清理** — V1 限制 #4
-3. **Understand-Anything 已接 vault，但 LLM 仍依赖本地 `ollama run llama3.2` 可用性**
-4. **HCC 阶段 1-4 未在代码中定义**
-5. **BaiLongma** — 需要设计定义后再排期（范围/ACUI 协议/视觉方案/集成方案）
+## 下一步优先级
 
-## 明日计划：V4 启动前调查
+| 优先级 | 任务 | 说明 |
+|--------|------|------|
+| **P0** | BaiLongma Manual QA | POC-2 只读数据验证，cron 失败诊断 screen 手动测试 |
+| **P1** | 路线图锁定确认 | 确认 docs/roadmap-locked-2026-05-28.md 是唯一计划入口 |
+| **P2** | V6 知识自动化任务排序 | 评估 V6-2 Horizon cron / V6-4 MCP 配齐 / V6-6 CodeGraph 的优先级 |
+| **P3** | V7 生态工具前置条件排查 | CLI-Anything Python TLS / iLink rate limit / **Mano-P 硬件不匹配（16GB < 32GB）；UI-TARS Desktop 作为候选试点评估** |
+| **P4** | Cron 根因修复 | DeepSeek key + WeChat/iLink rate limited |
 
-> 今天不再派发实现任务。V4 明天开始，第一步只做现状调查，不直接写代码。
+> **Productionization NOT APPROVED** — 当前下一步是 Manual QA，不是生产化
 
-优先级：
+---
 
-| 优先级 | 任务 | 范围 | 风险 |
-|--------|------|------|------|
-| P0 | V4 启动前现状调查 | CLI-Anything / Mano-P / Ruflo 本地源码、安装、启动、日志、Hermes/MCP/cron/launchd 接入点 | 避免基于旧计划直接开工 |
-| P1 | BaiLongma 设计文档 | 明确范围、ACUI 协议、视觉方案、集成点 | 未定义前不进入实现 |
-| P2 | HANDOFF.md 历史归档清理 | 保留顶部最新事实，归档旧长日志 | 防止 Claude Code 被旧状态误导 |
+## 相关文档
+
+| 文档 | 用途 |
+|------|------|
+| [docs/roadmap-locked-2026-05-28.md](./docs/roadmap-locked-2026-05-28.md) | 锁定版路线图（唯一计划入口） |
+| [docs/v6-knowledge-automation-plan.md](./docs/v6-knowledge-automation-plan.md) | V6 知识自动化计划 |
+| [docs/v7-ecosystem-integration-plan.md](./docs/v7-ecosystem-integration-plan.md) | V7 生态工具计划 |
+| [docs/deprecation-candidates-2026-05-28.md](./docs/deprecation-candidates-2026-05-28.md) | 废弃/过时候选清单 |
+| [docs/v2-status.md](./docs/v2-status.md) | V2 各任务实际状态 |
+| [docs/v3-status.md](./docs/v3-status.md) | V3 各任务实际状态 |
+| [docs/bailongma/README.md](./docs/bailongma/README.md) | BaiLongma 设计索引 |
+
+---
+
+## 路线图锁定规则
+
+- **知识库内容不自动改变路线图**。vault/归档内容只能进入候选池，需用户明确批准。
+- **禁止 Agent 自行改路线图**。任何路线图变更必须新建 ADR + 用户确认。
+- **已完成的版本不得回滚**。除非用户明确说"解锁路线图"。
+- **发现计划 bug 时，Agent 可以报告 Roadmap Bug Report，由用户决定是否修改；不得自行改路线图**。
+
+---
+
+*本文档最后更新：2026-05-28（锁定版路线图重基线 + UI-TARS 候选补充）*
