@@ -270,7 +270,6 @@ body {
 }
 
 /* ----- Loading ----- */
-.loading-screen {
   background: var(--bg-primary);
 }
 
@@ -328,9 +327,6 @@ body {
   gap: 0;
 }
 
-.welcome-logo {
-  border-radius: var(--radius-lg);
-}
 
 .welcome-title {
   font-size: 32px;
@@ -825,24 +821,7 @@ body {
   margin-top: 25px;
 }
 
-.sidebar-brand-icon {
-  width: 30px;
-  height: 30px;
-  background: var(--accent);
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-}
 
-.sidebar-brand-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
 
 .sidebar-nav {
   flex: 1;
@@ -950,36 +929,9 @@ body {
 }
 
 /* Theme Switcher */
-.theme-switcher {
-  display: flex;
-  background: var(--bg-tertiary);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-  gap: 2px;
-}
 
-.theme-switcher-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px 0;
-  border: none;
-  background: transparent;
-  border-radius: 4px;
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: all var(--transition);
-}
 
-.theme-switcher-btn:hover {
-  color: var(--text-secondary);
-}
 
-.theme-switcher-btn.active {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
 
 .content {
   flex: 1;
