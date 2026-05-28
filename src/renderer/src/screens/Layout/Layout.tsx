@@ -379,7 +379,7 @@ function Layout(): React.JSX.Element {
 
         {visitedViews.has("bailongma") && (
           <div style={paneStyle("bailongma")}>
-            <BaiLongma />
+            <BaiLongma profile={activeProfile} />
           </div>
         )}
 

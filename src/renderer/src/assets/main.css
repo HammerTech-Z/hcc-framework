@@ -5845,3 +5845,218 @@ body {
     min-width: 0;
   }
 }
+
+/* Loading state */
+.bailongma-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex: 1;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.bailongma-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-bright);
+  border-top-color: var(--accent-text);
+  border-radius: 50%;
+  animation: bailongma-spin 0.8s linear infinite;
+}
+
+@keyframes bailongma-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error state */
+.bailongma-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+  padding: 40px;
+  text-align: center;
+}
+
+.bailongma-error-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--error-bg);
+  color: var(--error);
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bailongma-error-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bailongma-error-msg {
+  font-size: 13px;
+  color: var(--error);
+  font-family: var(--font-mono);
+  padding: 8px 12px;
+  background: var(--error-bg);
+  border-radius: var(--radius-sm);
+  max-width: 400px;
+  word-break: break-word;
+}
+
+.bailongma-error-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Stats in left panel */
+.bailongma-stats {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.bailongma-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  flex: 1;
+}
+
+.bailongma-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.bailongma-stat-ok {
+  color: var(--success);
+}
+
+.bailongma-stat-err {
+  color: var(--error);
+}
+
+.bailongma-stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Diagnosis card variants */
+.bailongma-diagnosis-ok {
+  background: var(--success-bg);
+  border-color: var(--success);
+}
+
+.bailongma-diagnosis-ok .bailongma-diagnosis-header {
+  color: var(--success);
+}
+
+/* Error type badges */
+.bailongma-error-type-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.bailongma-error-type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.bailongma-error-type-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Failed jobs list */
+.bailongma-failed-list {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.bailongma-failed-list-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.bailongma-failed-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.bailongma-failed-item:last-of-type {
+  border-bottom: none;
+}
+
+.bailongma-failed-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--error-bg);
+  color: var(--error);
+  text-transform: uppercase;
+}
+
+.bailongma-failed-badge[data-type="rate_limited"] {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.bailongma-failed-badge[data-type="permission_required"] {
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+}
+
+.bailongma-failed-badge[data-type="connection_failed"] {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.bailongma-failed-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.bailongma-failed-more {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+}
