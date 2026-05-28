@@ -13,9 +13,9 @@ Accepted
 
 ## Results
 - 候选 19 个(6 security + 13 likely)
-- 实际 pick:5 个(全部 security)
-- 跳过:14 个(冲突涉及 SSH tunnel / Chat 模块 / preload API / 平台特定逻辑)
-- 成功率:26%
+- 实际 pick:6 个(5 security + 1 likely)
+- 跳过:13 个(冲突涉及 SSH tunnel / Chat 模块 / preload API / 平台特定逻辑)
+- 成功率:31.6%
 - Maybe 桶 51 个未执行(基于 Likely 桶低成功率推断)
 
 ## Consequences
