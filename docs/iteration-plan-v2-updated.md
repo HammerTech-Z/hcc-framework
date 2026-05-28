@@ -37,7 +37,7 @@
 | **V1.5** | 修复阶段 | ✅ 已完成 | tag v1.5-final，10 commits |
 | **V2** | 效率提升 | ✅ 4/5 完成 | Theme/AgentMonitor/MCP/Memory 完成，BaiLongma 移出 |
 | **V3** | 知识赋能 | ✅ 已完成（6/6） | Knowledge/Vault/Recharts/Understand→Vault/GBrain/Horizon |
-| **V4** | 生态融合 | 🔍 调查已推进，待决策 | CLI-Anything / Ruflo / Mano-P 已有调查结论；下一步是 BaiLongma 定义或 V3.5 巩固决策 |
+| **V4** | 生态融合 | ✅ 设计闭环完成，POC 待实现评审 | BaiLongma Layer 1-3 + README + cron 诊断 POC Plan 已完成；下一步是只读 POC 实现评审 |
 | **V5** | 变现检验 | ⏳ 待启动 | AI 视频 + 语音 Dograh |
 
 ---
@@ -79,7 +79,7 @@
 | Memory 编辑器 | 待启动 | ✅ 功能已实现 | CRUD + i18n + 容量指示 + 7 providers。底层仍以 `MEMORY.md` 为主，SQLite 迁移是后续技术债 |
 | BaiLongma 落地 | 待启动 | ⏸️ 移出 V2 | 代码零实现，需设计定义后重新排期 |
 
-详见 [docs/v2-status.md](./docs/v2-status.md)
+详见 [docs/v2-status.md](./docs/v2-status.md)。
 
 ---
 
@@ -103,29 +103,52 @@ V3 已在 2026-05-26 全部完成并提交。实际落地范围：
 
 ---
 
-## V4 — 生态融合（🔍 调查已推进，待决策）
+## V4 — BaiLongma 认知编排（✅ 设计闭环完成，POC 待实现评审）
 
-### 调查结论
+### BaiLongma 设计闭环
 
-| 项目 | 源码/安装 | Hermes 集成 | 结论 |
-|------|-----------|-------------|------|
-| CLI-Anything | ✅ 官方入口 + 本地路径已验证 | ❌ Safari harness 受本机 Python/TLS 问题阻塞 | 不写成已集成 |
-| Ruflo loop-workers | ✅ 官方项目 + 子模块真实 | ❌ 本地未接入 Hermes cron/launchd/MCP | 不替代当前 cron |
-| Mano-P | ✅ 受硬件前置限制 | — | 暂缓 |
-| BaiLongma | ❌ 代码零实现 | ❌ ACUI 无正式定义 | 先写范围与角色定义；写不出则 V4 降级为 V3.5 工程巩固 |
+BaiLongma 是 Hermes Pro 的 TICK-aware 任务驾驶舱与认知编排层。Layer 1-4 设计文档已完成：
+
+| 文件 | 内容 |
+|------|------|
+| [docs/bailongma/01-scope-and-role.md](./docs/bailongma/01-scope-and-role.md) | Layer 1 范围与角色、用户旅程、参考机制边界 |
+| [docs/bailongma/02-acui-protocol.md](./docs/bailongma/02-acui-protocol.md) | Layer 2 ACUI 协议：概念、消息格式、组件命令、任务生命周期、错误模型 |
+| [docs/bailongma/03-visual-and-integration.md](./docs/bailongma/03-visual-and-integration.md) | Layer 3 视觉与集成点：三栏布局、产品位置、ACUI→React 映射 |
+| [docs/bailongma/README.md](./docs/bailongma/README.md) | 设计索引与 POC 决策 |
+| [docs/bailongma/04-poc-plan.md](./docs/bailongma/04-poc-plan.md) | cron 失败诊断只读 POC 计划 |
+
+详见 [docs/bailongma/README.md](./docs/bailongma/README.md)。
 
 ### 下一步决策点
 
-1. BaiLongma 范围与角色定义能否产出？
-   - 能 → V4 继续，聚焦 BaiLongma 实现
-   - 不能 → V4 降级为 V3.5 工程巩固
+1. **是否批准 cron 失败诊断只读 POC？**
+   - 批准 → 按 04-poc-plan.md 实现评审
+   - 不批准 → V4 降级为 V3.5 工程巩固
+2. **POC 是否允许新建 BaiLongma screen？**
+   - 允许 → 修改 Layout.tsx，新增 view
+   - 不允许 → 在现有 AgentMonitor 嵌入
+3. **POC 是否坚持"四不"边界？**
+   - 不新增 IPC、不新增数据库、不启动后台 TICK、不迁移 Memory SQLite
+4. **POC 验收通过后是否进入实现层？**
+   - 是 → Layer 4 完整实现
+   - 否 → 保持文档存档
 
-## 当前优先级（2026-05-27）
+### V5 候选或环境修复项（不占 V4 主线）
 
-1. **Git 主线决策** — 是否以 `integrate/upstream-2026-05-27` 作为 Hermes Pro 产品主线
+CLI-Anything / Ruflo / Mano-P 调查结果保留，不作为 V4 主线：
+
+| 项目 | 结论 |
+|------|------|
+| CLI-Anything | Safari harness 受本机 Python/TLS 问题阻塞，不写成已集成 |
+| Ruflo loop-workers | 本地未接入 Hermes cron/launchd/MCP，不替代当前 cron |
+| Mano-P | 受硬件前置限制，暂缓 |
+
+## 当前优先级（2026-05-28）
+
+1. **BaiLongma cron 诊断 POC 实现评审** — 按 04-poc-plan.md 评审是否批准实现
 2. **Cron 根因修复** — DeepSeek key 401 + Weixin/iLink rate limited
-3. **V4 定义决策** — BaiLongma 能定义则 V4 继续，否则降级 V3.5
-4. **技术债清扫** — V1.5 遗留 + SQLite 迁移待定
+3. **Git / upstream 维护** — 继续保持 hermes-pro-main 与 origin/hermes-pro-main 同步
+4. **技术债清扫** — Theme 持久化（TD-PERSIST-001）、Memory SQLite schema（TD-PERSIST-002）、测试覆盖率
 
 ---
 
@@ -135,5 +158,5 @@ V3 已在 2026-05-26 全部完成并提交。实际落地范围：
 
 ---
 
-*本文件是 ~/.hermes/docs/Hermes-迭代计划-v2.md 的更新副本（2026-05-27）。*
+*本文件是 ~/.hermes/docs/Hermes-迭代计划-v2.md 的更新副本（2026-05-28）。*
 *原始文件保留以提供历史参考。*
