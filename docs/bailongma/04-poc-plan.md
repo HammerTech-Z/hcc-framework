@@ -288,7 +288,63 @@ After POC, the following decisions are made:
 
 Memory SQLite migration (TD-PERSIST-002) and TICK background service remain **not** prerequisites. They proceed on their own timelines.
 
-## 10. Rollback Plan
+## 10. Implementation Status (2026-05-28)
+
+### POC Phases Completed
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| POC-1 | Static readonly UI skeleton | Completed |
+| POC-2 | Real cron data via `listCronJobs(true, profile)` | Completed |
+| npm typecheck | `npm run typecheck` passes | Passed |
+| Git push | Pushed to `origin/hermes-pro-main` | Done |
+
+### Actual Implementation (vs Plan)
+
+| Item | Plan | Actual |
+|------|------|--------|
+| BaiLongma.tsx | Created | ✅ Created (280 lines) |
+| Bailongma/index.tsx | Not planned | ✅ Created (export) |
+| Layout.tsx | Add bailongma view | ✅ Added |
+| main.css | Add bailongma-* classes | ✅ Added (~170 new lines) |
+| i18n | Add bailongma labels | ✅ Added (en/zh-CN) |
+| Components | Separate components planned | Simplified: all in BaiLongma.tsx |
+| useACUI hook | Planned | Simplified: local state only |
+| types.ts | Planned | Inlined in BaiLongma.tsx |
+
+### Hard Boundaries Verified
+
+| Boundary | Maintained |
+|----------|-----------|
+| No new IPC handles | ✅ |
+| No src/main changes | ✅ |
+| No src/preload changes | ✅ |
+| No new database tables | ✅ |
+| No writes to cron jobs | ✅ |
+| No writes to Memory/Vault/Knowledge | ✅ |
+| No WeChat send | ✅ |
+| No model inference | ✅ |
+| No TICK service | ✅ |
+| No Memory SQLite migration | ✅ |
+
+### Manual QA Pending
+
+- [ ] Start Hermes Pro app and open BaiLongma
+- [ ] Verify 3-column cockpit renders without overflow
+- [ ] Verify Schedules screen still opens
+- [ ] Verify AgentMonitor screen still opens
+- [ ] Verify cron data displays (total/ok/errors)
+- [ ] Verify error classification works (rate_limited/permission/connection/unknown)
+
+### Productionization
+
+**NOT APPROVED** — BaiLongma POC remains a validation instrument per Section 2. Productionization requires:
+1. Successful manual QA
+2. Layer 4 decision (continue or archive)
+3. New IPC domain decision (if needed)
+4. ACUI registry pattern evaluation
+
+## 11. Rollback Plan
 
 If POC reveals fundamental flaws:
 

@@ -17,7 +17,48 @@ Design documents for the BaiLongma task cockpit and cognitive orchestration laye
 | Layer 1 | Scope and Role | Draft |
 | Layer 2 | ACUI Protocol | Draft |
 | Layer 3 | Visual and Integration | Draft |
-| Layer 4 | POC Implementation | Not started |
+| Layer 4 | POC Implementation | Completed |
+
+## Current Status (2026-05-28)
+
+| Phase | Status |
+|-------|--------|
+| Design loop | Completed |
+| POC-1 (static skeleton) | Completed |
+| POC-2 (readonly cron data) | Completed |
+| Manual QA | Pending |
+
+### Completed Features
+
+- BaiLongma top-level screen: `src/renderer/src/screens/BaiLongma/BaiLongma.tsx`
+- Layout integration: `bailongma` view in NAV_ITEMS with Monitor icon
+- i18n labels: `navigation.bailongma` in en/zh-CN
+- POC badge: "Read-only POC · No new IPC · No writes · Real cron data"
+- Real cron data via `window.hermesAPI.listCronJobs(true, profile)`
+- Error classification: rate_limited / permission_required / connection_failed / unknown
+- Stats display: total / ok / error counts
+- ACUI Event Log generated from real data
+
+### Hard Boundaries Maintained
+
+- ✅ No new IPC handles introduced
+- ✅ No modifications to src/main
+- ✅ No modifications to src/preload
+- ✅ No new database tables
+- ✅ No writes to cron jobs
+- ✅ No writes to Memory / Vault / Knowledge
+- ✅ No WeChat send operations
+- ✅ No model inference calls
+- ✅ No background TICK service
+- ✅ No Memory SQLite migration
+
+### Pending Manual QA
+
+- [ ] Start Hermes Pro app
+- [ ] Open BaiLongma screen from sidebar
+- [ ] Verify no layout overflow in real window
+- [ ] Verify Schedules / AgentMonitor still open correctly
+- [ ] Verify cron data displays (readonly, no write actions)
 
 ## Key Design Decisions
 
