@@ -5549,3 +5549,299 @@ body {
   font-size: 13px;
   margin-bottom: 12px;
 }
+
+/* ========================================================================
+   BAILONGMA POC
+   ======================================================================== */
+.bailongma-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 16px;
+  gap: 12px;
+}
+
+.bailongma-poc-badge {
+  padding: 6px 12px;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--warning);
+  text-align: center;
+}
+
+.bailongma-cockpit {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.bailongma-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.bailongma-panel-left {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.bailongma-panel-center {
+  flex: 1;
+}
+
+.bailongma-panel-right {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.bailongma-panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bailongma-focus-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--accent-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--accent-text);
+}
+
+.bailongma-focus-dot {
+  color: var(--accent);
+}
+
+.bailongma-task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.bailongma-task-goal {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bailongma-task-state {
+  font-size: 12px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.bailongma-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.bailongma-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.bailongma-step-num {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.bailongma-step-done {
+  color: var(--success);
+}
+
+.bailongma-step-running {
+  color: var(--accent);
+  animation: bailongma-pulse 1s ease infinite;
+}
+
+.bailongma-step-pending {
+  color: var(--text-muted);
+}
+
+.bailongma-step-label {
+  color: var(--text-primary);
+}
+
+@keyframes bailongma-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.bailongma-diagnosis-card {
+  margin-top: 12px;
+  background: var(--error-bg);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+.bailongma-diagnosis-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--error);
+  margin-bottom: 8px;
+}
+
+.bailongma-diagnosis-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bailongma-diagnosis-error {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--error);
+}
+
+.bailongma-diagnosis-msg {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bailongma-diagnosis-suggestion {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.bailongma-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.bailongma-brain-section {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bailongma-brain-section:last-child {
+  border-bottom: none;
+}
+
+.bailongma-brain-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.bailongma-status-done {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.bailongma-status-pending {
+  color: var(--text-muted);
+}
+
+.bailongma-artifact-tag {
+  font-size: 10px;
+  color: var(--accent-text);
+  background: var(--accent-subtle);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.bailongma-event-log {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.bailongma-event-log-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.bailongma-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bailongma-event-item {
+  display: flex;
+  gap: 8px;
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border-radius: 3px;
+}
+
+.bailongma-event-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.bailongma-event-time {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.bailongma-event-type {
+  color: var(--accent-text);
+  flex-shrink: 0;
+}
+
+.bailongma-event-desc {
+  color: var(--text-secondary);
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Responsive: narrow screens */
+@media (max-width: 960px) {
+  .bailongma-cockpit {
+    flex-direction: column;
+  }
+
+  .bailongma-panel-left,
+  .bailongma-panel-right {
+    width: auto;
+  }
+
+  .bailongma-panel-center {
+    min-width: 0;
+  }
+}

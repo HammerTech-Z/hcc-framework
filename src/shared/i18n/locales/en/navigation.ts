@@ -15,4 +15,5 @@ export default {
   playbooks: "Playbooks",
   understand: "Understand",
   settings: "Settings",
+  bailongma: "BaiLongma",
 } as const;

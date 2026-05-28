@@ -15,4 +15,5 @@ export default {
   playbooks: "工作流",
   understand: "理解",
   settings: "设置",
+  bailongma: "白龙马",
 } as const;

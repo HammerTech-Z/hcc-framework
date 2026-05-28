@@ -15,6 +15,7 @@ import Understand from "../Understand/Understand";
 import Models from "../Models/Models";
 import Providers from "../Providers/Providers";
 import Schedules from "../Schedules/Schedules";
+import BaiLongma from "../BaiLongma";
 import RemoteNotice from "../../components/RemoteNotice";
 import hermeslogo from "../../assets/hermes.png";
 import {
@@ -53,7 +54,8 @@ type View =
   | "monitor"
   | "playbooks"
   | "understand"
-  | "settings";
+  | "settings"
+  | "bailongma";
 
 const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "chat", icon: ChatBubble, labelKey: "navigation.chat" },
@@ -71,6 +73,7 @@ const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "monitor", icon: Monitor, labelKey: "navigation.monitor" },
   { view: "playbooks", icon: Layers, labelKey: "navigation.playbooks" },
   { view: "understand", icon: Sparkles, labelKey: "navigation.understand" },
+  { view: "bailongma", icon: Monitor, labelKey: "navigation.bailongma" },
   { view: "settings", icon: SettingsIcon, labelKey: "navigation.settings" },
 ];
 
@@ -371,6 +374,12 @@ function Layout(): React.JSX.Element {
         {visitedViews.has("understand") && (
           <div style={paneStyle("understand")}>
             <Understand />
+          </div>
+        )}
+
+        {visitedViews.has("bailongma") && (
+          <div style={paneStyle("bailongma")}>
+            <BaiLongma />
           </div>
         )}
 
