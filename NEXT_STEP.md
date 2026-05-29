@@ -36,7 +36,7 @@
 | ~~**P1**~~ | ~~路线图锁定确认~~ ✅ 已完成 | 确认 docs/roadmap-locked-2026-05-28.md 是唯一计划入口 |
 | **P2** | V6 知识自动化任务排序（进行中）| 评估 V6-2 Horizon cron / V6-4 MCP 配齐 / V6-6 CodeGraph 的优先级 |
 | **P3** | V7 生态工具前置条件排查 | CLI-Anything Python TLS / iLink rate limit / **Mano-P 硬件不匹配（16GB < 32GB）；UI-TARS Desktop 作为候选试点评估** |
-| **P4** | Cron 根因修复 | DeepSeek key + WeChat/iLink rate limited |
+| **P4** | Cron 根因修复 | DeepSeek 401 ✅ RESOLVED；WeChat/iLink rate limit ⚠️ REMAINING（delivery 层，单独处理） |
 
 > **Productionization NOT APPROVED** — P0/P1 已完成，P2 V6 知识自动化任务排序进行中
 
