@@ -24,7 +24,7 @@ flowchart LR
         V1[V1 基础可用<br/>✅ 完成]
         V2[V2 效率提升<br/>✅ 4/5]
         V3[V3 知识赋能<br/>✅ UI完成]
-        V4[V4 BaiLongma<br/>POC-2完成]
+        V4[V4 BaiLongma<br/>POC-2✅+QA PASS]
         V5[V5 变现检验<br/>未启动]
         V6[V6 知识自动化<br/>待启动]
         V7[V7 生态工具融合<br/>待启动]
@@ -89,7 +89,7 @@ flowchart LR
 | **V1.5** | 修复阶段 | ✅ 完成 | IPC审计 + any清理 + execSync→spawn + i18n四语言 |
 | **V2** | 效率提升 | ✅ 4/5 完成 | Theme + AgentMonitor + MCP + Memory；BaiLongma移出 |
 | **V3** | 知识赋能 | ✅ UI完成 | Knowledge页面 + Vault增强 + Recharts + GBrain stats + Horizon tab |
-| **V4** | BaiLongma认知编排 | 🔄 POC-2完成 | Layer 1-3 + POC-1 + POC-2 + typecheck通过；Manual QA待执行 |
+| **V4** | BaiLongma认知编排 | 🔄 POC-2✅+QA PASS | Layer 1-3 + POC-1 + POC-2 + typecheck通过 + Manual QA PASS；Productionization NOT APPROVED |
 | **V5** | 变现检验 | ⏳ 未启动 | AI漫剧 + 语音Dograh |
 | **V6** | 知识自动化补完 | ⏳ 待启动 | 承接V3未完成自动化任务 |
 | **V7** | 生态工具融合 | ⏳ 待启动 | 承接原V4生态工具任务 |
@@ -142,9 +142,11 @@ flowchart LR
 
 ## 当前唯一下一步
 
-> **P0：BaiLongma Manual QA**
-> - POC-2 只读数据验证，cron 失败诊断 screen 手动测试
-> - Productionization NOT APPROVED
+> **P0：BaiLongma Manual QA ✅ 已完成（2026-05-29）**
+>
+> **P1：路线图锁定确认 ✅ 已完成**
+>
+> **P2：V6 知识自动化任务排序（进行中）**
 
 ---
 

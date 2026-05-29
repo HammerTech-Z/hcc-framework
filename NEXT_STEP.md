@@ -1,7 +1,7 @@
 # Hermes Pro — 下一步行动指南
 
-> 最后更新：2026-05-28（锁定版路线图重基线 + UI-TARS 候选补充）
-> 当前状态：V1/V2 完成，V3 UI 完成，V4 BaiLongma POC-2 完成，下一步 Manual QA
+> 最后更新：2026-05-29（BaiLongma POC-2 QA PASS + P0/P1 完成 + P2 进行中）
+> 当前状态：V1/V2 完成，V3 UI 完成，V4 BaiLongma POC-2 ✅+QA PASS，下一步 P2 V6 知识自动化任务排序；Productionization NOT APPROVED
 
 ## 当前真实状态
 
@@ -11,7 +11,7 @@
 | V1.5 | ✅ 完成 | 修复阶段 |
 | V2 | ✅ 4/5 完成 | Theme/AgentMonitor/MCP/Memory；BaiLongma 已移出到 V4 |
 | V3 | ✅ UI完成 | Knowledge/Vault/Recharts/GBrain/Horizon；自动化 backlog 迁移到 V6 |
-| V4 | 🔄 POC-2完成 | BaiLongma Layer 1-3 + POC-1 + POC-2 + typecheck通过；Manual QA 待执行 |
+| V4 | ✅ POC-2+QA PASS | BaiLongma Layer 1-3 + POC-1 + POC-2 + typecheck通过 + Manual QA PASS；Productionization NOT APPROVED |
 | V5-V7 | ⏳ 未启动 | 锁定版路线图后续版本 |
 
 ### V4 BaiLongma 当前进度
@@ -23,8 +23,8 @@
 | POC-1 静态只读 screen | ✅ 完成 |
 | POC-2 真实 cron 只读数据 | ✅ 完成 |
 | npm run typecheck | ✅ 通过 |
-| Manual QA | ⏳ 待执行 |
-| Productionization | ❌ NOT APPROVED |
+| Manual QA | ✅ PASS（2026-05-29）|
+| Productionization | ❌ NOT APPROVED（用户选择3d：暂不批准，只读增强方向）|
 
 ---
 
@@ -32,13 +32,13 @@
 
 | 优先级 | 任务 | 说明 |
 |--------|------|------|
-| **P0** | BaiLongma Manual QA | POC-2 只读数据验证，cron 失败诊断 screen 手动测试 |
-| **P1** | 路线图锁定确认 | 确认 docs/roadmap-locked-2026-05-28.md 是唯一计划入口 |
-| **P2** | V6 知识自动化任务排序 | 评估 V6-2 Horizon cron / V6-4 MCP 配齐 / V6-6 CodeGraph 的优先级 |
+| ~~**P0**~~ | ~~BaiLongma Manual QA~~ ✅ 已完成 | POC-2 只读数据验证，cron 失败诊断 screen 手动测试 |
+| ~~**P1**~~ | ~~路线图锁定确认~~ ✅ 已完成 | 确认 docs/roadmap-locked-2026-05-28.md 是唯一计划入口 |
+| **P2** | V6 知识自动化任务排序（进行中）| 评估 V6-2 Horizon cron / V6-4 MCP 配齐 / V6-6 CodeGraph 的优先级 |
 | **P3** | V7 生态工具前置条件排查 | CLI-Anything Python TLS / iLink rate limit / **Mano-P 硬件不匹配（16GB < 32GB）；UI-TARS Desktop 作为候选试点评估** |
 | **P4** | Cron 根因修复 | DeepSeek key + WeChat/iLink rate limited |
 
-> **Productionization NOT APPROVED** — 当前下一步是 Manual QA，不是生产化
+> **Productionization NOT APPROVED** — P0/P1 已完成，P2 V6 知识自动化任务排序进行中
 
 ---
 
