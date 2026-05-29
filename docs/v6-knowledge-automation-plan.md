@@ -37,10 +37,10 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 |------|------|
 | **原计划来源** | V3 知识赋能，Phase 1a Horizon |
 | **目标** | Horizon 新闻雷达自动抓取→vault，每日评分阈值自动归档 |
-| **当前状态** | ❌ 桌面端只有 read-only tab，无自动化写入 |
+| **当前状态** | 🔄 部分完成 — Horizon cron `deliver: local` 已验证通过，每日 10:00 自动运行，结果写入 vault/wiki/tools/horizon-YYYY-MM-DD.md；桌面端 UI 仍是 read-only tab（不影响自动化） |
 | **缺口** | Horizon MCP 已 clone（~/Horizon-src/），但 cron 未完整对接 vault |
-| **可达性判断** | DeepSeek 阻塞已解除，可进入复验；仍需复验 Horizon MCP、API key 和 cron 写入 vault 路径 |
-| **推荐 Sprint** | V6 早期（需复验） |
+| **可达性判断** | ✅ 已验证 — Horizon cron `deliver: local` 复验 PASS：每日 10:00 自动运行，结果写入 vault/wiki/tools/horizon-YYYY-MM-DD.md |
+| **推荐 Sprint** | V6 早期（✅ 已验证通过）|
 | **验收标准** | 1. Horizon cron 每日自动运行 2. 输出自动写入 vault 3. 评分阈值可见 |
 
 ---
@@ -105,7 +105,7 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 
 | 优先级 | 任务 | 可达性 | 原因 |
 |--------|------|--------|------|
-| P1 | V6-2 Horizon cron 自动入 vault | 需复验 | Horizon MCP 需复验可用性、API key 和 cron 写入路径 |
+| P1 | V6-2 Horizon cron 自动入 vault | ✅ 已验证（local PASS） | deliver: local 已验证，vault 写入正常 |
 | P2 | V6-6 CodeGraph 重新索引 | ✅ 已完成 | nodes=2078, status=ready，search_graph/get_code_snippet 均 PASS |
 | P3 | V6-4 SQLite/Filesystem/Git MCP 配齐 | ✅ 已完成 | Filesystem/Git MCP Connected，runtime validation PASS |
 | P4 | V6-3 K3 学习方向每周自动更新 | 需复验 | DeepSeek 已解除；WeChat delivery 仍受 rate limit |
