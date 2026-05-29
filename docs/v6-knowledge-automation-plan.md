@@ -51,10 +51,10 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 |------|------|
 | **原计划来源** | V3 K线计划，K3 反推学习方向 |
 | **目标** | K3 输出每周自动更新到 vault/wiki/learning/direction.md |
-| **当前状态** | ❌ K3 输出存在，但未形成自动化闭环 |
-| **缺口** | learning-direction.md 存在但 cron 未完整对接 |
-| **可达性判断** | DeepSeek 阻塞已解除，可进入复验；WeChat delivery 仍受 rate limit 影响 |
-| **推荐 Sprint** | V6 中期（需复验；delivery 层限流单独处理） |
+| **当前状态** | ✅ 自动化闭环完成 — K3 cron（a53e70308670）已创建，每周 日22:00 运行，分析 vault 生成学习方向建议并写入 vault/wiki/learning-direction.md；manual trigger 测试 PASS |
+| **缺口** | 已解决 — K3 cron 已对接 learning-direction.md |
+| **可达性判断** | ✅ 已验证 — K3 cron 自动化闭环完成，手动触发测试 PASS，写入 learning-direction.md 成功 |
+| **推荐 Sprint** | V6 中期（✅ 已验证通过）|
 | **验收标准** | 1. K3 每周自动生成方向建议 2. 输出写入 vault/wiki/learning/direction.md |
 
 ---
@@ -108,7 +108,7 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 | P1 | V6-2 Horizon cron 自动入 vault | ✅ 已验证（local PASS） | deliver: local 已验证，vault 写入正常 |
 | P2 | V6-6 CodeGraph 重新索引 | ✅ 已完成 | nodes=2078, status=ready，search_graph/get_code_snippet 均 PASS |
 | P3 | V6-4 SQLite/Filesystem/Git MCP 配齐 | ✅ 已完成 | Filesystem/Git MCP Connected，runtime validation PASS |
-| P4 | V6-3 K3 学习方向每周自动更新 | 需复验 | DeepSeek 已解除；WeChat delivery 仍受 rate limit |
+| P4 | V6-3 K3 学习方向每周自动更新 | ✅ 已验证（local PASS） | K3 cron 已创建，每周 日22:00 运行，手动触发 PASS |
 | P5 | V6-1 GBrain typed links + dream cycle | 暂缓 | 需额外设计定义 |
 | P6 | V6-5 HCC 流程入主线 | 暂缓 | 需产品决策 |
 
