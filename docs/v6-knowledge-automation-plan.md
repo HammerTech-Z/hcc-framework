@@ -93,11 +93,11 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 |------|------|
 | **原计划来源** | V3 Phase 0a CodeGraph |
 | **目标** | codebase-memory-mcp 索引完整，当前 nodes/edges > 0 |
-| **当前状态** | ❌ 存档文档称 177文件/1222节点，实际 nodes/edges=0 |
-| **缺口** | Codex 索引未验证，codebase-memory-mcp 状态未知 |
-| **可达性判断** | 现在可做，需先验证 MCP 服务状态 |
-| **推荐 Sprint** | V6 早期 |
-| **验收标准** | 1. codebase-memory-mcp 索引成功 2. nodes > 0 且 edges > 0 3. 搜索可用 |
+| **当前状态** | ✅ NO-OP ACCEPTED — HCC-20260529-165100-v6-codegraph-diagnostic 诊断通过：nodes=2078, edges=3588, status=ready |
+| **缺口** | 无 — codebase-memory-mcp v0.6.0 已完全可用 |
+| **可达性判断** | 已完成 — no-op accepted，already healthy |
+| **推荐 Sprint** | 不适用 — V6-6 已关闭，后续推进 V6-4 Filesystem/Git MCP 配齐 |
+| **验收标准** | ✅ 全部满足 — 1. 索引成功(nodes=2078) 2. status=ready 3. search_graph/get_code_snippet 均 PASS |
 
 ---
 
