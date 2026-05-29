@@ -65,11 +65,11 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 |------|------|
 | **原计划来源** | V3 Phase 0b MCP Servers |
 | **目标** | 桌面端 Settings MCP 管理 UI 支持 Filesystem + Git MCP |
-| **当前状态** | ⏳ MCP 管理 UI 已有，但 Filesystem/Git MCP 未配齐 |
-| **缺口** | MCP 列表无 Filesystem/Git server |
-| **可达性判断** | 现在可做 |
-| **推荐 Sprint** | V6 早期 |
-| **验收标准** | 1. Settings MCP 列表包含 Filesystem server 2. Settings MCP 列表包含 Git server |
+| **当前状态** | ✅ 已完成 — Filesystem MCP + Git MCP Connected，mcp list + runtime validation + UI check 均通过 |
+| **缺口** | 无 |
+| **可达性判断** | 已完成 |
+| **推荐 Sprint** | 不适用 — V6-4 已关闭 |
+| **验收标准** | ✅ 全部满足 — 1. Settings MCP 列表包含 Filesystem server 2. Settings MCP 列表包含 Git server 3. list/read/status/log 均已验证 |
 
 ---
 
@@ -96,7 +96,7 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 | **当前状态** | ✅ NO-OP ACCEPTED — HCC-20260529-165100-v6-codegraph-diagnostic 诊断通过：nodes=2078, edges=3588, status=ready |
 | **缺口** | 无 — codebase-memory-mcp v0.6.0 已完全可用 |
 | **可达性判断** | 已完成 — no-op accepted，already healthy |
-| **推荐 Sprint** | 不适用 — V6-6 已关闭，后续推进 V6-4 Filesystem/Git MCP 配齐 |
+| **推荐 Sprint** | 不适用 — V6-6 已关闭，后续推进 P4 Cron 根因诊断 |
 | **验收标准** | ✅ 全部满足 — 1. 索引成功(nodes=2078) 2. status=ready 3. search_graph/get_code_snippet 均 PASS |
 
 ---
@@ -107,7 +107,7 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 |--------|------|--------|------|
 | P1 | V6-2 Horizon cron 自动入 vault | 需复验 | Horizon MCP 需复验可用性、API key 和 cron 写入路径 |
 | P2 | V6-6 CodeGraph 重新索引 | 需复验 | 需先验证 MCP 状态 |
-| P3 | V6-4 SQLite/Filesystem/Git MCP 配齐 | 现在可做 | MCP UI 已有，只需配 server |
+| P3 | V6-4 SQLite/Filesystem/Git MCP 配齐 | ✅ 已完成 | Filesystem/Git MCP Connected，runtime validation PASS |
 | P4 | V6-3 K3 学习方向每周自动更新 | 需要前置 | 需先修复 cron 根因 |
 | P5 | V6-1 GBrain typed links + dream cycle | 暂缓 | 需额外设计定义 |
 | P6 | V6-5 HCC 流程入主线 | 暂缓 | 需产品决策 |
