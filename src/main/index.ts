@@ -27,7 +27,9 @@ import {
   discoverMemoryProviders,
   readLogs,
   InstallProgress,
+  HERMES_HOME,
 } from "./installer";
+import { readdir, stat } from "fs/promises";
 import {
   sendMessage,
   startGateway,
@@ -492,8 +494,31 @@ function setupIPC(): void {
     // TODO: implement real events from Hermes logs
     return [];
   });
-  ipcMain.handle("list-vault-files", () => {
-    // TODO: implement real vault directory listing from hermes vault path
+  ipcMain.handle("list-vault-files", async () => {
+    try {
+      const vaultBase = join(HERMES_HOME, "vault");
+      const dirs = await readdir(vaultBase);
+      const result = await Promise.all(
+        dirs.map(async (dir) => {
+          const fullDir = join(vaultBase, dir);
+          const entries = await readdir(fullDir);
+          const files = await Promise.all(
+            entries.map(async (f) => {
+              const fullPath = join(fullDir, f);
+              const stats = await stat(fullPath);
+              return {
+                path: `vault/${dir}/${f}`,
+                name: f,
+                size: stats.size,
+                mtime: stats.mtimeMs,
+              };
+            }),
+          );
+          return { dir, files };
+        }),
+      );
+      return result;
+    } catch { /* ignore */ }
     return [];
   });
 
