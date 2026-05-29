@@ -61,7 +61,7 @@ function PlaybookCard({
 
 function HCCBadge({ stage }: { stage: string }) {
   const stageMap: Record<string, string> = {
-    stage_5_codex_execute: "HCC5",
+    stage_5_claude_code_execute: "HCC5",
     stage_6_review_test: "HCC6",
     stage_7_delivery: "HCC7",
   };

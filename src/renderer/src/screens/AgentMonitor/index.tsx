@@ -268,7 +268,7 @@ export default function AgentMonitor() {
   }
 
   const HCC_COLORS: Record<string, string> = {
-    stage_5_codex_execute: "#7C3AED",
+    stage_5_claude_code_execute: "#7C3AED",
     stage_6_review_test: "#D97706",
     stage_7_delivery: "#059669",
   };

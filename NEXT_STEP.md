@@ -65,4 +65,12 @@
 
 ---
 
-*本文档最后更新：2026-05-28（锁定版路线图重基线 + UI-TARS 候选补充）*
+*本文档最后更新：2026-05-29（HCC v2 主流程更新 + code_dev fallback 规则）*
+
+## HCC v2 代码任务入口（2026-05-29）
+
+以后代码任务默认流程：
+Hermes 需求翻译/调度 -> 用户确认 -> 双视角审计划 -> Claude Code 隔离 worktree 执行 -> Codex 双审+测试 -> 用户交付
+
+仅当 HCC v2 修复 3 次仍无法执行或无法通过测试时，降级到旧 code_dev：
+Hermes -> Karpathy planner -> Claude Code executor -> Bellard reviewer -> deliver/escalate -> reflect

@@ -532,23 +532,26 @@ export type StepEventCallback = (step: PlaybookStep) => void;
 
 // --------------- built-in playbooks ---------------
 
+// HCC v2 default: Hermes -> user confirm -> dual plan review -> Claude Code worktree execution -> Codex review/test -> delivery.
+// code_dev remains a fallback-only playbook after three failed HCC v2 repair attempts.
+
 const codeDevPlaybook: Playbook = {
   id: "code_dev",
-  name: "Code Dev — HCC Code Pipeline",
+  name: "Code Dev — HCC v2 Fallback Pipeline",
   description:
-    "编码闭环：Claude Code 执行 -> 测试审查 -> 交付。映射 HCC 阶段 5-7。",
+    "降级闭环：仅在 HCC v2 修复 3 次仍无法执行时使用；Claude Code 执行 -> Bellard 审核 -> 交付。",
   version: 1,
   steps: [
     {
       id: "setup",
-      label: "阶段 5: 环境准备 & 物理锁检查",
-      hccStage: "stage_5_codex_execute",
+      label: "阶段 5: Claude Code worktree 执行准备",
+      hccStage: "stage_5_claude_code_execute",
       command: "ls -1 src/main/*.ts | head -3",
       cwd: cwd(),
     },
     {
       id: "typecheck",
-      label: "阶段 6: TypeScript 编译审查",
+      label: "阶段 6: Codex TypeScript 双审",
       hccStage: "stage_6_review_test",
       command: "npx tsc --noEmit",
       cwd: cwd(),
@@ -556,7 +559,7 @@ const codeDevPlaybook: Playbook = {
     },
     {
       id: "test",
-      label: "阶段 6: 测试执行",
+      label: "阶段 6: Codex 测试审查",
       hccStage: "stage_6_review_test",
       command: "npx vitest run --reporter=verbose 2>&1 | tail -20",
       cwd: cwd(),
@@ -564,7 +567,7 @@ const codeDevPlaybook: Playbook = {
     },
     {
       id: "build",
-      label: "阶段 6: 构建验证",
+      label: "阶段 6: Codex 构建审查",
       hccStage: "stage_6_review_test",
       command: "npx electron-vite build 2>&1",
       cwd: cwd(),
@@ -589,7 +592,7 @@ const mangaIndustrialPlaybook: Playbook = {
     {
       id: "asset_check",
       label: "资产清单检查",
-      hccStage: "stage_5_codex_execute",
+      hccStage: "stage_5_claude_code_execute",
       command:
         "ls -1 src/renderer/src/assets/ 2>/dev/null | head -10 || echo 'no assets dir'",
     },
