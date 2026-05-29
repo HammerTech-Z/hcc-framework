@@ -1,6 +1,6 @@
 # Hermes Pro — 下一步行动指南
 
-> 最后更新：2026-05-29（BaiLongma POC-2 QA PASS + P0/P1 完成 + P2 进行中）
+|> 最后更新：2026-05-29（V6 主干完成：V6-2/V6-3/V6-4/V6-6 全部 PASS；WeChat/iLink rate limit 移出 V6 归属）
 > 当前状态：V1/V2 完成，V3 UI 完成，V4 BaiLongma POC-2 ✅+QA PASS，下一步 P2 V6 知识自动化任务排序；Productionization NOT APPROVED
 
 ## 当前真实状态
@@ -34,9 +34,9 @@
 |--------|------|------|
 | ~~**P0**~~ | ~~BaiLongma Manual QA~~ ✅ 已完成 | POC-2 只读数据验证，cron 失败诊断 screen 手动测试 |
 | ~~**P1**~~ | ~~路线图锁定确认~~ ✅ 已完成 | 确认 docs/roadmap-locked-2026-05-28.md 是唯一计划入口 |
-| **P2** | V6 知识自动化任务排序（进行中）| 评估 V6-2 Horizon cron / V6-4 MCP 配齐 / V6-6 CodeGraph 的优先级 |
-| **P3** | V7 生态工具前置条件排查 | CLI-Anything Python TLS / iLink rate limit / **Mano-P 硬件不匹配（16GB < 32GB）；UI-TARS Desktop 作为候选试点评估** |
-| **P4** | Cron 根因修复 | DeepSeek 401 ✅ RESOLVED；WeChat/iLink rate limit ⚠️ REMAINING（delivery 层，单独处理） |
+|| ~~**P2**~~ | ~~V6 知识自动化任务排序~~ ✅ 完成 | V6 主干 5/5 完成：V6-2/V6-3 PASS，V6-4/V6-6 完成；DeepSeek 401 RESOLVED |
+| **P3** | WeChat/iLink rate limit 诊断 | delivery 层独立问题，阻塞 weixin deliver cron 的用户触达 |
+| **P4** | V7 生态工具前置条件排查 | CLI-Anything Python TLS / iLink rate limit / **Mano-P 硬件不匹配（16GB < 32GB）；UI-TARS Desktop 作为候选试点评估** |
 
 > **Productionization NOT APPROVED** — P0/P1 已完成，P2 V6 知识自动化任务排序进行中
 
