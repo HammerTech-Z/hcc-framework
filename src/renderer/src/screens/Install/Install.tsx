@@ -30,9 +30,12 @@ function Install({ onComplete, onFailed }: InstallProps): React.JSX.Element {
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const cleanup = window.hermesAPI.onInstallProgress((p) => {
-      setProgress(p);
-    });
+    const cleanup =
+      typeof window.hermesAPI?.onInstallProgress === "function"
+        ? window.hermesAPI.onInstallProgress((p) => {
+            setProgress(p);
+          })
+        : undefined;
 
     window.hermesAPI
       .startInstall()

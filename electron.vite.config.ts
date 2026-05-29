@@ -1,7 +1,6 @@
 import { resolve } from "path";
 import { defineConfig } from "electron-vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   main: {
@@ -13,6 +12,10 @@ export default defineConfig({
   },
   preload: {
     build: {
+      // Bundle all dependencies into preload for Electron sandbox compatibility.
+      // Without this, @electron-toolkit/preload is externalized and fails to load
+      // in sandbox mode because node_modules is inaccessible.
+      externalizeDeps: false,
       rollupOptions: {
         input: {
           index: resolve("src/preload/index.ts"),
@@ -27,6 +30,6 @@ export default defineConfig({
         "@renderer": resolve("src/renderer/src"),
       },
     },
-    plugins: [tailwindcss(), react()],
+    plugins: [react()],
   },
 });

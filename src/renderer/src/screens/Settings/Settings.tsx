@@ -275,13 +275,16 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
     setMigrationLog("");
     setMigrationResult(null);
 
-    const cleanup = window.hermesAPI.onInstallProgress((p) => {
-      setMigrationLog(p.log);
-    });
+    const cleanup =
+      typeof window.hermesAPI?.onInstallProgress === "function"
+        ? window.hermesAPI.onInstallProgress((p) => {
+            setMigrationLog(p.log);
+          })
+        : undefined;
 
     try {
       const result = await window.hermesAPI.runClawMigrate();
-      cleanup();
+      cleanup?.();
       if (result.success) {
         setMigrationResult(t("settings.migrationComplete"));
         setMigrationResultType("success");
@@ -291,7 +294,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         setMigrationResultType("error");
       }
     } catch (err) {
-      cleanup();
+      cleanup?.();
       setMigrationResult(
         (err as Error).message || t("settings.migrationFailed"),
       );
