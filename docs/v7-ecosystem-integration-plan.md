@@ -19,15 +19,15 @@
 
 ### V7-1: CLI-Anything
 
-| 项目 | 内容 |
+|| 项目 | 内容 |
 |------|------|
 | **原计划目标** | 集成 CLI-Anything，实现 Safari MCP 操作 |
-| **当前状态** | ❌ 未集成 |
-| **阻塞原因** | Python 3.14 Homebrew LibreSSL 与 GitHub Pages TLS 握手不兼容，cli-hub 无法 fetch registry.json |
-| **前置条件** | 1. Python TLS 问题解决 2. 或使用 cli-hub 替代方案（npm 直接安装） |
+| **当前状态** | ✅ **MVP PASS** — safari-mcp 已接入 Hermes，smoke test 通过 |
+| **阻塞原因** | ~~Python 3.14 TLS~~ ✅ 已解除（python3.14 OpenSSL 3.6.2）；Safari 需打开 + Safari 设置需勾"允许来自 Apple 事件中的 JavaScript" |
+| **前置条件** | ~~暂缓，需等 Python TLS 问题解决~~ ✅ **MVP PASS 已达成** |
 | **是否保留** | 保留 |
-| **可达性判断** | 暂缓，需等 Python TLS 问题解决或找替代安装路径 |
-| **验收标准** | 1. `cli-anything-safari` 可运行 2. Hermes Pro 可操作 Safari |
+| **可达性判断** | ✅ MVP 已达成 — safari-mcp 已安装，配置到 Hermes，smoke test PASS |
+| **验收标准** | 1. `safari-mcp` 已注册到 Hermes 2. Hermes Pro 可操作 Safari ✅ PASS |
 
 ---
 
@@ -92,7 +92,7 @@
 
 | 优先级 | 任务 | 可达性 | 原因 |
 |--------|------|--------|------|
-| P1 | V7-1 CLI-Anything | 暂缓 | Python TLS 问题阻塞 |
+| P1 | V7-1 CLI-Anything | ✅ MVP PASS | Safari MCP 已接入 Hermes，smoke test PASS |
 | P2 | V7-2 Ruflo loop-workers | 暂缓 | 当前无需替代 |
 | P3 | V7-3 Mano-P | **候选暂缓** | 硬件不匹配（16GB < 32GB），降级为候选 |
 | P4 | V7-4 OpenHuman Memory Tree | 暂缓 | 需设计定义 |
