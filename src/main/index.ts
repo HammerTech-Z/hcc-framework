@@ -34,6 +34,7 @@ import {
   stopGateway,
   isGatewayRunning,
   isRemoteMode,
+  isRemoteOnlyMode,
   testRemoteConnection,
   stopHealthPolling,
   restartGateway,
@@ -353,6 +354,7 @@ function setupIPC(): void {
 
   // Connection mode (local vs remote)
   ipcMain.handle("is-remote-mode", () => isRemoteMode());
+  ipcMain.handle("is-remote-only-mode", () => isRemoteOnlyMode());
   ipcMain.handle("get-connection-config", () => getConnectionConfig());
 
   ipcMain.handle(
@@ -473,6 +475,27 @@ function setupIPC(): void {
     return true;
   });
   ipcMain.handle("gateway-status", () => isGatewayRunning());
+
+  // AgentMonitor handlers — read-only gateway state
+  // Returns null when gateway not running (dev without backend / SSH tunnel)
+  ipcMain.handle("get-gateway-state", () => null);
+  ipcMain.handle("check-gateway-health", () =>
+    isGatewayRunning()
+      ? { status: 200, ok: true } // TODO: implement real health check
+      : { status: 0, ok: false },
+  );
+  ipcMain.handle("get-cron-job-history", (_event, _limit?: number) => {
+    // TODO: implement real cron history from Hermes logs/events
+    return [];
+  });
+  ipcMain.handle("get-events", (_event, _limit?: number) => {
+    // TODO: implement real events from Hermes logs
+    return [];
+  });
+  ipcMain.handle("list-vault-files", () => {
+    // TODO: implement real vault directory listing from hermes vault path
+    return [];
+  });
 
   // Platform toggles (config.yaml platforms section)
   ipcMain.handle("get-platform-enabled", (_event, profile?: string) =>
