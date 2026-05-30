@@ -281,6 +281,9 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
       {/* Agent Memory Entries */}
       {tab === "entries" && (
         <div className="memory-entries">
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
+              来源：~/.hermes/memories/MEMORY.md · 用途：保存 Hermes 对项目、任务、长期事实的记忆
+            </div>
           <div className="memory-entries-header">
             <span className="memory-entries-count">
               {t("memory.entries", { count: data.memory.entries.length })}
@@ -417,6 +420,9 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
       {/* User Profile */}
       {tab === "profile" && (
         <div className="memory-profile">
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
+              来源：~/.hermes/memories/USER.md · 用途：保存用户偏好、长期背景和交互习惯
+            </div>
           <div className="memory-profile-header">
             <span className="memory-profile-hint">
               {t("memory.userProfileHint")}
@@ -462,6 +468,9 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
       {/* Memory Providers */}
       {tab === "providers" && (
         <div className="memory-providers">
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
+              来源：~/.hermes/config.yaml 中的 memory.provider · 用途：选择外部记忆服务或关闭外部记忆接入
+            </div>
           <div className="memory-providers-hint">
             {t("memory.providersHint")}
             {memoryProvider ? (

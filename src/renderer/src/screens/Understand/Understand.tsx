@@ -274,10 +274,27 @@ export default function Understand(): React.JSX.Element {
       {result && <div style={{ marginTop: 16 }}>{renderResult(result)}</div>}
 
       {!result && !error && !loading && (
-        <div className="understand-empty">
-          <FileText size={48} style={{ display: "block", margin: "0 auto 16px", opacity: 0.3 }} />
-          <p>{t("understand.emptyState")}</p>
-        </div>
+        <>
+          <div className="understand-purpose" style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 12 }}>
+            理解模块用于把文本、代码、日志或文档拆解成摘要、关键点、风险、待办，并可沉淀到知识库
+          </div>
+          <div className="understand-examples">
+            <span style={{ fontSize: 13, color: "var(--text-muted)", marginRight: 8 }}>可粘贴：</span>
+            {["会议记录", "项目代码片段", "网页摘录", "失败日志", "技术文档"].map((eg) => (
+              <span key={eg} className="chip" style={{
+                fontSize: 12, padding: "2px 8px", borderRadius: 12,
+                background: "rgba(59,130,246,0.1)", color: "#3B82F6", cursor: "default"
+              }}>{eg}</span>
+            ))}
+          </div>
+          <div className="understand-hint" style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
+            或输入本地文件路径（支持 Markdown / 代码 / 文本）
+          </div>
+          <div className="understand-empty" style={{ marginTop: 24 }}>
+            <FileText size={48} style={{ display: "block", margin: "0 auto 16px", opacity: 0.3 }} />
+            <p>{t("understand.emptyState")}</p>
+          </div>
+        </>
       )}
     </div>
   );

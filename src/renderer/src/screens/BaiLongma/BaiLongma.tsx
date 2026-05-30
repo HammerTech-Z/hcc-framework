@@ -193,7 +193,7 @@ function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
     return (
       <div className="bailongma-container">
         <div className="bailongma-poc-badge">
-          Read-only POC · No new IPC · No writes · Analyzing cron data...
+          只读 POC · 无新增 IPC · 无写入 · 正在分析 cron 数据...
         </div>
         <div className="bailongma-loading">
           <div className="bailongma-spinner" />
@@ -208,13 +208,13 @@ function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
     return (
       <div className="bailongma-container">
         <div className="bailongma-poc-badge">
-          Read-only POC · No new IPC · No writes · Error occurred
+          只读 POC · 无新增 IPC · 无写入 · 出错了
         </div>
         <div className="bailongma-error-state">
           <div className="bailongma-error-icon">!</div>
-          <div className="bailongma-error-title">Failed to load cron jobs</div>
+          <div className="bailongma-error-title">加载 cron 任务失败</div>
           <div className="bailongma-error-msg">{error}</div>
-          <div className="bailongma-error-hint">Read-only mode — no retry or write actions.</div>
+          <div className="bailongma-error-hint">只读模式 — 无法重试或写入</div>
         </div>
       </div>
     );
@@ -225,7 +225,7 @@ function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
     <div className="bailongma-container">
       {/* POC Header */}
       <div className="bailongma-poc-badge">
-        Read-only POC · No new IPC · No writes · Real cron data
+        只读 POC · 无新增 IPC · 无写入 · 真实 Cron 数据
       </div>
 
       {/* 3-Column Cockpit */}

@@ -188,6 +188,14 @@ export function PlaybookRunner() {
         ))}
       </div>
 
+      {playbooks.length === 0 && (
+        <div className="playbooks-empty-hint">
+          <p>当前没有已加载的工作流</p>
+          <p>HCC v2 当前通过 pipeline-runs 文件式闭环运行</p>
+          <p>可在 AgentMonitor 查看 Pipeline Runs</p>
+        </div>
+      )}
+
       {selected && !running && steps.length === 0 && (
         <div className="playbooks-detail">
           <h3 className="playbooks-detail-title">Selected: {selected.name}</h3>
