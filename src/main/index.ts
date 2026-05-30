@@ -218,7 +218,8 @@ function createWindow(): void {
   mainWindow.webContents.on(
     "will-attach-webview",
     (event, webPreferences, params) => {
-      if (!isAllowedWebviewUrl(params.src)) {
+      const allowedWebviewPorts = [getClaw3dPort()];
+      if (!isAllowedWebviewUrl(params.src, allowedWebviewPorts)) {
         event.preventDefault();
         console.warn("[SECURITY] Blocked webview attachment for untrusted URL");
         return;

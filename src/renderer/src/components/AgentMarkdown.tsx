@@ -124,31 +124,40 @@ function CodeBlock({
 }
 
 // Shared Markdown renderer that opens links externally
+function safeMarkdownExternalHref(href: unknown): string | undefined {
+  if (typeof href !== "string") return undefined;
+
+  try {
+    const url = new URL(href);
+    if (!["http:", "https:", "mailto:"].includes(url.protocol)) {
+      return undefined;
+    }
+    return url.href;
+  } catch {
+    return undefined;
+  }
+}
+
 const AgentMarkdown = memo(function AgentMarkdown({ children }: { children: string }): React.JSX.Element {
   return (
     <Markdown
       remarkPlugins={[remarkGfm]}
       components={{
-        a: ({ href, children }) => (
-          <a
-            href={href}
-            onClick={(e) => {
-              e.preventDefault();
-              if (!href) return;
-              try {
-                const url = new URL(href, "https://placeholder.invalid");
-                if (!["http:", "https:", "mailto:"].includes(url.protocol)) {
-                  return;
-                }
-              } catch {
-                return;
-              }
-              window.hermesAPI.openExternal(href);
-            }}
-          >
-            {children}
-          </a>
-        ),
+        a: ({ href, children }) => {
+          const safeHref = safeMarkdownExternalHref(href);
+          return (
+            <a
+              href={safeHref}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!safeHref) return;
+                window.hermesAPI.openExternal(safeHref);
+              }}
+            >
+              {children}
+            </a>
+          );
+        },
         code: ({ className, children, ...props }) => {
           const isInline =
             !className &&
@@ -172,3 +181,4 @@ const AgentMarkdown = memo(function AgentMarkdown({ children }: { children: stri
 
 export { AgentMarkdown };
 export default AgentMarkdown;
+export { safeMarkdownExternalHref };

@@ -26,8 +26,12 @@ describe("Electron main process hardening", () => {
     expect(mainSrc).toContain('webContents.on("will-navigate"');
     expect(mainSrc).toContain('"will-attach-webview"');
     expect(mainSrc).toContain("isAllowedAppNavigationUrl(");
-    expect(mainSrc).toContain("isAllowedWebviewUrl(params.src)");
+    expect(mainSrc).toContain("isAllowedClaw3dWebviewUrl(params.src)");
     expect(mainSrc).toContain("hardenWebviewPreferences(webPreferences)");
+    expect(mainSrc).toContain('"did-attach-webview"');
+    expect(mainSrc).toContain('webviewContents.on("will-navigate"');
+    expect(mainSrc).toContain('webviewContents.on("will-redirect"');
+    expect(mainSrc).toContain("webviewContents.setWindowOpenHandler");
   });
 
   it("routes shell.openExternal through the allowlist helper", () => {
@@ -44,6 +48,20 @@ describe("Electron external URL policy", () => {
     expect(isAllowedExternalUrl("https://example.com/docs")).toBe(true);
     expect(isAllowedExternalUrl("http://localhost:3000")).toBe(true);
     expect(isAllowedExternalUrl("mailto:security@example.com")).toBe(true);
+  });
+
+  it("allows only the safe vscode file action", () => {
+    expect(isAllowedExternalUrl("vscode://file/Users/me/project/file.ts:12")).toBe(
+      true,
+    );
+    expect(isAllowedExternalUrl("vscode://extension/ms-python.python")).toBe(
+      false,
+    );
+    expect(isAllowedExternalUrl("vscode://file/../../.ssh/id_rsa")).toBe(false);
+    expect(isAllowedExternalUrl("vscode://file/%2e%2e/.ssh/id_rsa")).toBe(false);
+    expect(isAllowedExternalUrl("vscode://file/Users/me/file.ts?cmd=run")).toBe(
+      false,
+    );
   });
 
   it("blocks dangerous or ambiguous external URLs", () => {
@@ -100,17 +118,27 @@ describe("Electron app navigation policy", () => {
 
 describe("Electron webview policy", () => {
   it("allows only loopback HTTP URLs on app-controlled ports", () => {
-    expect(isAllowedWebviewUrl("http://localhost:3000")).toBe(true);
-    expect(isAllowedWebviewUrl("http://127.0.0.1:65535/path")).toBe(true);
-    expect(isAllowedWebviewUrl("http://[::1]:3000")).toBe(true);
+    expect(isAllowedWebviewUrl("http://localhost:3000", [3000])).toBe(true);
+    expect(isAllowedWebviewUrl("http://127.0.0.1:3000/path", [3000])).toBe(
+      true,
+    );
+    expect(isAllowedWebviewUrl("http://[::1]:3000", [3000])).toBe(true);
+    expect(isAllowedWebviewUrl("http://127.0.0.1:65535/path", [3000])).toBe(
+      false,
+    );
+    expect(isAllowedWebviewUrl("http://127.0.0.1:3000@evil.com/", [3000])).toBe(
+      false,
+    );
   });
 
   it("blocks remote, privileged, and non-HTTP webview URLs", () => {
-    expect(isAllowedWebviewUrl("https://localhost:3000")).toBe(false);
-    expect(isAllowedWebviewUrl("http://example.com:3000")).toBe(false);
-    expect(isAllowedWebviewUrl("http://localhost:80")).toBe(false);
-    expect(isAllowedWebviewUrl("file:///C:/Users/me/page.html")).toBe(false);
-    expect(isAllowedWebviewUrl("javascript:alert(1)")).toBe(false);
+    expect(isAllowedWebviewUrl("https://localhost:3000", [3000])).toBe(false);
+    expect(isAllowedWebviewUrl("http://example.com:3000", [3000])).toBe(false);
+    expect(isAllowedWebviewUrl("http://localhost:80", [3000])).toBe(false);
+    expect(isAllowedWebviewUrl("file:///C:/Users/me/page.html", [3000])).toBe(
+      false,
+    );
+    expect(isAllowedWebviewUrl("javascript:alert(1)", [3000])).toBe(false);
   });
 
   it("removes privileged webview capabilities before attachment", () => {
