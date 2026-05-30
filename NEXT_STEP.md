@@ -13,8 +13,8 @@
 | V3 | ✅ UI完成 | Knowledge/Vault/Recharts/GBrain/Horizon；自动化 backlog 迁移到 V6 |
 | V4 | ✅ POC-2+QA PASS | BaiLongma Layer 1-3 + POC-1 + POC-2 + typecheck通过 + Manual QA PASS；Productionization NOT APPROVED |
 | V5 | ⏸️ MVP_PARTIAL | TEXT_TO_PROMPT_ASSET_PACK_READY；C1/C2/C3 ✅；C4/C5 等待 API key |
-| V6 | ⏳ 待启动 | 知识自动化补完 |
-| V7 | ✅ PARTIAL_COMPLETE | Safari MCP MVP PASS；browser-use DEFER；Mano-P/UI-TARS/OpenAdapt 待用户授权 |
+| V6 | ✅ MAIN COMPLETE | 主干 5/5 完成；V6-1/V6-5 扩展/产品决策项暂缓 |
+| V7 | ✅ PARTIAL_COMPLETE | Safari MCP MVP PASS；browser-use DEFER；Mano-P/UI-TARS/OpenAdapt 需用户授权 |
 
 ### V4 BaiLongma 当前进度
 
