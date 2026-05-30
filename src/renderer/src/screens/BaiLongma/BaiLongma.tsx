@@ -2,6 +2,11 @@
 // Hard boundaries: no new IPC handles, no writes, read-only via existing preload APIs
 
 import React, { useState, useEffect } from "react";
+import {
+  classifyError,
+  errorTypeLabel,
+  type ErrorType,
+} from "./error-classification";
 
 // Cron Job type from preload API (read-only)
 interface CronJob {
@@ -14,13 +19,11 @@ interface CronJob {
   last_error: string | null;
 }
 
-// Error classification from job.last_error
-type ErrorType = "rate_limited" | "permission_required" | "connection_failed" | "unknown";
-
 interface ClassifiedError {
   jobId: string;
   jobName: string;
   errorType: ErrorType;
+  retryable: boolean;
   rawError: string;
 }
 
@@ -34,39 +37,12 @@ interface EventLogItem {
   desc: string;
 }
 
-// Classify error type from last_error string
-function classifyError(lastError: string | null): ErrorType {
-  if (!lastError) return "unknown";
-  const err = lastError.toLowerCase();
-  if (err.includes("rate limit") || err.includes("rate_limited") || err.includes("429")) {
-    return "rate_limited";
-  }
-  if (err.includes("401") || err.includes("403") || err.includes("unauthorized") ||
-      err.includes("authentication") || err.includes("auth") || err.includes("permission")) {
-    return "permission_required";
-  }
-  if (err.includes("connect") || err.includes("timeout") || err.includes("econnrefused") ||
-      err.includes("enotfound") || err.includes("socket")) {
-    return "connection_failed";
-  }
-  return "unknown";
-}
-
-// Error display text for UI
-function errorTypeLabel(t: ErrorType): string {
-  switch (t) {
-    case "rate_limited": return "Rate Limited";
-    case "permission_required": return "Permission Required";
-    case "connection_failed": return "Connection Failed";
-    default: return "Unknown";
-  }
-}
-
 // Generate summary events from real job data
 function generateSummaryEvents(
   totalJobs: number,
   failedJobs: number,
   errorTypes: Map<ErrorType, number>,
+  retryableJobs: number,
 ): EventLogItem[] {
   const now = new Date();
   const timeStr = now.toLocaleTimeString("en-US", { hour12: false });
@@ -78,14 +54,14 @@ function generateSummaryEvents(
   ];
 
   if (failedJobs > 0) {
-    const rateLimited = errorTypes.get("rate_limited") || 0;
-    const permErrors = errorTypes.get("permission_required") || 0;
-    const connErrors = errorTypes.get("connection_failed") || 0;
+    const errorSummary = Array.from(errorTypes.entries())
+      .map(([type, count]) => `${type}=${count}`)
+      .join(", ");
 
     events.push({
       time: timeStr,
       type: "context.gathered",
-      desc: `loaded ${totalJobs} jobs, ${failedJobs} failed (rate=${rateLimited}, perm=${permErrors}, conn=${connErrors})`,
+      desc: `loaded ${totalJobs} jobs, ${failedJobs} failed (${errorSummary}, retryable=${retryableJobs})`,
     });
     events.push({ time: timeStr, type: "step.state_change", desc: `s-1 → completed` });
     events.push({ time: timeStr, type: "step.state_change", desc: `s-2 → running` });
@@ -166,18 +142,23 @@ function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
   const failedJobs = jobs.filter(
     (j) => j.last_status === "error" || (j.last_error && j.last_error.length > 0),
   );
-  const classifiedErrors: ClassifiedError[] = failedJobs.map((j) => ({
-    jobId: j.id,
-    jobName: j.name,
-    errorType: classifyError(j.last_error),
-    rawError: j.last_error || "unknown",
-  }));
+  const classifiedErrors: ClassifiedError[] = failedJobs.map((j) => {
+    const classification = classifyError(j.last_error);
+    return {
+      jobId: j.id,
+      jobName: j.name,
+      errorType: classification.type,
+      retryable: classification.retryable,
+      rawError: j.last_error || "unknown",
+    };
+  });
 
   // Error type counts for summary
   const errorTypeCounts = new Map<ErrorType, number>();
   classifiedErrors.forEach((e) => {
     errorTypeCounts.set(e.errorType, (errorTypeCounts.get(e.errorType) || 0) + 1);
   });
+  const retryableFailures = classifiedErrors.filter((e) => e.retryable).length;
 
   // Steps always completed in POC view (diagnostic completed)
   const steps = [
@@ -186,7 +167,12 @@ function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
   ];
 
   // Generate summary events based on real data
-  const events = generateSummaryEvents(totalJobs, failedJobs.length, errorTypeCounts);
+  const events = generateSummaryEvents(
+    totalJobs,
+    failedJobs.length,
+    errorTypeCounts,
+    retryableFailures,
+  );
 
   // Loading state
   if (loading) {
@@ -286,7 +272,7 @@ function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
               <div className="bailongma-diagnosis-header">● {failedJobs.length} Failed Jobs</div>
               <div className="bailongma-diagnosis-body">
                 <div className="bailongma-diagnosis-error">
-                  {failedJobs.length} jobs with errors
+                  {failedJobs.length} jobs with errors · {retryableFailures} retryable
                 </div>
                 {Array.from(errorTypeCounts.entries()).map(([type, count]) => (
                   <div key={type} className="bailongma-error-type-row">
@@ -320,6 +306,9 @@ function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
                     {errorTypeLabel(e.errorType).slice(0, 3)}
                   </span>
                   <span className="bailongma-failed-name">{e.jobName}</span>
+                  <span className="bailongma-failed-retryable">
+                    {e.retryable ? "retryable" : "manual"}
+                  </span>
                 </div>
               ))}
               {classifiedErrors.length > 5 && (
