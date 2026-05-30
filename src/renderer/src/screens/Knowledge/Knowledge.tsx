@@ -1,7 +1,9 @@
 import { useState, useCallback } from "react";
 import { Search, Plus, Brain } from "../../assets/icons";
-import { Check, Loader2, FileText, RadioTower } from "lucide-react";
+import { Check, Loader2, FileText, RadioTower, Link } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
+import type { KnowledgeNode, TypedLink } from "../../../../shared/lib/typed-links";
+import { inferTypedLinks } from "../../../../shared/lib/typed-links";
 
 interface SearchResult {
   file: string;
@@ -36,6 +38,228 @@ const DIR_ICON: Record<string, string> = {
   raw: "📋",
 };
 
+// ---------------------------------------------------------------------------
+// TypedLinksView — GBrain read-only typed links tab
+// ---------------------------------------------------------------------------
+
+const REL_TYPE_LABELS: Record<string, string> = {
+  elaborates: "elaborates",
+  supersedes: "supersedes",
+  depends_on: "depends_on",
+  repeats: "repeats",
+};
+
+function TypedLinksView() {
+  const [links, setLinks] = useState<TypedLink[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const loadLinks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Build KnowledgeNode[] from vault files via preload IPC
+      const groups = await window.hermesAPI.listVaultFiles();
+      const nodes: KnowledgeNode[] = [];
+
+      for (const group of groups) {
+        for (const file of group.files) {
+          const result = await window.hermesAPI.readVaultFile(file.path);
+          if (result.content !== undefined) {
+            // Determine kind from path
+            const kind =
+              file.path.includes("/tools/horizon-") || file.name.startsWith("horizon-")
+                ? "horizon_summary"
+                : file.path.includes("/failure-lessons/") || file.name.endsWith(".fl.json")
+                ? "failure_lesson"
+                : file.path.includes("/wiki/understand/") || file.path.includes("understand-")
+                ? "understand_result"
+                : "vault_file";
+
+            // Extract title from filename or frontmatter
+            const title =
+              (result.frontmatter?.title as string) ||
+              file.name.replace(/\.md$/, "").replace(/[-_]/g, " ");
+
+            nodes.push({
+              id: `vault://${file.path}`,
+              kind,
+              title,
+              content: result.content,
+              path: file.path,
+              mtime: file.mtime,
+            });
+          }
+        }
+      }
+
+      const inferred = inferTypedLinks(nodes);
+      setLinks(inferred);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const toggleCollapse = (id: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const grouped = links.reduce<Record<string, TypedLink[]>>((acc, link) => {
+    (acc[link.relationType] ??= []).push(link);
+    return acc;
+  }, {});
+
+  return (
+    <div style={{ padding: "0 16px 16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          {links.length === 0 ? "无推断链接" : `${links.length} 条链接`}
+        </span>
+        <button
+          type="button"
+          onClick={loadLinks}
+          style={{
+            padding: "4px 12px",
+            fontSize: 12,
+            background: "var(--bg-tertiary)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            color: "var(--text-primary)",
+            cursor: "pointer",
+          }}
+        >
+          {loading ? "计算中…" : "刷新"}
+        </button>
+      </div>
+
+      {loading ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: 32 }}>
+          <div className="loading-spinner" />
+        </div>
+      ) : error ? (
+        <div className="knowledge-error">{error}</div>
+      ) : links.length === 0 ? (
+        <p className="knowledge-empty">暂无推断链接</p>
+      ) : (
+        <div>
+          {(["elaborates", "supersedes", "depends_on", "repeats"] as const).map((rel) => {
+            const items = grouped[rel];
+            if (!items?.length) return null;
+            return (
+              <div key={rel} style={{ marginBottom: 20 }}>
+                <div style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--text-muted)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: 8,
+                }}>
+                  {REL_TYPE_LABELS[rel]} ({items.length})
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {items.map((link) => {
+                    const isCollapsed = collapsed.has(link.id);
+                    const isLowConfidence = link.confidence < 0.7;
+                    return (
+                      <div
+                        key={link.id}
+                        className="knowledge-result-item"
+                        style={{ padding: "8px 12px" }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <Link size={12} style={{ flexShrink: 0, color: "var(--accent)" }} />
+                              <span style={{
+                                fontSize: 12,
+                                fontWeight: 500,
+                                color: "var(--text-primary)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}>
+                                {link.sourceId.replace("vault://", "")}
+                              </span>
+                              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>→</span>
+                              <span style={{
+                                fontSize: 12,
+                                color: "var(--text-secondary)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}>
+                                {link.targetId.replace("vault://", "")}
+                              </span>
+                              {isLowConfidence && (
+                                <span style={{
+                                  fontSize: 10,
+                                  padding: "1px 5px",
+                                  background: "var(--warning-bg, rgba(245,158,11,0.15))",
+                                  color: "var(--warning, #f59e0b)",
+                                  borderRadius: 4,
+                                }}>
+                                  低置信
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ marginTop: 4, fontSize: 11, color: "var(--text-muted)", display: "flex", gap: 8 }}>
+                              <span>置信: {link.confidence.toFixed(2)}</span>
+                              {link.createdAt && <span>{new Date(link.createdAt).toLocaleDateString("zh-CN")}</span>}
+                            </div>
+                            {!isCollapsed && (
+                              <div style={{
+                                marginTop: 6,
+                                fontSize: 11,
+                                color: "var(--text-secondary)",
+                                background: "var(--bg-secondary)",
+                                borderRadius: 4,
+                                padding: "4px 8px",
+                                fontStyle: "italic",
+                              }}>
+                                {link.evidence}
+                              </div>
+                            )}
+                          </div>
+                          {link.evidence && (
+                            <button
+                              type="button"
+                              onClick={() => toggleCollapse(link.id)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                fontSize: 10,
+                                color: "var(--text-muted)",
+                                padding: "2px 4px",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {isCollapsed ? "证据" : "隐藏"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function fmtSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -46,7 +270,7 @@ function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-type KnowledgeTab = "search" | "ingest" | "vault" | "gbrain" | "horizon";
+type KnowledgeTab = "search" | "ingest" | "vault" | "gbrain" | "horizon" | "links";
 
 export default function Knowledge() {
   const { t } = useI18n();
@@ -202,6 +426,14 @@ export default function Knowledge() {
         >
           <RadioTower size={14} />
           {t("knowledge.horizon")}
+        </button>
+        <button
+          type="button"
+          onClick={() => { setActiveTab("links"); }}
+          className={`knowledge-tab${activeTab === "links" ? " active" : ""}`}
+        >
+          <Link size={14} />
+          Links
         </button>
       </div>
 
@@ -486,6 +718,10 @@ export default function Knowledge() {
               <p className="knowledge-empty">{t("knowledge.gbrainNoData")}</p>
             )}
           </>
+        )}
+
+        {activeTab === "links" && (
+          <TypedLinksView />
         )}
       </div>
     </div>
