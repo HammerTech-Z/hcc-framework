@@ -56,6 +56,19 @@ interface DailyTrend {
   label: string;
 }
 
+interface PipelineRunInfo {
+  runId: string;
+  taskName: string;
+  status: string;
+  conclusion: string;
+  kind: string;
+  loopType: string;
+  createdAt: string;
+  updatedAt: string;
+  artifactCount: number;
+  artifacts: { name: string; path: string }[];
+}
+
 const PLATFORM_DISPLAY: Record<string, { label: string; icon: string }> = {
   weixin: { label: "微信", icon: "💬" },
   wecom: { label: "企微", icon: "🏢" },
@@ -139,6 +152,7 @@ export default function AgentMonitor() {
     playbookName?: string;
   }
   const [exec, setExec] = useState<ExecState | null>(null);
+  const [pipelineRuns, setPipelineRuns] = useState<PipelineRunInfo[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,6 +180,15 @@ export default function AgentMonitor() {
       }
     }
 
+    async function loadPipelineRuns() {
+      try {
+        const runs = await window.hermesAPI.listPipelineRuns(50);
+        if (!cancelled) setPipelineRuns(runs);
+      } catch {
+        if (!cancelled) setPipelineRuns([]);
+      }
+    }
+
     async function checkHealth(retried = false) {
       try {
         const r = await window.hermesAPI.checkGatewayHealth();
@@ -180,12 +203,15 @@ export default function AgentMonitor() {
     }
 
     load();
+    loadPipelineRuns();
     checkHealth();
     const dataInterval = setInterval(load, 30000);
+    const pipelineInterval = setInterval(loadPipelineRuns, 30000);
     const healthInterval = setInterval(() => checkHealth(), 30000);
     return () => {
       cancelled = true;
       clearInterval(dataInterval);
+      clearInterval(pipelineInterval);
       clearInterval(healthInterval);
     };
   }, []);
@@ -557,6 +583,50 @@ export default function AgentMonitor() {
             <div className="monitor-empty">{t("monitor.events.empty")}</div>
           )}
         </div>
+      </div>
+
+      {/* Pipeline Runs Section */}
+      <div className="settings-section">
+        <div className="settings-section-title">Pipeline Runs</div>
+        {pipelineRuns.length === 0 ? (
+          <div className="monitor-empty">No pipeline runs</div>
+        ) : (
+          <div className="monitor-list">
+            {pipelineRuns.map((run) => (
+              <div key={run.runId} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <span style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--accent)" }}>{run.runId}</span>
+                  <span style={{
+                    fontSize: "10px",
+                    padding: "1px 6px",
+                    borderRadius: "4px",
+                    background: run.status === "completed" ? "#05966922" : run.status === "failed" ? "#DC262622" : "#D9770622",
+                    color: run.status === "completed" ? "#059669" : run.status === "failed" ? "#DC2626" : "#D97706",
+                  }}>
+                    {run.status}
+                  </span>
+                </div>
+                <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--text-primary)", marginBottom: "2px" }}>
+                  {run.taskName || run.runId}
+                </div>
+                {run.conclusion && (
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", marginBottom: "2px" }}>{run.conclusion}</div>
+                )}
+                <div style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  {run.kind && <span>{run.kind}</span>}
+                  {run.createdAt && <span>{new Date(run.createdAt).toLocaleString("zh-CN")}</span>}
+                  <span>{run.artifactCount} artifacts</span>
+                </div>
+                {run.artifacts.length > 0 && (
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
+                    {run.artifacts.slice(0, 3).map((a) => a.name).join(", ")}
+                    {run.artifacts.length > 3 && <span style={{ marginLeft: "4px" }}>+{run.artifacts.length - 3} more</span>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

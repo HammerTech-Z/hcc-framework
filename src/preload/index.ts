@@ -781,6 +781,21 @@ const hermesAPI = {
   checkGatewayHealth: (): Promise<{ status: number; ok: boolean }> =>
     ipcRenderer.invoke("check-gateway-health"),
 
+  // AgentMonitor — pipeline runs listing
+  listPipelineRuns: (limit?: number): Promise<{
+    runId: string;
+    taskName: string;
+    status: string;
+    conclusion: string;
+    kind: string;
+    loopType: string;
+    createdAt: string;
+    updatedAt: string;
+    artifactCount: number;
+    artifacts: { name: string; path: string }[];
+  }[]> =>
+    ipcRenderer.invoke("list-pipeline-runs", limit),
+
   // Knowledge search (direct fetch to gateway)
   knowledgeSearch: (query: string, limit = 10): Promise<{ status: string; results: Array<{ file: string; score: number; preview: string }> }> =>
     fetch(`http://127.0.0.1:8643/knowledge/search?q=${encodeURIComponent(query)}&limit=${limit}`).then(r => r.json()),

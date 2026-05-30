@@ -524,6 +524,20 @@ interface HermesAPI {
   // AgentMonitor — gateway health via main process
   checkGatewayHealth: () => Promise<{ status: number; ok: boolean }>;
 
+  // AgentMonitor — pipeline runs listing
+  listPipelineRuns: (limit?: number) => Promise<{
+    runId: string;
+    taskName: string;
+    status: string;
+    conclusion: string;
+    kind: string;
+    loopType: string;
+    createdAt: string;
+    updatedAt: string;
+    artifactCount: number;
+    artifacts: { name: string; path: string }[];
+  }[]>;
+
   // Knowledge gateway search
   knowledgeSearch: (query: string, limit?: number) => Promise<{
     status: string;

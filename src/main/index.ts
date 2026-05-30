@@ -25,11 +25,12 @@ import {
   runHermesDump,
   listMcpServers,
   discoverMemoryProviders,
-  readLogs,
   InstallProgress,
   HERMES_HOME,
+  readLogs,
 } from "./installer";
-import { readdir, stat } from "fs/promises";
+import { readdir, stat, readFile } from "fs/promises";
+import { existsSync } from "fs";
 import {
   sendMessage,
   startGateway,
@@ -776,6 +777,89 @@ function setupIPC(): void {
   ipcMain.handle("read-logs", (_event, logFile?: string, lines?: number) =>
     readLogs(logFile, lines),
   );
+
+  // Pipeline runs listing
+  ipcMain.handle("list-pipeline-runs", async (_event, limit?: number) => {
+    try {
+      const pipelineBase = join(HERMES_HOME, "pipeline-runs");
+      if (!existsSync(pipelineBase)) return [];
+      const dirs = await readdir(pipelineBase);
+      const safeLimit = typeof limit === "number" && limit >= 1 ? Math.min(limit, 100) : 50;
+      const HCC_dirs = dirs
+        .filter(d => d.startsWith("HCC-"))
+        .sort()
+        .reverse()
+        .slice(0, safeLimit);
+
+      const runs = await Promise.all(
+        HCC_dirs.map(async (runId) => {
+          const runDir = join(pipelineBase, runId);
+          const metaPath = join(runDir, "run-metadata.json");
+
+          let runInfo: {
+            runId: string;
+            taskName: string;
+            status: string;
+            conclusion: string;
+            kind: string;
+            loopType: string;
+            createdAt: string;
+            updatedAt: string;
+            artifactCount: number;
+            artifacts: { name: string; path: string }[];
+          } = {
+            runId,
+            taskName: runId,
+            status: "unknown",
+            conclusion: "",
+            kind: "",
+            loopType: "",
+            createdAt: "",
+            updatedAt: "",
+            artifactCount: 0,
+            artifacts: [],
+          };
+
+          try {
+            if (existsSync(metaPath)) {
+              const meta = JSON.parse(await readFile(metaPath, "utf-8"));
+              runInfo = {
+                runId: meta.run_id || runId,
+                taskName: meta.task || runId,
+                status: meta.status || "unknown",
+                conclusion: meta.结论 || meta.conclusion || "",
+                kind: meta.闭环类型 || meta.kind || "",
+                loopType: meta.loopType || "",
+                createdAt: meta.创建时间 || meta.createdAt || "",
+                updatedAt: meta.完成时间 || meta.updatedAt || meta.createdAt || "",
+                artifactCount: 0,
+                artifacts: [],
+              };
+            }
+          } catch {
+            // metadata parse failed — use fallback above
+          }
+
+          try {
+            const files = await readdir(runDir);
+            const artifacts = files
+              .filter(f => f.endsWith(".md") || f.endsWith(".json"))
+              .map(f => ({ name: f, path: join(runDir, f) }));
+            runInfo.artifactCount = artifacts.length;
+            runInfo.artifacts = artifacts;
+          } catch {
+            // ignore artifact listing error
+          }
+
+          return runInfo;
+        })
+      );
+
+      return runs;
+    } catch {
+      return [];
+    }
+  });
 }
 
 function buildMenu(): void {
