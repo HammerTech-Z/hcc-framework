@@ -16,4 +16,5 @@ export default {
   understand: "理解",
   settings: "设置",
   bailongma: "白龙马",
+  hccCockpit: "HCC 驾驶舱",
 } as const;

@@ -16,6 +16,7 @@ import Models from "../Models/Models";
 import Providers from "../Providers/Providers";
 import Schedules from "../Schedules/Schedules";
 import BaiLongma from "../BaiLongma";
+import HccCockpit from "../HccCockpit";
 import RemoteNotice from "../../components/RemoteNotice";
 import hermeslogo from "../../assets/hermes.png";
 import {
@@ -54,6 +55,7 @@ type View =
   | "monitor"
   | "playbooks"
   | "understand"
+  | "hccCockpit"
   | "settings"
   | "bailongma";
 
@@ -74,6 +76,7 @@ const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
   { view: "playbooks", icon: Layers, labelKey: "navigation.playbooks" },
   { view: "understand", icon: Sparkles, labelKey: "navigation.understand" },
   { view: "bailongma", icon: Monitor, labelKey: "navigation.bailongma" },
+  { view: "hccCockpit", icon: Monitor, labelKey: "navigation.hccCockpit" },
   { view: "settings", icon: SettingsIcon, labelKey: "navigation.settings" },
 ];
 
@@ -380,6 +383,12 @@ function Layout(): React.JSX.Element {
         {visitedViews.has("bailongma") && (
           <div style={paneStyle("bailongma")}>
             <BaiLongma profile={activeProfile} />
+          </div>
+        )}
+
+        {visitedViews.has("hccCockpit") && (
+          <div style={paneStyle("hccCockpit")}>
+            <HccCockpit />
           </div>
         )}
 

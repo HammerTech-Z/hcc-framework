@@ -12,5 +12,9 @@ export default {
   schedules: "Programaciones",
   gateway: "Gateway",
   monitor: "Monitor",
+  playbooks: "Playbooks",
+  understand: "Understand",
+  bailongma: "BaiLongma",
+  hccCockpit: "HCC Cockpit",
   settings: "Configuración",
 } as const;

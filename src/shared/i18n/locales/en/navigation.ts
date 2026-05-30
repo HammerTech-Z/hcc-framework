@@ -16,4 +16,5 @@ export default {
   understand: "Understand",
   settings: "Settings",
   bailongma: "BaiLongma",
+  hccCockpit: "HCC Cockpit",
 } as const;

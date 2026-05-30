@@ -6522,10 +6522,13 @@ body {
 }
 
 .hcc-cockpit-blocker {
-  padding: 8px;
+  padding: 8px 10px;
   background: var(--bg-tertiary);
-  border-left: 2px solid var(--warning);
-  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--warning);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
 
 .hcc-cockpit-empty {
