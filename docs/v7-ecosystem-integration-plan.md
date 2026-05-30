@@ -128,11 +128,13 @@ GUI-VLA 方向（Mano-P 的替代方案）进入候选池，不直接进入 V7 �
 
 ### browser-use
 
-| 项目 | 内容 |
+|| 项目 | 内容 |
 |------|------|
 | **定位** | 浏览器自动化候选，不覆盖完整桌面 GUI |
 | **本地适配** | 适合 Web 自动化任务 |
-| **状态** | 候选试点，不覆盖完整桌面 GUI |
+| **状态** | **DEFER** — 评估完成，等待 Safari MCP 验证后再评估必要性 |
+| **推荐理由** | browser-use-sdk 云端 API 是默认（需 API key）；Chrome + Playwright 额外依赖；Safari MCP 已满足浏览器控制需求 |
+| **DEFER 条件** | Safari MCP 自然运行验证后 + 用户有明确非 Safari 需求 + 云端 API 成本可控 |
 | **试点条件** | ADR + 用户确认后才能入主线 |
 
 ---
