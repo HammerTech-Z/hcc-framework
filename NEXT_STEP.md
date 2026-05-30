@@ -35,7 +35,7 @@
 | ~~**P0**~~ | ~~BaiLongma Manual QA~~ ✅ 已完成 | POC-2 只读数据验证，cron 失败诊断 screen 手动测试 |
 | ~~**P1**~~ | ~~路线图锁定确认~~ ✅ 已完成 | 确认 docs/roadmap-locked-2026-05-28.md 是唯一计划入口 |
 || ~~**P2**~~ | ~~V6 知识自动化任务排序~~ ✅ 完成 | V6 主干 5/5 完成：V6-2/V6-3 PASS，V6-4/V6-6 完成；DeepSeek 401 RESOLVED |
-| **P3** | WeChat/iLink rate limit 诊断 | Delivery/Reliability 独立任务池 — 阻塞 weixin deliver cron 用户触达；[ADR-20260530](./docs/adr/ADR-20260530-v7-5-delivery-unbind.md) |
+| **P3** | WeChat/iLink rate limit 诊断+修复 | Delivery/Reliability 独立任务池 — 诊断完成（根因：CONFIRMED iLink账号级rate limit）；修复方案A已执行（错开4个job schedule）；**mitigated_pending_observation** — 等待2026-05-31 22:10后首次自然运行验证；[ADR-20260530](./docs/adr/ADR-20260530-v7-5-delivery-unbind.md) |
 | **P4** | V7 生态工具前置条件排查 | CLI-Anything Python TLS / iLink rate limit / **Mano-P 硬件不匹配（16GB < 32GB）；UI-TARS Desktop 作为候选试点评估** |
 
 > **Productionization NOT APPROVED** — P0/P1 已完成，P2 V6 知识自动化任务排序进行中
