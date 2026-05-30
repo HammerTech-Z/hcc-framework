@@ -25,9 +25,9 @@ flowchart LR
         V2[V2 效率提升<br/>✅ 4/5]
         V3[V3 知识赋能<br/>✅ UI完成]
         V4[V4 BaiLongma<br/>POC-2✅+QA PASS]
-        V5[V5 变现检验<br/>未启动]
-        V6[V6 知识自动化<br/>待启动]
-        V7[V7 生态工具融合<br/>待启动]
+        V5[V5 变现检验<br/>⏸️ MVP_PARTIAL]
+        V6[V6 知识自动化<br/>✅ MAIN COMPLETE]
+        V7[V7 生态工具融合<br/>✅ PARTIAL_COMPLETE]
     end
 
     V1 --> V2 --> V3 --> V4 --> V5 --> V6 --> V7
@@ -63,9 +63,9 @@ flowchart LR
     style V2 fill:#90EE90
     style V3 fill:#90EE90
     style V4 fill:#98FB98
-    style V5 fill:#D3D3D3
-    style V6 fill:#D3D3D3
-    style V7 fill:#D3D3D3
+    style V5 fill:#FFFACD
+    style V6 fill:#90EE90
+    style V7 fill:#98FB98
     style OLD_V4 fill:#FFE4B5
     style CANDIDATE fill:#E0E0E0
     style APPROVAL fill:#E8F4FD
@@ -90,9 +90,9 @@ flowchart LR
 | **V2** | 效率提升 | ✅ 4/5 完成 | Theme + AgentMonitor + MCP + Memory；BaiLongma移出 |
 | **V3** | 知识赋能 | ✅ UI完成 | Knowledge页面 + Vault增强 + Recharts + GBrain stats + Horizon tab |
 | **V4** | BaiLongma认知编排 | 🔄 POC-2✅+QA PASS | Layer 1-3 + POC-1 + POC-2 + typecheck通过 + Manual QA PASS；Productionization NOT APPROVED |
-| **V5** | 变现检验 | ⏳ 未启动 | AI漫剧 + 语音Dograh |
-| **V6** | 知识自动化补完 | ⏳ 待启动 | 承接V3未完成自动化任务 |
-| **V7** | 生态工具融合 | ⏳ 待启动 | 承接原V4生态工具任务 |
+| **V5** | 变现检验 | ⏸️ MVP_PARTIAL | C1/C2/C3 ✅；C4/C5 等待 API key；Dograh/TTS 待替代方案 |
+| **V6** | 知识自动化补完 | ✅ MAIN COMPLETE | 主干 5/5 完成；V6-1/V6-5 扩展/决策项待定 |
+| **V7** | 生态工具融合 | ✅ PARTIAL_COMPLETE | Safari MCP MVP PASS；browser-use DEFER；Ruflo/Mano-P/UI-TARS 暂缓 |
 
 ---
 
@@ -121,7 +121,7 @@ flowchart LR
 | Ruflo loop-workers | ❌ 未接入 | V7 | Hermes cron问题在业务层，非调度层 |
 | Mano-P | ⏸️ 候选暂缓 | V7 | 候选暂缓：当前M5 16GB不满足Mano-P本地部署内存要求（需M4+ 32GB） |
 | OpenHuman Memory Tree | ❏ 未启动 | V7 | 从未进入实施 |
-| 每日知识摘要自动推送 | ❌ 未实现 | V7 | WeChat delivery受rate limit阻塞 |
+| 每日知识摘要自动推送 | ❌ 未实现 | ~~V7~~ → Delivery | V7-5 已从 V7 主线解绑，归入 Delivery/Reliability 独立任务池（见 ADR-20260530） |
 
 **GUI-VLA 方向备注**：Mano-P 暂缓，UI-TARS Desktop 进入候选池，需单独试点验证后才能进入锁定路线图。
 
@@ -146,7 +146,7 @@ flowchart LR
 >
 > **P1：路线图锁定确认 ✅ 已完成**
 >
-> **P2：V6 知识自动化任务排序（进行中）**
+> **✅ P2：V6 MAIN COMPLETE（V6-1/V6-5 扩展/决策项暂缓）**
 
 ---
 
