@@ -89,7 +89,7 @@ flowchart LR
 | **V1.5** | 修复阶段 | ✅ 完成 | IPC审计 + any清理 + execSync→spawn + i18n四语言 |
 | **V2** | 效率提升 | ✅ 4/5 完成 | Theme + AgentMonitor + MCP + Memory；BaiLongma移出 |
 | **V3** | 知识赋能 | ✅ UI完成 | Knowledge页面 + Vault增强 + Recharts + GBrain stats + Horizon tab |
-| **V4** | BaiLongma认知编排 | 🔄 POC-2✅+QA PASS | Layer 1-3 + POC-1 + POC-2 + typecheck通过 + Manual QA PASS；Productionization NOT APPROVED |
+| **V4** | BaiLongma认知编排 | ✅ POC-2+QA PASS | Layer 1-3 + POC-1 + POC-2 + typecheck通过 + Manual QA PASS；Productionization NOT APPROVED |
 | **V5** | 变现检验 | ⏸️ MVP_PARTIAL | C1/C2/C3 ✅；C4/C5 等待 API key；Dograh/TTS 待替代方案 |
 | **V6** | 知识自动化补完 | ✅ MAIN COMPLETE | 主干 5/5 完成；V6-1/V6-5 扩展/决策项待定 |
 | **V7** | 生态工具融合 | ✅ PARTIAL_COMPLETE | Safari MCP MVP PASS；browser-use DEFER；Ruflo/Mano-P/UI-TARS 暂缓 |
@@ -98,16 +98,16 @@ flowchart LR
 
 ## V3 未完成 → V6 映射表
 
-原 V3 计划中**UI已完成，自动化未完成**的内容：
+原 V3 计划中 UI 已完成、自动化后续迁移到 V6 的内容。V6 主干已完成，剩余仅为扩展/产品决策项：
 
 | 原任务 | 当前状态 | 迁移到V6 | 原因 |
 |--------|---------|---------|------|
-| GBrain typed links + dream cycle | ❌ 未实现 | V6 | 需额外设计，未进入V3实施 |
-| Horizon cron 自动入vault + 评分阈值 | ❌ 未实现 | V6 | 桌面端只有read-only tab，无自动化 |
-| K3 学习方向每周自动更新 | ❌ 未实现 | V6 | cron存在但K3任务未完成自动化闭环 |
-| SQLite/Filesystem/Git MCP 配齐 | ⏳ 部分完成 | V6 | MCP UI已有，但Filesystem/Git MCP未配齐 |
-| HCC流程入主线 | ❌ 未完成 | V6 | 阶段1-4未在代码中定义 |
-| CodeGraph / codebase-memory-mcp 重新索引 | ❌ 未验证 | V6 | 存档文档称177文件/1222节点，实际nodes/edges=0 |
+| GBrain typed links + dream cycle | ❌ 未实现 | V6 扩展 | 需额外产品设计，未进入主干实施 |
+| Horizon cron 自动入vault + 评分阈值 | ✅ 已验证 | V6 主干 | cron deliver:local PASS，输出写入 vault |
+| K3 学习方向每周自动更新 | ✅ 已验证 | V6 主干 | K3 cron 已创建，manual trigger PASS |
+| SQLite/Filesystem/Git MCP 配齐 | ✅ 已完成 | V6 主干 | Filesystem/Git MCP Connected，runtime validation PASS |
+| HCC流程入主线 | ⏸️ 产品决策 | V6 扩展 | 阶段1-4是否代码化需用户确认 |
+| CodeGraph / codebase-memory-mcp 重新索引 | ✅ 已验证 | V6 主干 | nodes=2078, edges=3588, status=ready |
 
 详见 [v6-knowledge-automation-plan.md](./v6-knowledge-automation-plan.md)
 
@@ -117,13 +117,15 @@ flowchart LR
 
 | 原任务 | 当前状态 | 迁移到V7 | 原因 |
 |--------|---------|---------|------|
-| CLI-Anything | ❌ 未集成 | V7 | Python 3.14 TLS阻塞cli-hub安装 |
-| Ruflo loop-workers | ❌ 未接入 | V7 | Hermes cron问题在业务层，非调度层 |
+| CLI-Anything / Safari MCP | ✅ MVP PASS | V7 | Safari MCP 已接入 Hermes，smoke test PASS |
+| Ruflo loop-workers | ⏸️ 暂缓 | V7 候选 | Hermes cron问题在业务层，非调度层；只借鉴 worker taxonomy，不替换 cron |
 | Mano-P | ⏸️ 候选暂缓 | V7 | 候选暂缓：当前M5 16GB不满足Mano-P本地部署内存要求（需M4+ 32GB） |
-| OpenHuman Memory Tree | ❏ 未启动 | V7 | 从未进入实施 |
+| OpenHuman Memory Tree | ⏸️ 架构候选 | V7 候选 | 从未进入实施；可借鉴 Memory Tree/TokenJuice，需设计定义 |
 | 每日知识摘要自动推送 | ❌ 未实现 | ~~V7~~ → Delivery | V7-5 已从 V7 主线解绑，归入 Delivery/Reliability 独立任务池（见 ADR-20260530） |
 
 **GUI-VLA 方向备注**：Mano-P 暂缓，UI-TARS Desktop 进入候选池，需单独试点验证后才能进入锁定路线图。
+
+**外部 Agent 能力萃取备注**：OpenClaw sandbox/allowlist、OpenHuman Memory Tree/TokenJuice、Ruflo worker taxonomy 已形成 ADR 草案；未获用户批准前只保留为候选或架构借鉴，不直接进入锁定主线。
 
 详见 [v7-ecosystem-integration-plan.md](./v7-ecosystem-integration-plan.md)
 

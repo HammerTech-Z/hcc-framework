@@ -2,7 +2,7 @@
 
 > 版本：V6
 > 继承自：V3 未完成的自动化任务
-> 状态：进行中（V6-4/V6-6 已完成；DeepSeek 阻塞已解除；V6-2/V6-3 待复验）
+> 状态：✅ MAIN COMPLETE（V6 主干 5/5 完成；V6-1/V6-5 为扩展/产品决策项）
 > 锁定：本文档是锁定路线图的一部分，变更需 ADR + 用户确认
 
 ---
@@ -11,7 +11,7 @@
 
 **把 V3 的 UI 展示层升级成真实自动化知识飞轮。**
 
-V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、Horizon tab 等 UI 展示层，但自动化飞轮未闭环。本阶段承接 V3 的自动化缺口，让知识系统真正运转起来。
+V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、Horizon tab 等 UI 展示层。V6 已补齐主干自动化能力；剩余 GBrain typed links/dream cycle 与 HCC mainline 属于扩展/产品决策项。
 
 ---
 
@@ -38,7 +38,7 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 | **原计划来源** | V3 知识赋能，Phase 1a Horizon |
 | **目标** | Horizon 新闻雷达自动抓取→vault，每日评分阈值自动归档 |
 | **当前状态** | 🔄 部分完成 — Horizon cron `deliver: local` 已验证通过，每日 10:00 自动运行，结果写入 vault/wiki/tools/horizon-YYYY-MM-DD.md；桌面端 UI 仍是 read-only tab（不影响自动化） |
-| **缺口** | Horizon MCP 已 clone（~/Horizon-src/），但 cron 未完整对接 vault |
+| **缺口** | 已解决 — cron deliver:local 已对接 vault 输出 |
 | **可达性判断** | ✅ 已验证 — Horizon cron `deliver: local` 复验 PASS：每日 10:00 自动运行，结果写入 vault/wiki/tools/horizon-YYYY-MM-DD.md |
 | **推荐 Sprint** | V6 早期（✅ 已验证通过）|
 | **验收标准** | 1. Horizon cron 每日自动运行 2. 输出自动写入 vault 3. 评分阈值可见 |
@@ -105,12 +105,12 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 
 | 优先级 | 任务 | 可达性 | 原因 |
 |--------|------|--------|------|
-| P1 | V6-2 Horizon cron 自动入 vault | ✅ 已验证（local PASS） | deliver: local 已验证，vault 写入正常 |
-| P2 | V6-6 CodeGraph 重新索引 | ✅ 已完成 | nodes=2078, status=ready，search_graph/get_code_snippet 均 PASS |
-| P3 | V6-4 SQLite/Filesystem/Git MCP 配齐 | ✅ 已完成 | Filesystem/Git MCP Connected，runtime validation PASS |
-| P4 | V6-3 K3 学习方向每周自动更新 | ✅ 已验证（local PASS） | K3 cron 已创建，每周 日22:00 运行，手动触发 PASS |
-| P5 | V6-1 GBrain typed links + dream cycle | 暂缓 | 需额外设计定义 |
-| P6 | V6-5 HCC 流程入主线 | 暂缓 | 需产品决策 |
+| P1 | V6-1 GBrain typed links + dream cycle | 暂缓 | 当前知识主链路唯一真实瓶颈，需产品/数据模型设计 |
+| P2 | V6-5 HCC 流程入主线 | 暂缓 | 需产品决策；可结合 Ruflo worker taxonomy 做 ADR |
+| ✅ | V6-2 Horizon cron 自动入 vault | 已完成 | deliver: local 已验证，vault 写入正常 |
+| ✅ | V6-3 K3 学习方向每周自动更新 | 已完成 | K3 cron 已创建，每周 日22:00 运行，手动触发 PASS |
+| ✅ | V6-4 SQLite/Filesystem/Git MCP 配齐 | 已完成 | Filesystem/Git MCP Connected，runtime validation PASS |
+| ✅ | V6-6 CodeGraph 重新索引 | 已完成 | nodes=2078, status=ready，search_graph/get_code_snippet 均 PASS |
 
 ---
 
@@ -118,7 +118,7 @@ V3 完成了 Knowledge 页面、Vault 增强、Recharts 图表、GBrain stats、
 
 1. **Cron 根因修复** — DeepSeek 401 ✅ RESOLVED；WeChat/iLink rate limit ⚠️ REMAINING（delivery 层，单独诊断，不阻塞 V6-2 local/vault 复验）
 2. **MCP 服务状态验证** — codebase-memory-mcp / Horizon 需先确认可用
-3. **产品决策** — HCC 阶段 1-4 是否需要完整实现需用户确认
+3. **产品决策** — GBrain typed links/dream cycle 数据模型、HCC 阶段 1-4 是否需要完整实现需用户确认
 
 ---
 

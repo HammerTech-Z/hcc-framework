@@ -1,7 +1,7 @@
 # Hermes Pro — 下一步行动指南
 
-| 最后更新 | 2026-05-30（V5 存档：TEXT_TO_PROMPT_ASSET_PACK_READY；V7 PARTIAL COMPLETE；Safari MCP MVP PASS；WeChat/iLink mitigated_pending_observation）|
-| 当前状态 | V1/V2 完成，V3 UI 完成，V4 BaiLongma POC-2 ✅+QA PASS；V7 PARTIAL COMPLETE（核心 MVP Safari MCP 完成）；Productionization NOT APPROVED |
+| 最后更新 | 2026-05-30（HCC Cockpit read-only 已提交；外部 Agent 能力萃取已归档；V7 PARTIAL COMPLETE；WeChat/iLink mitigated_pending_observation）|
+| 当前状态 | V1/V2 完成，V3 UI 完成，V4 BaiLongma POC-2 ✅+QA PASS；HCC Cockpit read-only 已提交；V7 PARTIAL COMPLETE；Productionization NOT APPROVED |
 
 ## 当前真实状态
 
@@ -36,11 +36,12 @@
 |--------|------|------|
 | ~~**P0**~~ | ~~BaiLongma Manual QA~~ ✅ 已完成 | POC-2 只读数据验证，cron 失败诊断 screen 手动测试 |
 | ~~**P1**~~ | ~~路线图锁定确认~~ ✅ 已完成 | 确认 docs/roadmap-locked-2026-05-28.md 是唯一计划入口 |
-|| ~~**P2**~~ | ~~V6 知识自动化任务排序~~ ✅ 完成 | V6 主干 5/5 完成：V6-2/V6-3 PASS，V6-4/V6-6 完成；DeepSeek 401 RESOLVED |
+| ~~**P2**~~ | ~~V6 知识自动化任务排序~~ ✅ 完成 | V6 主干 5/5 完成：V6-2/V6-3 PASS，V6-4/V6-6 完成；DeepSeek 401 RESOLVED |
 | **P3** | WeChat/iLink rate limit 诊断+修复 | Delivery/Reliability 独立任务池 — 诊断完成（根因：CONFIRMED iLink账号级rate limit）；修复方案A已执行（错开4个job schedule）；**mitigated_pending_observation** — 等待2026-05-31 22:10后首次自然运行验证；[ADR-20260530](./docs/adr/ADR-20260530-v7-5-delivery-unbind.md) |
-| **P4** | V7 生态工具前置条件排查 | CLI-Anything Python TLS / iLink rate limit / **Mano-P 硬件不匹配（16GB < 32GB）；UI-TARS Desktop 作为候选试点评估** |
+| **P4** | V6-1 GBrain typed links 产品设计 | 当前主链路唯一真实架构瓶颈；先做产品/数据模型设计，不直接写代码 |
+| **P5** | 外部 Agent 能力采纳决策 | 基于 `docs/adr/ADR-20260530-external-agent-capability-adoption.md` 选择方案；OpenClaw/OpenHuman/Ruflo 只做候选或架构借鉴 |
 
-> **Productionization NOT APPROVED** — P0/P1 已完成，P2 V6 知识自动化任务排序进行中
+> **Productionization NOT APPROVED** — BaiLongma/HCC 仍停留在只读增强与候选设计阶段；写入/执行版必须另批。
 
 ---
 
@@ -67,7 +68,7 @@
 
 ---
 
-*本文档最后更新：2026-05-29（HCC v2 主流程更新 + code_dev fallback 规则）*
+*本文档最后更新：2026-05-30（HCC Cockpit read-only + 外部 Agent 能力萃取 + 计划归档同步）*
 
 ## HCC v2 代码任务入口（2026-05-29）
 

@@ -2,7 +2,7 @@
 
 > 版本：V7
 > 继承自：原 V4 生态融合任务
-> 状态：待启动
+> 状态：✅ PARTIAL_COMPLETE（Safari MCP MVP PASS；其余候选暂缓或待授权）
 > 锁定：本文档是锁定路线图的一部分，变更需 ADR + 用户确认
 
 ---
@@ -11,7 +11,7 @@
 
 **让 Hermes Pro 具备外部工具操作、多 worker 调度和高级记忆算法能力。**
 
-原 V4 计划（CLI-Anything / Ruflo / Mano-P / OpenHuman / Daily Digest）因各种原因未能在 2026-05-27 完成现状调查后实施。全部迁移到 V7，等前置条件满足后再推进。
+原 V4 计划（CLI-Anything / Ruflo / Mano-P / OpenHuman / Daily Digest）已迁移到 V7。当前 V7 核心 MVP 是 Safari MCP，已通过 smoke test；其余能力保持候选、暂缓或 Delivery/Reliability 独立归属。
 
 ---
 
@@ -29,6 +29,17 @@
 | **可达性判断** | ✅ MVP 已达成 — safari-mcp 已安装，配置到 Hermes，smoke test PASS |
 | **验收标准** | 1. `safari-mcp` 已注册到 Hermes 2. Hermes Pro 可操作 Safari ✅ PASS |
 
+### V7-1.1: 外部 Agent 能力萃取（研究完成）
+
+| 项目 | 内容 |
+|------|------|
+| **目标** | 从 Ruflo / OpenHuman / MiroFish / OpenClaw / Dograh / Mano-P 提炼可借鉴能力 |
+| **当前状态** | ✅ 研究完成，ADR 草案待用户选择 |
+| **研究文档** | [docs/research/external-agent-capability-map-2026-05-30.md](./research/external-agent-capability-map-2026-05-30.md) |
+| **ADR 草案** | [docs/adr/ADR-20260530-external-agent-capability-adoption.md](./adr/ADR-20260530-external-agent-capability-adoption.md) |
+| **推荐结论** | OpenClaw sandbox/allowlist、OpenHuman Memory Tree/TokenJuice、Ruflo worker taxonomy 可借鉴；Dograh/Mano-P/MiroFish 暂缓或候选 |
+| **边界** | 不安装、不复制受限许可证代码、不自动修改 locked roadmap |
+
 ---
 
 ### V7-2: Ruflo loop-workers
@@ -42,6 +53,8 @@
 | **是否保留** | 降级保留，不作为 V7 主线 |
 | **可达性判断** | 暂缓，当前 Hermes cron 问题不在调度层，无需替代 |
 | **验收标准** | 1. Ruflo 可管理 Hermes jobs 2. loop-workers 接入 Hermes cron |
+
+**2026-05-30 更新**：Ruflo 不再作为 cron 替代优先项；只保留 worker taxonomy、trajectory learning 作为 HCC 架构候选。
 
 ---
 
@@ -71,6 +84,8 @@
 | **是否保留** | 保留，但需先完成设计定义 |
 | **可达性判断** | 暂缓，需先完成设计定义 |
 | **验收标准** | 1. Memory Tree 算法实现 2. 与 GBrain 集成完成 |
+
+**2026-05-30 更新**：OpenHuman 不作为代码引入目标，只借鉴 Memory Tree、TokenJuice、auto-fetch 架构；具体实现需先明确与 GBrain/Memory/Vault 的边界。
 
 ---
 
