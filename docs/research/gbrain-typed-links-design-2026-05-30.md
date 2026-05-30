@@ -1,11 +1,27 @@
 # GBrain Typed Links + Dream Cycle 设计文档
 
-> 版本：v0.1 Draft
+> 版本：v0.2 Revised
 > 日期：2026-05-30
 > 状态：草案 — 不修改锁定路线图；用户确认后才可进入实现
 > 前置：V6 MAIN COMPLETE；HCC Cockpit Read-only POC 已提交
+>
+> **修订说明（v0.2）**：根据设计复核报告，MVP 范围已精简。dream cycle、LLM 推理、持久化全部移入 Future Work。
 
 ---
+
+## 摘要
+
+本文档描述 V6-1 GBrain typed links + dream cycle 的产品/数据模型设计。
+
+**设计分两阶段**：
+1. **MVP**（本文档第一部分）— typed links read-only，纯内存计算，用户可看 link 列表
+2. **Future Work**（本文档第二部分）— dream cycle、持久化、自动写入、更多 relation_type
+
+MVP 不需要 ADR。Future Work 需要独立 ADR + 用户确认后才能进入实现。
+
+---
+
+# 第一部分：MVP 设计
 
 ## 1. 背景与当前缺口
 
@@ -16,11 +32,10 @@ Knowledge 页面中 GBrain tab 当前仅显示：
 - 按类型分布（wiki/skills/failure-lessons/raw）
 - 周频次时间线（Recharts）
 
-**没有：**
+**没有**：
 - 碎片知识之间的关联关系
 - 跨 vault 文件的语义链接
 - 失败经验的闭环利用
-- 近期关注点的反推
 
 ### 1.2 为什么是瓶颈
 
@@ -30,143 +45,176 @@ Hermes Pro 知识链路：
 CodeGraph → GBrain → Horizon → Vault/Knowledge → Understand → BaiLongma/HCC
 ```
 
-当前链路是**线性**的：每个节点单向输出给下一个节点。碎片知识 → 吸收 → 使用 → 变现 的闭环缺少"关系层"。即：
+当前链路是**线性**的：每个节点单向输出给下一个节点。碎片知识 → 吸收 → 使用 → 变现 的闭环缺少"关系层"。typed links 补上这个缺口。
 
-- 用户积累了碎片（Knowledge ingest）
-- 但碎片之间没有链接，无法看到关系网络
-- Horizon 产出每日摘要，但摘要与 vault 历史知识之间没有关联
-- Understand 分析结果是一次性的，没有沉淀为可复用关系
-- 失败经验（failure-lessons）只存储，未参与学习方向推导
-
-### 1.3 设计目标
+### 1.3 设计目标（MVP）
 
 帮用户回答这个问题：
 
-> "我最近关注了什么？这些关注点之间的关系是什么？为什么系统推断我对 X 方向感兴趣？"
+> "我最近关注了什么？这些关注点之间的关系是什么？"
+
+MVP 只做一件事：**在 GBrain tab 新增 Links 子 tab，展示高可靠性规则推断的 typed links**。
 
 ---
 
-## 2. 产品目标
+## 2. MVP 产品目标
 
-### 2.1 typed links
+### 2.1 typed links（read-only）
 
-在 GBrain 中增加**类型化链接**——指明碎片知识 A 和碎片知识 B 之间的语义关系。
-
-- 用户能看知识图谱，而非孤立碎片
+- 用户能看知识碎片之间的关联
 - 每条 link 可溯源（evidence）
-- 区分关系类型（支持/矛盾/细化/依赖等）
+- 4 种高可靠性 relation_type（见 4.2）
+- 纯内存计算，不持久化
 
-### 2.2 dream cycle
-
-周期性离线处理：将碎片知识中的隐含模式"浮现"出来。
-
-- 每日/每周运行一次（类似 Horizon cron）
-- 从 vault 历史 + failure-lessons + Understand 结果中推断关注点
-- 不做自动写入，仅生成摘要供用户 review
-- 失败经验参与学习方向推导
-
-### 2.3 与 V6 主干的区别
-
-V6 已完成的是**数据入口自动化**：
-- Horizon cron → vault 写入
-- K3 → learning-direction.md 写入
-- GBrain stats（已有，只读）
-
-V6-1 补的是**关系推理层**：
-- typed links 是横跨 vault 的语义关系图
-- dream cycle 是周期性的模式浮现
-
----
-
-## 3. 非目标
+### 2.2 非目标（MVP）
 
 | 非目标 | 原因 |
 |--------|------|
-| 不做新学习 track | 已有 K3 满足 |
-| 不替代 Vault/Knowledge | typed links 是 Vault 之上的关系层 |
-| 不启动 HCC Productionization | HCC Cockpit Read-only 已满足监控需求 |
-| 不接 OpenHuman Memory Tree 代码 | 只借鉴架构；代码不复制 |
-| 不做自动写入主线 | 需单独 ADR 批准 |
-| 不修改锁定路线图 | 设计文档归档于 docs/gbrain/ |
+| 不做 dream cycle | MVP 范围，等 typed links 稳定后再评估 |
+| 不做 LLM 推理 | evidence 不可控，胡乱联想风险高 |
+| 不做持久化 | MVP 纯内存计算 |
+| 不做自动写入 Vault | MVP read-only |
+| 不做自动 cron | MVP 用户手动刷新 |
+| 不修改 locked roadmap | 设计文档归档于 docs/research/ |
 
 ---
 
-## 4. Typed Links 数据模型
+## 3. Typed Links 数据模型（MVP）
 
-### 4.1 最小字段设计
+### 3.1 字段设计
 
 ```typescript
 interface TypedLink {
-  // 唯一标识
+  // 唯一标识（内存中生成，非持久ID）
   id: string;
 
   // 链接的两端
-  sourceId: string;    // 格式：vault://{file_path} 或 gbrain://{chunk_id}
+  sourceId: string;    // 格式：vault://{file_path}
   targetId: string;
 
-  // 关系类型（见 4.2）
-  relationType: RelationType;
+  // 关系类型（MVP 只有 4 种）
+  relationType: "elaborates" | "supersedes" | "depends_on" | "repeats";
 
   // 推断置信度 [0, 1]
   confidence: number;
 
-  // 推断证据片段（原文引用）
+  // 推断证据片段（原文引用，必填）
   evidence: string;
 
   // 元信息
   createdAt: string;    // ISO 8601
-  sourceKind: "vault_file" | "understand_result" | "horizon_summary" | "failure_lesson" | "knowledge_chunk";
-  targetKind: "vault_file" | "understand_result" | "horizon_summary" | "failure_lesson" | "knowledge_chunk";
-
-  // 可选：关联的 HCC task / session
-  contextTaskId?: string;
-  contextSessionId?: string;
+  sourceKind: "vault_file" | "understand_result" | "horizon_summary" | "failure_lesson";
+  targetKind: "vault_file" | "understand_result" | "horizon_summary" | "failure_lesson";
 }
 ```
 
-### 4.2 relation_type 候选
+### 3.2 MVP relation_type（4 种）
 
-| relation_type | 含义 | evidence 来源 |
-|---------------|------|-------------|
-| `supports` | A 支持 B 的观点 | Understand 总结 / Knowledge search 结果 |
-| `contradicts` | A 与 B 矛盾 | Knowledge search 结果中的相反结论 |
-| `elaborates` | A 细化/展开 B | vault 文件继承关系 |
-| `depends_on` | A 依赖 B 的结论 | Understand 依赖链 |
-| `repeats` | A 与 B 内容重复 | Knowledge chunk 相似度检测 |
-| `supersedes` | A 是 B 的更新版本 | Horizon 摘要覆盖 |
-| `applies_to_project` | A 适用于某项目 | Understand 结果 + 项目名识别 |
-| `applies_to_manga` | A 适用于某漫画 | failure-lessons 中的漫画关联 |
-| `blocked_by` | A 被 B 阻塞 | failure-lessons 中的失败原因链 |
-| `learned_from_failure` | A 是从 B 的失败中学到的 | failure-lessons → 新理解 |
-| `related_to_trend` | A 与当前热点相关 | Horizon summary + GBrain 时序分析 |
-| `suggests_exploration` | A 建议探索方向 | K3 learning direction + typed links 聚合 |
+| relation_type | 含义 | 推断规则 | 可靠性 |
+|---------------|------|---------|--------|
+| `elaborates` | A 细化/展开 B | 文件路径继承：`wiki/ai/xxx.md` → `wiki/ai/deepseek/xxx.md` | ✅ 高 |
+| `supersedes` | A 是 B 的更新版本 | Horizon 摘要覆盖某 vault 文件 | ✅ 高 |
+| `depends_on` | A 依赖 B 的结论 | 从 Understand 输出依赖链直接提取 | ✅ 高 |
+| `repeats` | A 与 B 内容重复 | 向量相似度 > 0.85（使用已有 embedding，无新增依赖）| ⚠️ 中 |
 
-### 4.3 推断策略（初始版本）
+**暂缓的 relation_type**（移入 Future Work）：`supports`、`contradicts`、`applies_to_project`、`applies_to_manga`、`blocked_by`、`learned_from_failure`、`related_to_trend`、`suggests_exploration`。
 
-**不依赖 LLM 推理**，使用规则+向量相似度混合：
+### 3.3 推断策略（MVP）
 
-1. **文件路径继承**：`wiki/ai/xxx.md` → `wiki/ai/deepseek/xxx.md` → `elaborates`
-2. **Horizon → vault**：Horizon 摘要覆盖某 vault 文件 → `supersedes`
-3. **failure-lessons → Understand**：失败经验中提到的概念出现在 Understand 结果 → `learned_from_failure`
-4. **Understand 依赖链**：`depends_on` 直接从 Understand 输出中提取
-5. **向量相似度**：余弦相似度 > 0.85 → `repeats`
-6. **项目/漫画名识别**：从文件名/内容中正则匹配项目代号/漫画名 → `applies_to_project`
+**不依赖 LLM 推理**，使用规则 + 向量相似度：
+
+1. **文件路径继承**：同目录/子目录的 vault 文件 → `elaborates`
+2. **Horizon → vault**：Horizon 摘要与某 vault 文件主题重合 → `supersedes`
+3. **Understand 依赖链**：`depends_on` 直接从 Understand 输出提取
+4. **向量相似度**：余弦相似度 > 0.85 → `repeats`（使用现有 embedding）
+
+### 3.4 安全规则（MVP）
+
+- **evidence 必填**：无原文引用不生成 link
+- **confidence 阈值**：confidence < 0.7 的 link 默认折叠
+- **只读**：用户可看 link 列表，不可修改
 
 ---
 
-## 5. Dream Cycle 概念设计
+## 4. 与现有模块关系（MVP）
 
-### 5.1 输入
+| 模块 | 与 typed links 的关系 |
+|------|---------------------|
+| **GBrain stats** | Links 子 tab 叠加在现有 stats 之上 |
+| **Knowledge ingest** | 新 ingest 的文件参与 typed links 推断 |
+| **Vault** | typed links 指向 vault://{path}；不修改 vault 内容 |
+| **Understand** | Understand 结果参与 `depends_on` 推断 |
+| **Horizon** | Horizon 摘要参与 `supersedes` 推断 |
+| **HCC Cockpit** | Read-only 显示 typed links 状态 |
 
-| 来源 | 内容 |
+---
+
+## 5. MVP UI 设计
+
+### 5.1 GBrain Tab 新增 Links 子 Tab
+
+```
+GBrain tab
+  ├── Stats（现有）
+  ├── Links（新增）← typed links read-only
+  └── Timeline（现有）
+```
+
+### 5.2 Links 子 Tab 内容
+
+| 内容 | 说明 |
 |------|------|
-| Vault 历史（近 N 天） | 新增/修改的 vault 文件 |
-| failure-lessons | 过去一周的失败记录 |
-| Understand 结果 | 近期 Understand 分析摘要 |
-| Horizon 摘要 | 每日 Horizon 摘要 |
-| typed links（已有） | 已推断的关系网络 |
+| Link 列表 | 按 relation_type 分组显示 |
+| 每条 Link | source → relation → target + evidence + confidence |
+| 阈值控制 | 可折叠 confidence < 0.7 的 link |
+| 刷新按钮 | 用户手动刷新（不自动 cron） |
+| 说明文字 | "以下链接由规则推断生成，confidence < 0.7 已折叠" |
 
-### 5.2 处理（夜间/周期性）
+### 5.3 不改动的范围
+
+- 不改 Hermes Pro 主 IPC
+- 不新增 preload handler
+- 不新增 cron job
+- 不写 Vault/Knowledge
+- 不改 locked roadmap
+
+---
+
+## 6. MVP 验收标准
+
+| ID | 标准 | 验证方式 |
+|----|------|---------|
+| AC-1 | 每条 typed link 有 evidence 片段（原文引用） | evidence 字段非空 |
+| AC-2 | confidence < 0.7 的 link 默认折叠 | UI 显示阈值控制 |
+| AC-3 | MVP 只含 4 种 relation_type | 代码/文档审查 |
+| AC-4 | typed links 不修改 vault 文件内容 | links 指向 vault://，不写入 vault |
+| AC-5 | 纯内存计算，不持久化 | 无 JSON/SQLite 写入 |
+
+---
+
+## 7. ADR 判断（MVP）
+
+**MVP 不需要 ADR**。
+
+理由：
+- 纯 read-only（不改数据）
+- 纯内存计算（不持久化）
+- 不新增依赖
+- 不改 schema
+
+**Future Work 需要 ADR**（见第二部分）。
+
+---
+
+# 第二部分：Future Work
+
+> 以下内容不在 MVP scope 内。等 MVP 稳定后，通过独立 ADR + 用户确认后才能进入实现。
+
+## 8. dream cycle
+
+### 8.1 目标
+
+周期性离线处理：将碎片知识中的隐含模式"浮现"出来。
 
 ```
 dream_cycle():
@@ -174,182 +222,147 @@ dream_cycle():
   2. 提取失败经验中的根因关键词
   3. 提取 Understand 结果中的 action items
   4. 与已有 typed links 聚合
-  5. 生成关注点摘要（不上线，等待 review）
-  6. 输出：dream_summary.md（不上线）+ 关系更新候选
+  5. 生成关注点摘要（草稿，不自动上线）
+  6. 输出：dream_summary.md（需用户 review）
 ```
 
-### 5.3 输出
+### 8.2 dream cycle 输出
 
 | 输出 | 用途 | 是否自动上线 |
 |------|------|------------|
-| `dream_summary.md` | 用户 review 后手动确认 | ❌ 草稿，需用户确认 |
-| typed links 候选 | 用户 review 后可一键采纳或拒绝 | ❌ 候选，需用户确认 |
+| `dream_summary.md` | 用户 review 后手动确认 | ❌ 草稿 |
+| typed links 候选 | 用户 review 后可一键采纳或拒绝 | ❌ 候选 |
 | 关注点时间线 | 显示 GBrain 中 | ✅ 只读 |
 | 失败闭环报告 | 失败经验如何参与学习 | ✅ 只读 |
 
-### 5.4 如何避免胡乱总结
+### 8.3 dream cycle 需要 ADR 的原因
+
+| 问题 | 原因 |
+|------|------|
+| 输出路径 | 草稿存哪里？`~/.hermes/dream_drafts/` vs `vault/dream/` |
+| 自动运行 | 是否挂靠 Horizon cron？用户手动触发？ |
+| 与 Vault 关系 | 草稿确认后是否写入 Vault？ |
+| relation_type 扩展 | `learned_from_failure`/`blocked_by` 需 failure-lessons 结构化解析 |
+
+### 8.4 防胡乱联想规则（未来实现时必须满足）
 
 1. **无 LLM 推理**：所有推断基于规则 + 向量相似度，有 evidence 才写 link
-2. **confidence 阈值**：confidence < 0.7 的 link 不展示（或默认折叠）
-3. **evidence 必填**：每条 link 必须有原文引用，否则不可见
-4. **用户 review 门**：dream_summary 草稿不上线，需用户确认后才进入 vault
-5. **失败经验单独展示**：不混入常规 links，单独分区块
+2. **evidence 必填**：每条 link 必须有原文引用，否则不可见
+3. **用户 review 门**：dream_summary 草稿不上线，需用户确认后才进入 vault
+4. **失败经验单独展示**：不混入常规 links，单独分区块
 
-### 5.5 失败经验闭环
+---
 
-当前 failure-lessons 目录只存储失败记录，没有利用。
+## 9. 扩展 relation_type（Future Work）
 
-dream cycle 补全闭环：
+> 以下 9 种 relation_type 不在 MVP scope 内。
+
+| relation_type | 含义 | 进入条件 |
+|---------------|------|---------|
+| `supports` | A 支持 B 的观点 | 需 LLM 或明确的观点引用规则 |
+| `contradicts` | A 与 B 矛盾 | 需 LLM 或明确的矛盾引用规则 |
+| `learned_from_failure` | A 是从 B 的失败中学到的 | 需 failure-lessons 结构化解析 + ADR |
+| `applies_to_project` | A 适用于某项目 | 正则匹配项目名误报率高，暂缓 |
+| `applies_to_manga` | A 适用于某漫画 | 同上 |
+| `blocked_by` | A 被 B 阻塞 | 需 failure-lessons 结构化解析 |
+| `related_to_trend` | A 与当前热点相关 | Horizon summary + 时序分析，胡乱联想风险最高 |
+| `suggests_exploration` | A 建议探索方向 | K3 + 聚合，无明确 evidence 规则 |
+
+---
+
+## 10. 持久化方案（Future Work）
+
+> 需要独立 ADR + 用户确认后才能实施。
+
+### 10.1 方案选项
+
+| 方案 | 说明 | 是否需要 ADR |
+|------|------|------------|
+| 不持久化 | 每次内存重算（MVP 方案）| ❌ 不需要 |
+| JSON 文件 | `~/.hermes/typed-links.json` | ✅ 需要 |
+| SQLite | 需 schema 变更 | ✅ 需要 |
+
+### 10.2 持久化后影响
+
+- 每次 Knowledge ingest 时增量更新 vs 每日重算
+- 用户可删除/修改 link vs 纯只读
+- 与 Vault/Knowledge 双向同步
+
+---
+
+## 11. 自动写入 Vault（Future Work）
+
+> 需要独立 ADR + 用户确认后才能实施。
+
+| 问题 | 方案选项 |
+|------|---------|
+| 写入权限 | A) 不允许，只读；B) 用户确认后写入 |
+| 写入路径 | A) `vault/dream/`；B) `vault/links/` |
+| 更新策略 | A) 用户手动确认后写入；B) 自动写入（需高置信度） |
+
+---
+
+## 12. 自动 cron 运行（Future Work）
+
+> 需要独立 ADR + 用户确认后才能实施。
+
+| 问题 | 方案选项 |
+|------|---------|
+| 运行频率 | A) 每日；B) 每周；C) 用户手动触发 |
+| 挂靠位置 | A) 挂靠 Horizon cron；B) 独立 cron job；C) 用户手动触发 |
+| 通知方式 | A) HCC Cockpit 状态更新；B) 消息通知；C) 无通知 |
+
+---
+
+## 13. Future Work ADR 最小范围
+
+如果用户批准 MVP 后继续推进，需要以下 ADR：
+
+### ADR-1：typed links 持久化方案
+
+| 内容 | 方案选项 |
+|------|---------|
+| 存储层 | A) JSON 文件（`~/.hermes/typed-links.json`）；B) SQLite（需 schema 变更）；C) 不持久化 |
+| 更新策略 | A) 每次 Knowledge ingest 时增量更新；B) 每日重算；C) 用户手动触发 |
+
+### ADR-2：dream cycle 运行方案
+
+| 内容 | 方案选项 |
+|------|---------|
+| 运行方式 | A) 用户手动触发；B) 挂靠 Horizon cron；C) 独立 cron |
+| 输出路径 | A) `~/.hermes/dream_drafts/`；B) `vault/dream/`（需 Vault 写入） |
+| 与 Vault 关系 | A) 草稿需用户确认后才写 Vault；B) 不写入 Vault |
+
+### ADR-3：扩展 relation_type
+
+| relation_type | 进入条件 |
+|---------------|---------|
+| `learned_from_failure` | failure-lessons 结构化解析规则确定后 |
+| `repeats` 阈值调整 | MVP 稳定后根据实际误报率调整 |
+
+---
+
+## 14. 下一步流程
 
 ```
-failure-lessons/[date].md
-    ↓ 提取根因关键词 + 关联项目
-    ↓
-learned_from_failure links
-    ↓
-dream_summary 中包含 "从失败中学到：..."
-    ↓
-用户 review → 确认后 → 可进入 K3 learning direction
-```
-
----
-
-## 6. 与现有模块关系
-
-### 6.1 模块关系图
-
-```
-CodeGraph ──────────────────────────────────────┐
-                                                   │
-GBrain ─────┬── typed links ──→ [GBrain 图谱 UI]  │
-            │                                     │
-            └── dream cycle ──→ dream_summary ──→ [用户 review] ──→ K3/Learning Direction
-                                                   │
-Horizon ────→ 每日摘要 ──→ supersedes links ──┤
-                                                   │
-Vault/Knowledge ── ingest ──→ 碎片知识 ────────────┤
-                                                   │
-Understand ──→ 分析结果 ──→ elaborates/depends_on links ─┘
-                                                   │
-failure-lessons ──→ learned_from_failure links ───┘
-```
-
-### 6.2 详细关系
-
-| 模块 | 与 typed links / dream cycle 的关系 |
-|------|-----------------------------------|
-| **GBrain stats** | typed links 图谱叠加在现有 stats 之上；dream cycle 输出显示在 stats timeline |
-| **Knowledge ingest** | 新 ingest 的文件立即参与 typed links 推断 |
-| **Vault** | typed links 指向 vault://{path}；不修改 vault 内容 |
-| **Understand** | Understand 结果参与 elaborates / depends_on links 推断 |
-| **Horizon** | Horizon 摘要参与 supersedes / related_to_trend links |
-| **failure-lessons** | 参与 learned_from_failure / blocked_by links |
-| **K3 / learning-direction** | dream_summary 可被用户引用，但不自动写入 |
-| **BaiLongma / HCC** | typed links 可作为 HCC context 来源（只读）；HCC Cockpit Read-only 监控 dream cycle 运行状态 |
-| **HCC Cockpit** | 可显示 dream cycle 最近运行时间和状态（只读） |
-
-### 6.3 不侵入的边界
-
-- GBrain typed links 是 Vault 之上的视图层，不修改 Vault 文件
-- dream cycle 输出默认草稿，不自动进入 Vault/Knowledge
-- 不修改 Horizon cron 逻辑
-- 不修改 Understand 逻辑
-- 不修改 HCC stage 定义
-
----
-
-## 7. 外部能力借鉴边界
-
-### 7.1 借鉴来源
-
-| 外部项目 | 借鉴内容 | 不借鉴内容 |
-|----------|----------|------------|
-| **OpenHuman Memory Tree** | 层级摘要架构（短期→中期→长期）；不复制 Rust 代码 | TokenJuice 具体实现 |
-| **OpenHuman TokenJuice** | 压缩策略概念；不复制具体压缩算法 | TokenJuice 闭源实现 |
-| **Ruflo trajectory learning** | action ledger 概念（记录成功/失败模式）；不复制 TypeScript 代码 | Ruflo worker taxonomy 具体实现 |
-| **OpenClaw allowlist** | 权限边界设计思路（channel 权限分层）；不复制 allowlist 具体条目 | channel 安全模型代码 |
-
-### 7.2 借鉴原则
-
-1. **架构借鉴 > 代码复制**：只借鉴数据结构和处理流程概念
-2. **外部项目 ADR 前不入主线**：ADR 未批准，相关借鉴只记录在设计文档中
-3. **GPL/AGPL 代码不复制**：MiroFish（MiroFish License）不借鉴具体算法
-4. **TokenJuice 闭源**：TokenJuice 服务不接入，只借鉴"分层压缩"概念
-
----
-
-## 8. 最小 POC 建议
-
-### 8.1 POC Scope（只设计，不实现）
-
-**POC 1: typed links read-only preview**
-
-- 数据源：现有 vault 文件 + Understand 结果（不新增 API）
-- 推断：基于文件路径继承 + Horizon supersedes（规则推断）
-- UI：在 GBrain tab 新增 "Links" 子 tab，仅显示 read-only link list
-- 存储：内存中计算，不持久化（或持久化到单独 JSON，需另开 ADR）
-- 限制：不含 dream cycle，不含 LLM 推理
-
-**POC 2: dream cycle 生成草稿（CLI 可选）**
-
-- 运行方式：用户手动触发或 Horizon cron 触发（不新建 cron）
-- 输出：`~/.hermes/hermes-pro/default/dream_summary_draft.md`
-- UI：不改 Hermes Pro UI；仅在 GBrain tab 显示 "dream summary 草稿待 review"
-- 存储：文件落盘，需用户手动 copy 到 vault
-
-### 8.2 POC 限制
-
-- 不修改 Hermes Pro 主 IPC
-- 不新增 preload handler
-- 不新增 cron job
-- 不写 Vault/Knowledge（dream_summary 草稿路径与 vault 分开）
-- 不改 locked roadmap
-
----
-
-## 9. 验收标准
-
-| ID | 标准 | 验证方式 |
-|----|------|----------|
-| AC-1 | 每条 typed link 有 evidence 片段（原文引用） | link 对象 evidence 字段非空 |
-| AC-2 | confidence < 0.7 的 link 默认折叠或隐藏 | UI 显示阈值控制 |
-| AC-3 | failure-lessons 中的失败记录参与 links 推断 | 生成 link 中 relation_type 含 learned_from_failure |
-| AC-4 | dream_summary 草稿需用户手动确认才可上线 | 输出路径与 vault 分开，默认草稿 |
-| AC-5 | typed links 不修改 vault 文件内容 | links 指向 vault://{path}，不写入 vault |
-| AC-6 | 用户能解释某关注点为何被推断出来 | dream_summary 中含推断依据 |
-| AC-7 | 不把无 evidence 推断写成 facts | 无 evidence 不生成 link |
-
----
-
-## 10. 风险与待用户决策
-
-| ID | 问题 | 选项 |
-|----|------|------|
-| R-1 | typed links 是否允许持久化到 SQLite / JSON | A) 不持久化，每次计算；B) 持久化到 JSON（需 ADR）；C) 持久化到 SQLite（需 ADR） |
-| R-2 | dream_summary 草稿存哪里 | A) ~/.hermes/dream_drafts/（与 vault 分开）；B) vault/dream/（需 Vault 写入 ADR） |
-| R-3 | 是否允许 dream cycle 自动化运行 | A) 用户手动触发；B) 挂靠 Horizon cron 运行（需 cron ADR） |
-| R-4 | 是否允许 typed links 写入 Vault/Knowledge | A) 不允许，只读；B) 用户确认后写入（需 Vault 写入 ADR） |
-| R-5 | 是否进入 V6 扩展主线 | A) 暂缓，用户 review 后决定；B) 进入 V6 扩展，需 ADR 批准 |
-
----
-
-## 11. 下一步建议
-
-```
-当前状态：设计草案
+当前状态：设计草案（v0.2）
     ↓
 用户 review 本文档（2-3 天内）
     ↓
-若批准 → 新建 ADR（typed links 持久化方案 + dream cycle 运行方案）
+若批准 → MVP 进入实现（不需要 ADR）
     ↓
-ADR 批准 → V6-1 进入实现（作为 V6 扩展，非主干）
+MVP 实现 + 稳定后（1-2 周）
+    ↓
+若继续 → 启动 ADR-1（持久化）+ ADR-2（dream cycle）
+    ↓
+ADR 批准 → Future Work 进入实现（作为 V6 扩展，非主干）
     ↓
 若不批准 → 本文档归档，不进入实现
 ```
 
 ---
 
-## 12. 相关文档
+## 15. 相关文档
 
 | 文档 | 关系 |
 |------|------|
@@ -357,9 +370,8 @@ ADR 批准 → V6-1 进入实现（作为 V6 扩展，非主干）
 | [docs/roadmap-locked-2026-05-28.md](../roadmap-locked-2026-05-28.md) | V6-1 暂缓，不修改此路线图 |
 | [docs/adr/ADR-20260530-external-agent-capability-adoption.md](../adr/ADR-20260530-external-agent-capability-adoption.md) | 外部项目能力借鉴参考；ADR 仍为草案 |
 | [docs/bailongma/README.md](../bailongma/README.md) | BaiLongma / HCC 与 typed links 的关系 |
-| [docs/adr/ADR-20260530-hcc-cockpit-readonly-poc.md](../adr/ADR-20260530-hcc-cockpit-readonly-poc.md) | HCC Cockpit Read-only 是 typed links 的只读 context 来源 |
 | [src/renderer/src/screens/Knowledge/Knowledge.tsx](../../src/renderer/src/screens/Knowledge/Knowledge.tsx) | GBrain tab 现有实现 |
 
 ---
 
-*本文档是 V6-1 设计草案，不修改锁定路线图。用户确认后才可进入实现阶段。*
+*本文档是 V6-1 设计草案（v0.2），MVP 不修改锁定路线图，不需要 ADR。等用户确认后才可进入实现阶段。*
