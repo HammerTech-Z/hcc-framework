@@ -91,42 +91,44 @@
 
 ## V7 任务优先级建议
 
-| 优先级 | 任务 | 可达性 | 原因 |
+|| 优先级 | 任务 | 可达性 | 原因 |
 |--------|------|--------|------|
-| P1 | V7-1 CLI-Anything | ✅ MVP PASS | Safari MCP 已接入 Hermes，smoke test PASS |
+| P1 | V7-1 CLI-Anything | ✅ **MVP PASS** | Safari MCP 已接入 Hermes，smoke test PASS |
 | P2 | V7-2 Ruflo loop-workers | 暂缓 | 当前无需替代 |
 | P3 | V7-3 Mano-P | **候选暂缓** | 硬件不匹配（16GB < 32GB），降级为候选 |
 | P4 | V7-4 OpenHuman Memory Tree | 暂缓 | 需设计定义 |
-| P5 | V7-5 每日知识摘要 | 暂缓 | iLink rate limit 阻塞 |
+| ~~P5~~ | ~~V7-5 每日知识摘要~~ | ✅ **已从 V7 解绑** | 归入 Delivery/Reliability 独立任务池 |
 
-**注意**：V7 全部任务当前都是"暂缓"，没有"现在可做"的项。这符合实际情况，不是问题。
+**当前 V7 状态：V7_PARTIAL_COMPLETE**
 
----
+> **注意**：V7 核心 MVP（Safari MCP）已完成，但整体 V7 还有多个任务暂缓/DEFER，WeChat/iLink rate limit 仍在 mitigated_pending_observation。
 
-## 替代候选（小节）
+### 替代候选
 
 GUI-VLA 方向（Mano-P 的替代方案）进入候选池，不直接进入 V7 主线。需单独试点验证后才能进入锁定路线图。
 
-### UI-TARS Desktop
+#### UI-TARS Desktop
 
-| 项目 | 内容 |
+|| 项目 | 内容 |
 |------|------|
 | **定位** | 优先候选，适合 App/操作层 + 云端/API VLM |
 | **本地适配** | 本机 M5 16GB 可轻松承担 GUI 控制、截图、浏览器操作（使用云端 VLM API） |
 | **不推荐** | 不建议本机硬跑 UI-TARS 7B 全量模型；16GB 只适合轻量/量化试验 |
 | **状态** | 候选试点，不入主线 |
-| **试点条件** | 1. 验证云端 VLM API 可用 2. 验证 GUI 控制能力 3. ADR + 用户确认后才能入主线 |
+| **试点条件** | **必须用户明确授权**（需调用云端 VLM API）|
+| **用户授权** | 需用户明确授权才能启动试点 |
 
-### OpenAdapt
+#### OpenAdapt
 
-| 项目 | 内容 |
+|| 项目 | 内容 |
 |------|------|
 | **定位** | 桌面自动化/RPA 候选 |
 | **本地适配** | 通用桌面自动化工具 |
 | **状态** | 候选试点 |
-| **试点条件** | ADR + 用户确认后才能入主线 |
+| **试点条件** | **必须用户明确授权** |
+| **用户授权** | 需用户明确授权 |
 
-### browser-use
+#### browser-use
 
 || 项目 | 内容 |
 |------|------|

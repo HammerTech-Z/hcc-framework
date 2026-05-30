@@ -1,7 +1,7 @@
 # Hermes Pro — 下一步行动指南
 
-|> 最后更新：2026-05-29（V6 主干完成：V6-2/V6-3/V6-4/V6-6 全部 PASS；WeChat/iLink rate limit 移出 V6 归属）
-> 当前状态：V1/V2 完成，V3 UI 完成，V4 BaiLongma POC-2 ✅+QA PASS，下一步 P2 V6 知识自动化任务排序；Productionization NOT APPROVED
+| 最后更新 | 2026-05-30（V7 Completion Audit 完成：V7_PARTIAL_COMPLETE；Safari MCP MVP PASS；WeChat/iLink mitigated_pending_observation）|
+| 当前状态 | V1/V2 完成，V3 UI 完成，V4 BaiLongma POC-2 ✅+QA PASS；V7 PARTIAL COMPLETE（核心 MVP Safari MCP 完成）；Productionization NOT APPROVED |
 
 ## 当前真实状态
 
@@ -12,7 +12,7 @@
 | V2 | ✅ 4/5 完成 | Theme/AgentMonitor/MCP/Memory；BaiLongma 已移出到 V4 |
 | V3 | ✅ UI完成 | Knowledge/Vault/Recharts/GBrain/Horizon；自动化 backlog 迁移到 V6 |
 | V4 | ✅ POC-2+QA PASS | BaiLongma Layer 1-3 + POC-1 + POC-2 + typecheck通过 + Manual QA PASS；Productionization NOT APPROVED |
-| V5-V7 | ⏳ 未启动 | 锁定版路线图后续版本 |
+| V5-V7 | ✅ **V7 PARTIAL COMPLETE** | V7 核心 MVP（Safari MCP）已完成；browser-use DEFER；Mano-P/UI-TARS/OpenAdapt 待用户授权 |
 
 ### V4 BaiLongma 当前进度
 
