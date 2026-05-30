@@ -29,6 +29,102 @@ let adapterLogs = "";
 let devServerError = "";
 let adapterError = "";
 
+export interface CommandCandidate {
+  command: string;
+  windowsScript: boolean;
+}
+
+export interface CommandInvocation {
+  command: string;
+  args: string[];
+}
+
+export function isWindowsCommandScript(command: string): boolean {
+  return /\.(cmd|bat)$/i.test(command);
+}
+
+export function pickWindowsCommandCandidate(
+  candidates: string[],
+): CommandCandidate {
+  const script = candidates.find(isWindowsCommandScript);
+  const command = script || candidates[0] || "npm";
+  return {
+    command,
+    windowsScript: isWindowsCommandScript(command),
+  };
+}
+
+function windowsDirname(command: string): string {
+  const index = Math.max(command.lastIndexOf("\\"), command.lastIndexOf("/"));
+  return index >= 0 ? command.slice(0, index) : "";
+}
+
+function joinWindowsPath(base: string, ...parts: string[]): string {
+  return [base, ...parts].filter(Boolean).join("\\");
+}
+
+function quoteWindowsArg(arg: string): string {
+  return `"${arg.replace(/"/g, '\\"')}"`;
+}
+
+export function buildWindowsScriptCommandLine(
+  command: string,
+  args: string[],
+): string {
+  return `"${[command, ...args].map(quoteWindowsArg).join(" ")}"`;
+}
+
+export function createNpmCommandInvocation(
+  npm: CommandCandidate,
+  args: string[],
+  options: {
+    platform?: NodeJS.Platform;
+    fileExists?: (path: string) => boolean;
+  } = {},
+): CommandInvocation {
+  const platform = options.platform || process.platform;
+  const fileExists = options.fileExists || existsSync;
+
+  if (platform !== "win32" || !npm.windowsScript) {
+    return { command: npm.command, args };
+  }
+
+  const npmDir = windowsDirname(npm.command);
+  const nodeExe = joinWindowsPath(npmDir, "node.exe");
+  const npmCli = joinWindowsPath(
+    npmDir,
+    "node_modules",
+    "npm",
+    "bin",
+    "npm-cli.js",
+  );
+
+  if (fileExists(npmCli)) {
+    return {
+      command: fileExists(nodeExe) ? nodeExe : "node",
+      args: [npmCli, ...args],
+    };
+  }
+
+  return {
+    command: "cmd.exe",
+    args: ["/d", "/s", "/c", buildWindowsScriptCommandLine(npm.command, args)],
+  };
+}
+
+export function createClaw3dScriptInvocation(
+  script: "dev" | "hermes-adapter",
+  nodeCommand: string,
+): CommandInvocation {
+  if (script === "dev") {
+    return { command: nodeCommand, args: ["server/index.js", "--dev"] };
+  }
+  return {
+    command: nodeCommand,
+    args: ["server/hermes-gateway-adapter.js"],
+  };
+}
+
 function getSavedPort(): number {
   try {
     const port = parseInt(readFileSync(PORT_FILE, "utf-8").trim(), 10);

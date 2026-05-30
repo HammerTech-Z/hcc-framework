@@ -1,6 +1,13 @@
 import { spawn, execSync } from "child_process";
-import { existsSync, mkdirSync, writeFileSync, statSync, readFileSync } from "fs";
-import { join } from "path";
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  statSync,
+  readFileSync,
+  readdirSync,
+} from "fs";
+import { basename, join } from "path";
 import { cwd } from "process";
 
 // --------------- Understand-Anything A-lite ---------------
@@ -52,6 +59,45 @@ const PLAYBOOK_RULES: PlaybookRule[] = [
 
 function getVaultDir(): string {
   return join(process.env.HOME || "~", ".hermes", "vault", "wiki", "understand");
+}
+
+export function listUnderstandingHistory(): {
+  files: Array<{ filename: string; modified: string; size: number }>;
+} {
+  const vaultDir = getVaultDir();
+  if (!existsSync(vaultDir)) return { files: [] };
+
+  const files = readdirSync(vaultDir)
+    .filter((filename) => filename.endsWith(".md"))
+    .map((filename) => {
+      const fullPath = join(vaultDir, filename);
+      const stats = statSync(fullPath);
+      return {
+        filename,
+        modified: stats.mtime.toISOString(),
+        size: stats.size,
+      };
+    })
+    .sort((a, b) => b.modified.localeCompare(a.modified));
+
+  return { files };
+}
+
+export function readUnderstandingHistory(filename: string): {
+  content?: string;
+  error?: string;
+} {
+  const safeName = basename(filename);
+  if (!safeName || safeName !== filename || !safeName.endsWith(".md")) {
+    return { error: "Invalid history filename" };
+  }
+
+  const filePath = join(getVaultDir(), safeName);
+  if (!existsSync(filePath)) {
+    return { error: "History file not found" };
+  }
+
+  return { content: readFileSync(filePath, "utf-8") };
 }
 
 function yamlString(value: string): string {

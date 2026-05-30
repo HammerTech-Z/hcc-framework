@@ -6,7 +6,7 @@ import {
   Menu,
   Notification,
 } from "electron";
-import { join } from "path";
+import { isAbsolute, join, relative, resolve } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import type { AppUpdater } from "electron-updater";
 import icon from "../../resources/icon.png?asset";
@@ -112,11 +112,31 @@ import {
 } from "./cronjobs";
 import { getAppLocale, setAppLocale } from "./locale";
 import {
+  addMcpServer,
+  removeMcpServer,
+  testMcpServer,
+  toggleMcpServer,
+} from "./mcp";
+import {
+  getPlaybooks,
+  listUnderstandingHistory,
+  readUnderstandingHistory,
+  runLlmChecker,
+  runPlaybook,
+  understandAnything,
+} from "./playbook-runner";
+import {
   hardenWebviewPreferences,
   isAllowedAppNavigationUrl,
   isAllowedExternalUrl,
   isAllowedWebviewUrl,
 } from "./security";
+import {
+  isSshTunnelActive,
+  startSshTunnel,
+  stopSshTunnel,
+  testSshConnection as testSshTunnelConnection,
+} from "./ssh-tunnel";
 import type { AppLocale } from "../shared/i18n/types";
 
 process.on("uncaughtException", (err) => {
@@ -139,6 +159,31 @@ function openExternalUrl(rawUrl: unknown): void {
   shell.openExternal(rawUrl).catch((err) => {
     console.error("[SECURITY] Failed to open external URL:", err);
   });
+}
+
+function isAllowedClaw3dWebviewUrl(rawUrl: unknown): rawUrl is string {
+  return isAllowedWebviewUrl(rawUrl, [getClaw3dPort()]);
+}
+
+function resolveVaultPath(filePath: unknown): string | null {
+  if (typeof filePath !== "string" || filePath.length === 0) return null;
+
+  const vaultBase = resolve(HERMES_HOME, "vault");
+  const relativeVaultPath =
+    filePath === "vault"
+      ? ""
+      : filePath.startsWith("vault/")
+        ? filePath.slice("vault/".length)
+        : filePath;
+  const targetPath = isAbsolute(filePath)
+    ? resolve(filePath)
+    : resolve(vaultBase, relativeVaultPath);
+  const rel = relative(vaultBase, targetPath);
+
+  if (rel === "" || (!rel.startsWith("..") && !isAbsolute(rel))) {
+    return targetPath;
+  }
+  return null;
 }
 
 function createWindow(): void {
@@ -218,8 +263,7 @@ function createWindow(): void {
   mainWindow.webContents.on(
     "will-attach-webview",
     (event, webPreferences, params) => {
-      const allowedWebviewPorts = [getClaw3dPort()];
-      if (!isAllowedWebviewUrl(params.src, allowedWebviewPorts)) {
+      if (!isAllowedClaw3dWebviewUrl(params.src)) {
         event.preventDefault();
         console.warn("[SECURITY] Blocked webview attachment for untrusted URL");
         return;
@@ -228,6 +272,27 @@ function createWindow(): void {
       hardenWebviewPreferences(webPreferences);
     },
   );
+
+  mainWindow.webContents.on("did-attach-webview", (_event, webviewContents) => {
+    webviewContents.on("will-navigate", (event, url) => {
+      if (isAllowedClaw3dWebviewUrl(url)) return;
+      event.preventDefault();
+      console.warn("[SECURITY] Blocked webview navigation");
+    });
+
+    webviewContents.on("will-redirect", (event, url) => {
+      if (isAllowedClaw3dWebviewUrl(url)) return;
+      event.preventDefault();
+      console.warn("[SECURITY] Blocked webview redirect");
+    });
+
+    webviewContents.setWindowOpenHandler((details) => {
+      if (!isAllowedClaw3dWebviewUrl(details.url)) {
+        console.warn("[SECURITY] Blocked webview popup");
+      }
+      return { action: "deny" };
+    });
+  });
 
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
@@ -376,9 +441,68 @@ function setupIPC(): void {
   );
 
   ipcMain.handle(
+    "set-ssh-config",
+    (
+      _event,
+      host: string,
+      port: number,
+      username: string,
+      keyPath: string,
+      remotePort: number,
+      localPort: number,
+    ) => {
+      const existing = getConnectionConfig();
+      setConnectionConfig({
+        ...existing,
+        mode: "ssh",
+        ssh: { host, port, username, keyPath, remotePort, localPort },
+      });
+      return true;
+    },
+  );
+
+  ipcMain.handle(
     "test-remote-connection",
     (_event, url: string, apiKey?: string) => testRemoteConnection(url, apiKey),
   );
+
+  ipcMain.handle(
+    "test-ssh-connection",
+    (
+      _event,
+      host: string,
+      port: number,
+      username: string,
+      keyPath: string,
+      remotePort: number,
+    ) => {
+      const { ssh } = getConnectionConfig();
+      return testSshTunnelConnection({
+        host,
+        port,
+        username,
+        keyPath,
+        remotePort,
+        localPort: ssh.localPort || 18642,
+      });
+    },
+  );
+
+  ipcMain.handle("is-ssh-tunnel-active", () => isSshTunnelActive());
+
+  ipcMain.handle("start-ssh-tunnel", async () => {
+    try {
+      await startSshTunnel(getConnectionConfig().ssh);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+  ipcMain.handle("stop-ssh-tunnel", () => {
+    stopSshTunnel();
+    return true;
+  });
 
   // Chat — lazy-start gateway on first message
   ipcMain.handle(
@@ -768,15 +892,128 @@ function setupIPC(): void {
   ipcMain.handle("list-mcp-servers", (_event, profile?: string) =>
     listMcpServers(profile),
   );
+  ipcMain.handle("add-mcp-server", (_event, params, profile?: string) =>
+    addMcpServer(params, profile),
+  );
+  ipcMain.handle("remove-mcp-server", (_event, name: string, profile?: string) =>
+    removeMcpServer(name, profile),
+  );
+  ipcMain.handle(
+    "toggle-mcp-server",
+    (_event, name: string, enabled: boolean, profile?: string) =>
+      toggleMcpServer(name, enabled, profile),
+  );
+  ipcMain.handle("test-mcp-server", async (event, name: string) => {
+    const result = await testMcpServer(name, (chunk) => {
+      event.sender.send("mcp-test-output", chunk);
+    });
+    if (result.success) {
+      event.sender.send("mcp-test-done", result);
+    } else {
+      event.sender.send("mcp-test-error", result);
+    }
+    return result;
+  });
 
   // Memory providers
   ipcMain.handle("discover-memory-providers", (_event, profile?: string) =>
     discoverMemoryProviders(profile),
   );
 
+  ipcMain.handle("read-vault-file", async (_event, filePath: string) => {
+    const targetPath = resolveVaultPath(filePath);
+    if (!targetPath) {
+      return { error: "Path must stay inside HERMES_HOME/vault" };
+    }
+    try {
+      return {
+        content: await readFile(targetPath, "utf-8"),
+        frontmatter: null,
+        path: targetPath,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { error: message };
+    }
+  });
+
+  ipcMain.handle("get-vault-stats", async () => {
+    const vaultBase = resolve(HERMES_HOME, "vault");
+    const directories: Array<{
+      name: string;
+      fileCount: number;
+      latestUpdate: string;
+    }> = [];
+    let totalFiles = 0;
+    let totalSize = 0;
+
+    try {
+      const dirs = await readdir(vaultBase);
+      for (const dir of dirs) {
+        const fullDir = resolve(vaultBase, dir);
+        const dirStat = await stat(fullDir);
+        if (!dirStat.isDirectory()) continue;
+
+        const entries = await readdir(fullDir);
+        let fileCount = 0;
+        let latestMtime = 0;
+        for (const entry of entries) {
+          const fullPath = resolve(fullDir, entry);
+          const fileStat = await stat(fullPath);
+          if (!fileStat.isFile()) continue;
+          fileCount += 1;
+          totalFiles += 1;
+          totalSize += fileStat.size;
+          latestMtime = Math.max(latestMtime, fileStat.mtimeMs);
+        }
+        directories.push({
+          name: dir,
+          fileCount,
+          latestUpdate: latestMtime ? new Date(latestMtime).toISOString() : "",
+        });
+      }
+    } catch {
+      // Missing vault is a valid empty state.
+    }
+
+    return { totalFiles, totalSize, directories };
+  });
+
   // Log viewer
   ipcMain.handle("read-logs", (_event, logFile?: string, lines?: number) =>
     readLogs(logFile, lines),
+  );
+
+  ipcMain.handle("list-playbooks", () => getPlaybooks());
+  ipcMain.handle("run-playbook", async (event, playbookId: string) => {
+    try {
+      const result = await runPlaybook(playbookId, (step) => {
+        event.sender.send("playbook-step", step);
+      });
+      event.sender.send("playbook-done", {
+        finalStatus: result.finalStatus,
+        runId: result.runId,
+      });
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      event.sender.send("playbook-error", message);
+      return { finalStatus: "failed", error: message };
+    }
+  });
+  ipcMain.handle("run-llm-checker", (_event, task?: string) =>
+    runLlmChecker(task),
+  );
+  ipcMain.handle(
+    "understand-anything",
+    (_event, input: string, filePath?: string) =>
+      understandAnything(input, filePath),
+  );
+  ipcMain.handle("list-understanding-history", () =>
+    listUnderstandingHistory(),
+  );
+  ipcMain.handle("read-understanding-history", (_event, filename: string) =>
+    readUnderstandingHistory(filename),
   );
 
   // Pipeline runs listing
