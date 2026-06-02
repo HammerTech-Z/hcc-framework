@@ -76,19 +76,23 @@ function seedDb(
   const insMessage = db.prepare(
     `INSERT INTO messages (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)`,
   );
-  for (const s of sessions) {
-    insSession.run(
-      s.id,
-      s.source ?? "cli",
-      s.started_at,
-      s.message_count ?? 0,
-      s.model ?? "gpt-4o",
-      s.title ?? null,
-    );
-    if (s.firstUserMessage) {
-      insMessage.run(s.id, "user", s.firstUserMessage, s.started_at);
+  const insertSessions = db.transaction((items: typeof sessions) => {
+    for (const s of items) {
+      insSession.run(
+        s.id,
+        s.source ?? "cli",
+        s.started_at,
+        s.message_count ?? 0,
+        s.model ?? "gpt-4o",
+        s.title ?? null,
+      );
+      if (s.firstUserMessage) {
+        insMessage.run(s.id, "user", s.firstUserMessage, s.started_at);
+      }
     }
-  }
+  });
+
+  insertSessions(sessions);
   db.close();
 }
 
@@ -220,5 +224,5 @@ describe("syncSessionCache", () => {
     expect(result).toHaveLength(N);
     expect(result.every((r) => r.messageCount === 2)).toBe(true);
     expect(elapsed).toBeLessThan(500);
-  });
+  }, 15_000);
 });
