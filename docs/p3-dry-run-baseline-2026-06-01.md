@@ -3,6 +3,8 @@
 > 状态：P3 dry-run 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换 + soft switch 1-2 天观察期均已通过（2026-06-02）。P7 WeChat/iLink 4 个低优先级 cron job 已切 `deliver=local`（2026-06-02）。BaiLongma Read-only Cockpit Final Polish PASS（2026-06-02）。V5 保持 `MVP_PARTIAL`；C4/C5 暂缓（非技术失败）。HCC Auto Executor 仍不可用、未启动、未接线。
 > 用途：把 001-006 + 008 + 009 的成果归档为当前 P3 基线事实源，让 Claude Code / Hermes / 后续 Agent 读到同一上下文，不再重复追问或误判 HCC Auto Executor 已经处于可用/已启动状态。
 > 最高约束：`~/.hermes/HERMES-SOUL.md` v5.3。
+>
+> **当前测试基线（2026-06-02 21:51 更新）**：本文 §2 中 Slice 008 / Slice 009 引用的 `tests/safety 19 files / 470/470 PASS` 与 `tests/safety 20 files, 515/515 PASS / 45 tests` 是当时切片收口时的历史快照，**保留作历史证据，不再代表当前全量**。当前 Hermes Pro 全量测试基线为 **46 files / 995 tests PASS**（typecheck EXIT 0；执行：`npm run typecheck && npx vitest run`）。后续 §2 中任何"X files / Y tests"数字均为该切片收口时点的局部事实源。
 
 ---
 
@@ -194,7 +196,7 @@
 | Round 2 C Scoping Review | `~/.hermes/pipeline-runs/HCC-20260602-P3.5-ROUND2-C-SCOPING/01-report.md` | 18 files 分类：14 dead-infrastructure 0 importers + 4 high-risk hard-constraint-touching；推荐 0-file 迁移 / 软切换 |
 | Hermes live vs candidate readonly compare | `~/.hermes/pipeline-runs/HCC-20260602-HERMES-LIVE-VS-CANDIDATE-READONLY-COMPARE/01-report.md` | 7 pair；6 byte-identical + config 1 行差 + tools 1 行差 |
 | Soft-to-Live Switch Rehearsal | `~/.hermes/pipeline-runs/HCC-20260602-HERMES-SOFT-TO-LIVE-SWITCH-REHEARSAL/01-report.md` | `hermes` symlink 默认指向 candidate `.venv/bin/hermes`；6/6 smoke 全过 |
-| Soft Switch Observation Baseline | `~/.hermes/pipeline-runs/HCC-20260602-HERMES-SOFT-SWITCH-OBSERVATION/01 basaline.md` | ACTIVE 1-2 天观察期；rollback 命令就位 |
+| Soft Switch Observation Baseline | `~/.hermes/pipeline-runs/HCC-20260602-HERMES-SOFT-SWITCH-OBSERVATION/01-baseline.md` | ACTIVE 1-2 天观察期；rollback 命令就位 |
 
 **当前入口**：`hermes` 默认指向 `/Users/midoudou/.hermes/hermes-agent-upgrade-candidate/.venv/bin/hermes`（candidate v0.15.1）。
 

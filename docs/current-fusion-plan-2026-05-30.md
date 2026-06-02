@@ -420,7 +420,7 @@ usage_event:
 
 目标：让代码任务、小程序、Hermes Pro 自进化任务能走文件式半自动闭环。
 
-当前执行策略（2026-06-02）：P3 dry-run baseline 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 soft switch 已 PASS。HCC Auto Executor 仍不可用、未启动、未接线。后续代码/项目任务由 Claude Code 按 dry-run 契约执行（产 plan / verifier section / handoff payload / artifact record，不接真实执行入口）。Hermes 只负责需求整理、计划审查、知识检索、Handoff Pack、执行结果归档。**当前 P3.5 soft switch 处于 1-2 天观察期**：默认 `hermes` 入口指向 candidate v0.15.1；6/6 read-only smoke 已过；rollback 命令就位。等观察期结束且用户决定后再行推进。基线事实源：`docs/p3-dry-run-baseline-2026-06-01.md`；soft switch 观察期报告：`~/.hermes/pipeline-runs/HCC-20260602-HERMES-SOFT-SWITCH-OBSERVATION/01 basaline.md`。
+当前执行策略（2026-06-02）：P3 dry-run baseline 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 soft switch 已 PASS。HCC Auto Executor 仍不可用、未启动、未接线。后续代码/项目任务由 Claude Code 按 dry-run 契约执行（产 plan / verifier section / handoff payload / artifact record，不接真实执行入口）。Hermes 只负责需求整理、计划审查、知识检索、Handoff Pack、执行结果归档。**当前 P3.5 soft switch 处于 1-2 天观察期**：默认 `hermes` 入口指向 candidate v0.15.1；6/6 read-only smoke 已过；rollback 命令就位。等观察期结束且用户决定后再行推进。基线事实源：`docs/p3-dry-run-baseline-2026-06-01.md`；soft switch 观察期报告：`~/.hermes/pipeline-runs/HCC-20260602-HERMES-SOFT-SWITCH-OBSERVATION/01-baseline.md`。
 
 范围：
 - HCC 需求翻译、用户确认、双视角计划审查、隔离 worktree 执行、Codex 双审+测试、交付。

@@ -51,8 +51,8 @@ documenting the revert + the correct future procedure**.
   whether to commit the drift reset as a separate commit, or to
   leave the working tree uncommitted per Hermes Pro rules).
 - No other file is modified in this round (CONTEXT.md,
-  NEXT_STEP.md, current-fusion-plan, p3-dry-run basaline are
-  not touched).
+  NEXT_STEP.md, current-fusion-plan, p3-dry-run-baseline-2026-06-01.md
+  are not touched).
 - No `git reset --hard`, no `git checkout -- .` (both forbidden
   by this ADR's hard constraints; per Hermes Pro rules: "发现
   计划 bug 时，Agent 可以报告 Roadmap Bug Report，由用户决定
