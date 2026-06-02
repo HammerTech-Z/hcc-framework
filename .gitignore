@@ -33,3 +33,13 @@ release/
 **/src-tauri/target/
 **/src-tauri/gen/
 **/src-tauri/WixTools/
+
+# OpenWolf tool-local state (bug log, session cache, etc.)
+.wolf/
+
+# Claude Code skills that are not project-specific (e.g. impeccable, electron-pro,
+# typescript-expert — installed/updated by user; not part of the hermes-pro source).
+# Project-specific skills (e.g. hermes-agent) remain tracked explicitly.
+.claude/skills/impeccable/
+.claude/skills/electron-pro/
+.claude/skills/typescript-expert/
