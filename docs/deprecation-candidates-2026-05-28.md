@@ -171,6 +171,48 @@
 
 ---
 
+## F. 待用户决定是否移动到“过时计划”文件夹（2026-05-30 新增）
+
+目标文件夹：
+
+`/Users/midoudou/Desktop/知识/Hermes 代码任务/过时计划/`
+
+以下文件当前仍留在项目或 `.hermes` 内。它们不一定要移动；本节只列出候选，等待用户决定。
+
+| 编号 | 文件 | 当前作用 | 为什么可能过时 | 建议 |
+|------|------|----------|----------------|------|
+| F-1 | `docs/archive/CONTEXT-2026-05-21.md` | 历史上下文 | 版本线只有旧 V1-V5，无当前融合架构 | ✅ 已移动到桌面过时计划 `2026-05-30-current-cleanup/hermes-pro-docs-archive/` |
+| F-2 | `docs/archive/NEXT_STEP-2026-05-23.md` | 历史下一步 | 旧 V4 指向 CLI/Ruflo/Mano-P，不是当前 BaiLongma/HCC/GBrain 融合架构 | ✅ 已移动到桌面过时计划 `2026-05-30-current-cleanup/hermes-pro-docs-archive/` |
+| F-3 | `docs/archive/iteration-plan-v2-updated-2026-05-28.md` | 旧迭代计划快照 | 已被 locked roadmap + current fusion plan 取代 | ✅ 已移动到桌面过时计划 `2026-05-30-current-cleanup/hermes-pro-docs-archive/` |
+| F-4 | `~/.hermes/docs/Hermes-迭代计划-v2.md` | 兼容索引 | 若外部工具还会读此路径，移动会断旧链接；内容本身不是唯一计划 | 建议暂留，顶部继续指向 locked roadmap/current fusion plan |
+| F-5 | `~/.hermes/docs/trial/HCC流程-试点设计.md` | HCC 试点设计 | 仍有参考价值，但需要与当前融合计划同步 | 不建议移动；建议后续改为 HCC 当前设计参考 |
+| F-6 | `docs/iteration-plan-v2-updated.md` | 兼容索引 | 文件名像旧计划，但内容已是兼容索引 | 不建议移动；已更新指向 current fusion plan |
+
+补充：
+
+| 编号 | 文件 | 当前作用 | 为什么可能过时 | 建议 |
+|------|------|----------|----------------|------|
+| F-7 | `~/.hermes/docs/archive/patches-20260528/` | 旧补丁包 | 已不作为当前补丁来源 | ✅ 已移动到桌面过时计划 `2026-05-30-current-cleanup/hermes-dotdocs-patches/` |
+| F-8 | `NEXT_STEP.md.before-k15-2026-05-23` | 根目录旧下一步备份 | K1.5 旧状态会误导新 Agent；已被当前 `NEXT_STEP.md` + `current-fusion-plan-2026-05-30.md` 取代 | ✅ 已移动到桌面过时计划 `2026-05-30-current-cleanup/hermes-pro-root-legacy/` |
+| F-9 | `NEXT_STEP.md.before-hcc-2026-05-23` | 根目录旧下一步备份 | 旧 HCC/K1.5 状态会误导新 Agent；已被当前 `NEXT_STEP.md` + `current-fusion-plan-2026-05-30.md` 取代 | ✅ 已移动到桌面过时计划 `2026-05-30-current-cleanup/hermes-pro-root-legacy/` |
+| F-10 | `CONTEXT.md`（2026-05-28 旧版） | 根目录旧上下文 | 状态停在 2026-05-28，V4/V6/V7 与当前融合计划不一致 | ✅ 旧版已移动为 `2026-05-30-current-cleanup/hermes-pro-root-legacy/CONTEXT-2026-05-28.md`；根目录已重建当前入口 |
+
+过时计划文件夹已加 Archive Lock：
+
+- `/Users/midoudou/Desktop/知识/Hermes 代码任务/过时计划/AGENTS.md`
+- `/Users/midoudou/Desktop/知识/Hermes 代码任务/过时计划/CLAUDE.md`
+- `/Users/midoudou/Desktop/知识/Hermes 代码任务/过时计划/HERMES-ARCHIVE-LOCK.md`
+- `/Users/midoudou/Desktop/知识/Hermes 代码任务/过时计划/.ignore`
+- `/Users/midoudou/Desktop/知识/Hermes 代码任务/过时计划/.noindex`
+
+已在桌面过时计划文件夹中的旧文档无需重复移动，例如：
+
+- `/Users/midoudou/Desktop/知识/Hermes 代码任务/过时计划/2026-05-24-legacy-root/`
+- `/Users/midoudou/Desktop/知识/Hermes 代码任务/过时计划/2026-05-30-plan-cleanup/`
+- `/Users/midoudou/Desktop/知识/Hermes 代码任务/过时计划/2026-05-30-downloads/`
+
+---
+
 ## 执行原则
 
 - **不删除历史证据**。归档文件保留，当前入口明确指向 locked roadmap / NEXT_STEP。

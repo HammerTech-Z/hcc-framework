@@ -2,7 +2,7 @@
 
 > 创建日期：2026-05-26
 > 主题：知识赋能
-> 当前状态：V3 UI 集成完成，自动化 backlog 已迁移到 V6；V4 已重基线为 BaiLongma 认知编排；POC-2 已实现，下一步 Manual QA。原 V4 生态任务（CLI-Anything/Ruflo/Mano-P）已迁移到 V7。
+> 当前状态：V3 UI 集成完成，自动化 backlog 已迁移到 V6；V4 已重基线为 BaiLongma 认知编排；POC-2 已实现，Manual QA 已 PASS（2026-05-29）；Productionization NOT APPROVED。原 V4 生态任务（CLI-Anything/Ruflo/Mano-P）已迁移到 V7。
 
 ## 任务列表
 
@@ -35,4 +35,4 @@
 
 V3 已完成 6/6：Knowledge、Vault、Recharts、Understand → Vault、GBrain stats、Horizon read-only tab 均已落地。
 
-下一阶段已重基线为 V4 BaiLongma 认知编排，原 V4 生态融合任务（CLI-Anything/Ruflo/Mano-P）已迁移到 V7。POC-2 已实现，Manual QA 待执行。
+下一阶段已重基线为 V4 BaiLongma 认知编排，原 V4 生态融合任务（CLI-Anything/Ruflo/Mano-P）已迁移到 V7。POC-2 已实现，Manual QA 已 PASS（2026-05-29），Productionization NOT APPROVED。

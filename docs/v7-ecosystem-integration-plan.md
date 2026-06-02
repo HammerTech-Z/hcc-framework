@@ -2,7 +2,7 @@
 
 > 版本：V7
 > 继承自：原 V4 生态融合任务
-> 状态：✅ PARTIAL_COMPLETE（Safari MCP MVP PASS；其余候选暂缓或待授权）
+> 状态：✅ PARTIAL_COMPLETE（Safari MCP MVP PASS；Mano-P 待定；其余候选暂缓或待授权；P7 WeChat/iLink 4 个低优先级 cron job 已切 `deliver=local`）
 > 锁定：本文档是锁定路线图的一部分，变更需 ADR + 用户确认
 
 ---
@@ -11,7 +11,7 @@
 
 **让 Hermes Pro 具备外部工具操作、多 worker 调度和高级记忆算法能力。**
 
-原 V4 计划（CLI-Anything / Ruflo / Mano-P / OpenHuman / Daily Digest）已迁移到 V7。当前 V7 核心 MVP 是 Safari MCP，已通过 smoke test；其余能力保持候选、暂缓或 Delivery/Reliability 独立归属。
+原 V4 计划（CLI-Anything / Ruflo / Mano-P / OpenHuman / Daily Digest）已迁移到 V7。当前 V7 核心 MVP 是 Safari MCP，已通过 smoke test；Mano-P 进入待定项目，不再作为候选试点推进；其余能力保持候选、暂缓或 Delivery/Reliability 独立归属。
 
 ---
 
@@ -33,11 +33,11 @@
 
 | 项目 | 内容 |
 |------|------|
-| **目标** | 从 Ruflo / OpenHuman / MiroFish / OpenClaw / Dograh / Mano-P 提炼可借鉴能力 |
+| **目标** | 从 Ruflo / OpenHuman / MiroFish / OpenClaw / Dograh 提炼可借鉴能力；Mano-P 仅保留待定记录 |
 | **当前状态** | ✅ 研究完成，ADR 草案待用户选择 |
 | **研究文档** | [docs/research/external-agent-capability-map-2026-05-30.md](./research/external-agent-capability-map-2026-05-30.md) |
 | **ADR 草案** | [docs/adr/ADR-20260530-external-agent-capability-adoption.md](./adr/ADR-20260530-external-agent-capability-adoption.md) |
-| **推荐结论** | OpenClaw sandbox/allowlist、OpenHuman Memory Tree/TokenJuice、Ruflo worker taxonomy 可借鉴；Dograh/Mano-P/MiroFish 暂缓或候选 |
+| **推荐结论** | OpenClaw sandbox/allowlist、OpenHuman Memory Tree/TokenJuice、Ruflo worker taxonomy 可借鉴；Dograh/MiroFish 暂缓或候选；Mano-P 待定，不推进 |
 | **边界** | 不安装、不复制受限许可证代码、不自动修改 locked roadmap |
 
 ---
@@ -63,13 +63,13 @@
 | 项目 | 内容 |
 |------|------|
 | **原计划目标** | 本地模型训练/微调，支持 AI 操作 Mac |
-| **当前状态** | ⏸️ **硬件不匹配，降级为候选** |
+| **当前状态** | ⏸️ **待定项目，不作为候选试点推进** |
 | **本机配置** | MacBook Air M5，16GB RAM |
 | **Mano-P 前置要求** | Apple M4+，32GB RAM |
 | **结论** | 芯片满足（M5 ≥ M4），内存不满足（16GB < 32GB）；不作为 V7 主线 |
 | **保留条件** | 硬件升级到 32GB、Mano-P 计算棒可用、或云端服务可验证后再评估 |
-| **是否保留** | 降级保留，不进入 V7 主线核心依赖 |
-| **可达性判断** | 暂缓，等硬件升级或云端方案确认 |
+| **是否保留** | 仅放入待定项目，不进入 V7 主线，不作为近期候选试点 |
+| **可达性判断** | 待定；除非用户重新明确授权并满足硬件/云端验证条件，否则不推进 |
 
 ---
 
@@ -94,12 +94,12 @@
 || 项目 | 内容 |
 |------|------|
 | **原计划目标** | 每日自动生成知识摘要推送到 WeChat |
-| **当前状态** | **🔗 已从 V7 主线解绑** → 归入独立 Delivery/Reliability 任务池 |
+| **当前状态** | **🔗 已从 V7 主线解绑** → 归入独立 Delivery/Reliability 任务池；**P7 低优先级 4 job 已切 `deliver=local`**（`db41a513ebfd` / `21129f505fb4` / `28f0bff3083d` / `skill-cleanup-weekly`；schedule / prompt / skill set / enable state 不变；仅 `deliver: weixin → local`） |
 | **阻塞原因** | WeChat/iLink delivery 受 rate limit 阻塞（账号 o9cq80-y） |
 | **ADR** | [docs/adr/ADR-20260530-v7-5-delivery-unbind.md](./adr/ADR-20260530-v7-5-delivery-unbind.md) |
 | **新归属** | Delivery/Reliability 独立任务池，不再阻塞 V7 主线 |
 | **是否保留** | 保留（每日摘要功能不取消，只改变归属） |
-| **可达性判断** | 待 WeChat/iLink rate limit 诊断解决后恢复 |
+| **可达性判断** | 低优先级尾部 P7 已完成（4 job `deliver=local`）；高优先级投递策略仍待独立决策（不在本批次） |
 | **验收标准** | 1. 每日摘要自动生成 2. 成功推送到用户（不依赖 V7 生态工具进展） |
 
 ---
@@ -110,17 +110,17 @@
 |--------|------|--------|------|
 | P1 | V7-1 CLI-Anything | ✅ **MVP PASS** | Safari MCP 已接入 Hermes，smoke test PASS |
 | P2 | V7-2 Ruflo loop-workers | 暂缓 | 当前无需替代 |
-| P3 | V7-3 Mano-P | **候选暂缓** | 硬件不匹配（16GB < 32GB），降级为候选 |
+| P3 | V7-3 Mano-P | **待定项目** | 硬件不匹配（16GB < 32GB），用户要求先放弃 Mano-P 相关推进 |
 | P4 | V7-4 OpenHuman Memory Tree | 暂缓 | 需设计定义 |
 | ~~P5~~ | ~~V7-5 每日知识摘要~~ | ✅ **已从 V7 解绑** | 归入 Delivery/Reliability 独立任务池 |
 
 **当前 V7 状态：V7_PARTIAL_COMPLETE**
 
-> **注意**：V7 核心 MVP（Safari MCP）已完成，但整体 V7 还有多个任务暂缓/DEFER，WeChat/iLink rate limit 仍在 mitigated_pending_observation。
+> **注意**：V7 核心 MVP（Safari MCP）已完成，但整体 V7 还有多个任务暂缓/DEFER。WeChat/iLink low-priority 4 cron job 已切 `deliver=local`（P7 完成）；高优先级投递策略仍待独立决策（不在本批次）。
 
 ### 替代候选
 
-GUI-VLA 方向（Mano-P 的替代方案）进入候选池，不直接进入 V7 主线。需单独试点验证后才能进入锁定路线图。
+GUI-VLA 方向不再围绕 Mano-P 推进。UI-TARS Desktop / OpenAdapt 如需评估，作为独立候选池项目处理，不继承 Mano-P 优先级；需单独试点验证后才能进入锁定路线图。
 
 #### UI-TARS Desktop
 
@@ -164,7 +164,7 @@ GUI-VLA 方向（Mano-P 的替代方案）进入候选池，不直接进入 V7 �
 |------|------|
 | CLI-Anything | Safari harness 受 Python 3.14 TLS 问题阻塞。官方入口真实存在且高度活跃（HKUDS/CLI-Anything，40,643 stars） |
 | Ruflo loop-workers | 本地零痕迹，Hermes jobs 问题在业务层，不需要替代 |
-| Mano-P | 硬件不匹配：芯片满足（M5 ≥ M4），内存不满足（16GB < 32GB），降级为候选 |
+| Mano-P | 硬件不匹配：芯片满足（M5 ≥ M4），内存不满足（16GB < 32GB）；用户要求先放弃 Mano-P 相关推进，放入待定项目 |
 
 ---
 

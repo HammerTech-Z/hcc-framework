@@ -1,384 +1,432 @@
-// BaiLongma POC-2: Real readonly cron data integration
+// BaiLongma P2: 主驾驶舱 — 读所有可用 preload API
 // Hard boundaries: no new IPC handles, no writes, read-only via existing preload APIs
+// P2 panels use ONLY: getGatewayState, listVaultFiles, knowledgeSearch, listPipelineRuns, getEvents, listCronJobs
 
 import React, { useState, useEffect } from "react";
-import {
-  classifyError,
-  errorTypeLabel,
-  type ErrorType,
-} from "./error-classification";
 
-// Cron Job type from preload API (read-only)
-interface CronJob {
-  id: string;
-  name: string;
-  schedule: string;
-  state: "active" | "paused" | "completed";
-  last_run_at: string | null;
-  last_status: string | null;
-  last_error: string | null;
+// ----- Types -----
+
+interface GatewayState {
+  pid: number;
+  kind: string;
+  gateway_state: string;
+  active_agents: number;
+  platforms: Record<string, { state: string }>;
+  updated_at: string;
 }
 
-interface ClassifiedError {
-  jobId: string;
-  jobName: string;
-  errorType: ErrorType;
-  retryable: boolean;
-  rawError: string;
+interface VaultGroup {
+  dir: string;
+  files: { path: string; name: string; size: number; mtime: number }[];
 }
 
-// Step state for task progression
-type StepState = "pending" | "running" | "completed";
-
-// ACUI Event log item
-interface EventLogItem {
-  time: string;
-  type: string;
-  desc: string;
+interface PipelineRun {
+  runId: string;
+  taskName: string;
+  status: string;
+  conclusion: string;
+  createdAt: string;
+  updatedAt: string;
+  artifactCount: number;
 }
 
-// Generate summary events from real job data
-function generateSummaryEvents(
-  totalJobs: number,
-  failedJobs: number,
-  errorTypes: Map<ErrorType, number>,
-  retryableJobs: number,
-): EventLogItem[] {
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-US", { hour12: false });
+interface SystemEvent {
+  ts: string;
+  event: string;
+  task_id?: string;
+  role?: string;
+  [k: string]: unknown;
+}
 
-  const events: EventLogItem[] = [
-    { time: timeStr, type: "task.created", desc: `task_id=poc-2, goal=cron failure diagnosis` },
-    { time: timeStr, type: "ui_show", desc: `TaskHeader, id=hdr-2, props={loading: false}` },
-    { time: timeStr, type: "step.state_change", desc: `s-1 → running (load jobs)` },
+interface PhaseInfo {
+  label: string;
+  detail: string;
+  status: "passed" | "active" | "pending";
+}
+
+interface RiskItem {
+  text: string;
+  type: "blocker" | "warning";
+}
+
+// ----- Stage data (read-only, synchronized with NEXT_STEP.md) -----
+
+const STAGES: PhaseInfo[] = [
+  { label: "P0", detail: "knowledgeSearch 固定查询 0 超时 — PASS", status: "passed" },
+  { label: "P0.5", detail: "Handoff Pack & Verifier Report 生成 — PASS", status: "passed" },
+  { label: "P1", detail: "GBrain typed links MVP — PASS", status: "passed" },
+  { label: "P1.5", detail: "Usage Feedback Ledger in-memory — PASS", status: "passed" },
+  { label: "P2", detail: "BaiLongma 主驾驶舱升级 — PASS", status: "passed" },
+  { label: "P2.5", detail: "安全基座 — PASS", status: "passed" },
+  { label: "P3", detail: "dry-run 001-006 + 008 + 009 + harness 8 artifact — PASS / real execution paused", status: "active" },
+  { label: "P3.5", detail: "Hermes Agent soft switch ACTIVE（candidate v0.15.1 1-2 天观察期） / hard cutover 未批准", status: "active" },
+  { label: "P7", detail: "WeChat/iLink 低优先级 4 个 cron job deliver=local — 已完成", status: "passed" },
+  { label: "Prod", detail: "BaiLongma Productionization — NOT APPROVED（保持只读增强）", status: "pending" },
+];
+
+// ----- Helpers -----
+
+function timeAgo(ts: string): string {
+  const d = new Date(ts);
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return `${sec}s`;
+  if (sec < 3600) return `${Math.floor(sec / 3600)}m`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h`;
+  return `${Math.floor(sec / 86400)}d`;
+}
+
+// ----- Sub-panels -----
+
+function StageBar({ stages }: { stages: PhaseInfo[] }) {
+  return (
+    <div className="bailongma-panel">
+      <div className="bailongma-panel-title">当前阶段 / 总体进度</div>
+      {stages.map((s) => (
+        <div key={s.label} className="bailongma-stage-row">
+          <span className={`bailongma-stage-badge ${s.status}`}>{s.label}</span>
+          <span className={`bailongma-stage-status ${s.status}`}>
+            {s.status === "passed" ? "✓" : s.status === "active" ? "▶" : "○"}
+          </span>
+          <span className="bailongma-stage-detail">{s.detail}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function GatewayPanel({ gw }: { gw: GatewayState | null }) {
+  return (
+    <div className="bailongma-panel">
+      <div className="bailongma-panel-title">Gateway / Knowledge 状态</div>
+      {gw ? (
+        <>
+          <div className="bailongma-brain-item">
+            <span className={gw.gateway_state === "running" ? "bailongma-status-done" : "bailongma-status-pending"}>
+              {gw.gateway_state === "running" ? "✓" : "!"}
+            </span>
+            <span>Gateway: {gw.gateway_state}</span>
+            <span className="bailongma-text-muted">pid={gw.pid}</span>
+          </div>
+          <div className="bailongma-brain-item">
+            <span className="bailongma-status-done">✓</span>
+            <span>Active agents: {gw.active_agents}</span>
+          </div>
+          {Object.entries(gw.platforms).map(([name, p]) => (
+            <div key={name} className="bailongma-brain-item">
+              <span className={p.state === "connected" || p.state === "running" ? "bailongma-status-done" : "bailongma-status-pending"}>
+                {p.state === "connected" || p.state === "running" ? "✓" : "!"}
+              </span>
+              <span>{name}: {p.state}</span>
+            </div>
+          ))}
+          <div className="bailongma-brain-item">
+            <span className="bailongma-text-muted">更新: {timeAgo(gw.updated_at)} 前</span>
+          </div>
+        </>
+      ) : (
+        <div className="bailongma-brain-item">
+          <span className="bailongma-status-pending">?</span>
+          <span>Gateway 未连接</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VaultStatsPanel({ groups }: { groups: VaultGroup[] }) {
+  const totalFiles = groups.reduce((s, g) => s + g.files.length, 0);
+  const dirs = groups.map((g) => g.dir);
+  return (
+    <div className="bailongma-panel">
+      <div className="bailongma-panel-title">Knowledge / Vault 状态</div>
+      <div className="bailongma-brain-item">
+        <span className="bailongma-status-done">✓</span>
+        <span>Vault: {totalFiles} 文件</span>
+      </div>
+      {dirs.map((d) => {
+        const cnt = groups.find((g) => g.dir === d)?.files.length ?? 0;
+        return (
+          <div key={d} className="bailongma-brain-item">
+            <span className="bailongma-text-muted">·</span>
+            <span>{d}: {cnt} files</span>
+          </div>
+        );
+      })}
+      <div className="bailongma-panel-title" style={{ marginTop: 8 }}>Handoff Pack 状态</div>
+      <div className="bailongma-brain-item">
+        <span className="bailongma-status-pending">—</span>
+        <span>无 preload IPC — 未接线</span>
+      </div>
+    </div>
+  );
+}
+
+function GBrainPanel() {
+  return (
+    <div className="bailongma-panel">
+      <div className="bailongma-panel-title">GBrain Typed Links 状态</div>
+      <div className="bailongma-brain-item">
+        <span className="bailongma-status-done">✓</span>
+        <span>typed-links.ts 已实现</span>
+      </div>
+      <div className="bailongma-brain-item">
+        <span className="bailongma-status-pending">—</span>
+        <span>无 typed links 统计 IPC — 未接线</span>
+      </div>
+      <div className="bailongma-brain-item">
+        <span className="bailongma-status-pending">—</span>
+        <span>Knowledge screen 可本地计算，但 BaiLongma 不做估算</span>
+      </div>
+    </div>
+  );
+}
+
+function UsageFeedbackPanel() {
+  return (
+    <div className="bailongma-panel">
+      <div className="bailongma-panel-title">Usage Feedback Ledger 状态</div>
+      <div className="bailongma-brain-item">
+        <span className="bailongma-status-done">✓</span>
+        <span>usage-feedback.ts 已实现</span>
+      </div>
+      <div className="bailongma-brain-item">
+        <span className="bailongma-status-pending">—</span>
+        <span>in-memory only — 无法从 renderer 轮询</span>
+      </div>
+      <div className="bailongma-brain-item">
+        <span className="bailongma-text-muted">P1.5: append-only ledger</span>
+      </div>
+    </div>
+  );
+}
+
+function RisksPanel({ risks }: { risks: RiskItem[] }) {
+  return (
+    <div className="bailongma-panel">
+      <div className="bailongma-panel-title">风险 / 阻塞</div>
+      {risks.length === 0 ? (
+        <div className="bailongma-brain-item">
+          <span className="bailongma-status-done">✓</span>
+          <span>无阻塞风险</span>
+        </div>
+      ) : (
+        risks.map((r, i) => (
+          <div key={i} className="bailongma-brain-item">
+            <span className={r.type === "blocker" ? "bailongma-status-pending" : "bailongma-status-warn"}>
+              {r.type === "blocker" ? "✗" : "!"}
+            </span>
+            <span>{r.text}</span>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function NextActionsPanel() {
+  const nextItems = [
+    "P3 真实执行入口仍需用户单独批准（HCC Auto Executor paused）",
+    "BaiLongma Productionization 仍未批准，当前保持只读增强",
+    "Hermes Agent hard cutover 未批准，P3.5 soft switch 观察期内仅 read-only",
+    "P7 已完成 WeChat/iLink 低优先级 4 job deliver=local；高优先级投递策略仍待决策",
+    "hidden view 后台轮询已暂停（Layout.tsx visitedViews 模式）",
   ];
-
-  if (failedJobs > 0) {
-    const errorSummary = Array.from(errorTypes.entries())
-      .map(([type, count]) => `${type}=${count}`)
-      .join(", ");
-
-    events.push({
-      time: timeStr,
-      type: "context.gathered",
-      desc: `loaded ${totalJobs} jobs, ${failedJobs} failed (${errorSummary}, retryable=${retryableJobs})`,
-    });
-    events.push({ time: timeStr, type: "step.state_change", desc: `s-1 → completed` });
-    events.push({ time: timeStr, type: "step.state_change", desc: `s-2 → running` });
-    events.push({
-      time: timeStr,
-      type: "artifact.created",
-      desc: `id=a-1, type=diagnosis, summary=${failedJobs} failed jobs analyzed`,
-    });
-    events.push({ time: timeStr, type: "ui_show", desc: `DiagnosisCard, id=diag-1` });
-    events.push({ time: timeStr, type: "step.state_change", desc: `s-2 → completed` });
-  } else {
-    events.push({
-      time: timeStr,
-      type: "context.gathered",
-      desc: `loaded ${totalJobs} jobs, 0 failed`,
-    });
-    events.push({ time: timeStr, type: "step.state_change", desc: `s-1 → completed` });
-    events.push({ time: timeStr, type: "step.state_change", desc: `s-2 → running` });
-    events.push({
-      time: timeStr,
-      type: "artifact.created",
-      desc: `id=a-1, type=diagnosis, summary=no failures found`,
-    });
-    events.push({ time: timeStr, type: "ui_show", desc: `DiagnosisCard, id=diag-1` });
-    events.push({ time: timeStr, type: "step.state_change", desc: `s-2 → completed` });
-  }
-
-  events.push({ time: timeStr, type: "task.state_change", desc: `state=completed` });
-  return events;
+  return (
+    <div className="bailongma-panel">
+      <div className="bailongma-panel-title">下一步行动</div>
+      {nextItems.map((item, i) => (
+        <div key={i} className="bailongma-brain-item">
+          <span className="bailongma-stage-badge" style={{ fontSize: 10 }}>{i + 1}</span>
+          <span>{item}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
-// Step indicator component
-function StepIndicator({ state }: { state: StepState }): React.ReactNode {
-  if (state === "completed") return <span className="bailongma-step-done">✓</span>;
-  if (state === "running") return <span className="bailongma-step-running">●</span>;
-  return <span className="bailongma-step-pending">○</span>;
+function PipelineArtifactsPanel({ runs }: { runs: PipelineRun[] }) {
+  return (
+    <div className="bailongma-panel">
+      <div className="bailongma-panel-title">artifacts / verification</div>
+      <div className="bailongma-brain-item">
+        <span className="bailongma-status-done">✓</span>
+        <span>listPipelineRuns() 可用</span>
+      </div>
+      <div className="bailongma-text-muted" style={{ padding: "4px 0" }}>最近 pipeline runs:</div>
+      {runs.slice(0, 5).map((r) => (
+        <div key={r.runId} className="bailongma-brain-item">
+          <span className={r.conclusion === "success" ? "bailongma-status-done" : r.conclusion === "failed" ? "bailongma-status-pending" : "bailongma-status-warn"}>
+            {r.conclusion === "success" ? "✓" : r.conclusion === "failed" ? "✗" : "?"}
+          </span>
+          <span>{r.taskName || r.runId.slice(0, 8)}</span>
+          <span className="bailongma-text-muted">{r.conclusion}</span>
+        </div>
+      ))}
+      {runs.length === 0 && (
+        <div className="bailongma-brain-item">
+          <span className="bailongma-text-muted">暂无 pipeline runs</span>
+        </div>
+      )}
+    </div>
+  );
 }
 
-// Props interface
+function CronSummaryPanel({ totalJobs, failedJobs }: { totalJobs: number; failedJobs: number }) {
+  return (
+    <div className="bailongma-panel">
+      <div className="bailongma-panel-title">Cron Jobs 快照</div>
+      <div className="bailongma-stats">
+        <div className="bailongma-stat">
+          <span className="bailongma-stat-value">{totalJobs}</span>
+          <span className="bailongma-stat-label">total</span>
+        </div>
+        <div className="bailongma-stat">
+          <span className="bailongma-stat-value bailongma-stat-ok">{totalJobs - failedJobs}</span>
+          <span className="bailongma-stat-label">ok</span>
+        </div>
+        <div className="bailongma-stat">
+          <span className={`bailongma-stat-value ${failedJobs > 0 ? "bailongma-stat-err" : "bailongma-stat-ok"}`}>
+            {failedJobs}
+          </span>
+          <span className="bailongma-stat-label">errors</span>
+        </div>
+      </div>
+      <div className="bailongma-panel-title" style={{ marginTop: 8 }}>最近系统事件</div>
+    </div>
+  );
+}
+
+// ----- Main component -----
+
 interface BaiLongmaProps {
   profile?: string;
 }
 
-// Main component
-function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
-  const [jobs, setJobs] = useState<CronJob[]>([]);
+export default function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
+  const [gw, setGw] = useState<GatewayState | null>(null);
+  const [vaultGroups, setVaultGroups] = useState<VaultGroup[]>([]);
+  const [pipelineRuns, setPipelineRuns] = useState<PipelineRun[]>([]);
+  const [events, setEvents] = useState<SystemEvent[]>([]);
+  const [jobs, setJobs] = useState<{ last_status: string | null; last_error: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load cron jobs via existing preload API (read-only)
+  // Load all data via existing preload APIs
   useEffect(() => {
     let cancelled = false;
 
-    async function loadJobs(): Promise<void> {
+    async function load() {
       try {
-        const list = await window.hermesAPI.listCronJobs(true, profile);
-        if (!cancelled) {
-          setJobs(list);
-          setError(null);
-        }
+        const [gwRes, vaultRes, runsRes, evRes, cronRes] = await Promise.all([
+          window.hermesAPI.getGatewayState().catch(() => null),
+          window.hermesAPI.listVaultFiles().catch(() => []),
+          window.hermesAPI.listPipelineRuns(20).catch(() => []),
+          window.hermesAPI.getEvents(20).catch(() => []),
+          window.hermesAPI.listCronJobs(true, profile).catch(() => []),
+        ]);
+        if (cancelled) return;
+
+        if (gwRes) setGw(gwRes);
+        if (vaultRes) setVaultGroups(vaultRes);
+        if (runsRes) setPipelineRuns(runsRes);
+        if (evRes) setEvents(evRes);
+        if (cronRes) setJobs(cronRes);
+
+        setError(null);
       } catch (e) {
-        if (!cancelled) {
-          setError(String(e));
-        }
+        if (!cancelled) setError(String(e));
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
-    loadJobs();
+    load();
     return () => { cancelled = true; };
   }, [profile]);
 
-  // Compute stats from real data
   const totalJobs = jobs.length;
-  const failedJobs = jobs.filter(
-    (j) => j.last_status === "error" || (j.last_error && j.last_error.length > 0),
-  );
-  const classifiedErrors: ClassifiedError[] = failedJobs.map((j) => {
-    const classification = classifyError(j.last_error);
-    return {
-      jobId: j.id,
-      jobName: j.name,
-      errorType: classification.type,
-      retryable: classification.retryable,
-      rawError: j.last_error || "unknown",
-    };
-  });
+  const failedJobs = jobs.filter((j) => j.last_status === "error" || (j.last_error && j.last_error.length > 0)).length;
 
-  // Error type counts for summary
-  const errorTypeCounts = new Map<ErrorType, number>();
-  classifiedErrors.forEach((e) => {
-    errorTypeCounts.set(e.errorType, (errorTypeCounts.get(e.errorType) || 0) + 1);
-  });
-  const retryableFailures = classifiedErrors.filter((e) => e.retryable).length;
-
-  // Steps always completed in POC view (diagnostic completed)
-  const steps = [
-    { id: "s-1", label: "gather context", state: "completed" as StepState },
-    { id: "s-2", label: "analyze failures", state: "completed" as StepState },
+  const risks: RiskItem[] = [
+    { text: "HCC Auto Executor — paused（未批准、未启动、未接线）", type: "blocker" },
+    { text: "P3 真实执行 — 仍需用户显式批准（不调用 runPlaybook / trigger / send）", type: "blocker" },
+    { text: "BaiLongma Productionization — NOT APPROVED（仅允许只读增强）", type: "blocker" },
+    { text: "Hermes Agent hard cutover — 未批准（仅 P3.5 soft switch 观察期 ACTIVE）", type: "blocker" },
+    { text: "P7 WeChat/iLink — 低优先级 4 个 cron job 已切 deliver=local（高优先级投递策略仍待决策）", type: "warning" },
+    { text: "Handoff Pack — 无 preload IPC，标注未接线", type: "warning" },
+    { text: "Usage Feedback Ledger — in-memory only，无法从 renderer 轮询", type: "warning" },
+    { text: "GBrain typed links — 无独立 IPC，由 Knowledge screen 计算", type: "warning" },
+    { text: "hidden view polling — Layout.tsx visitedViews 模式，无主动轮询", type: "warning" },
   ];
 
-  // Generate summary events based on real data
-  const events = generateSummaryEvents(
-    totalJobs,
-    failedJobs.length,
-    errorTypeCounts,
-    retryableFailures,
-  );
-
-  // Loading state
   if (loading) {
     return (
       <div className="bailongma-container">
-        <div className="bailongma-poc-badge">
-          只读 POC · 无新增 IPC · 无写入 · 正在分析 cron 数据...
-        </div>
+        <div className="bailongma-poc-badge">BaiLongma Read-only Cockpit · 只读 · 无新增 IPC · 无写入</div>
         <div className="bailongma-loading">
           <div className="bailongma-spinner" />
-          <span>Loading readonly cron status...</span>
+          <span>Loading cockpit...</span>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="bailongma-container">
-        <div className="bailongma-poc-badge">
-          只读 POC · 无新增 IPC · 无写入 · 出错了
-        </div>
+        <div className="bailongma-poc-badge">BaiLongma Read-only Cockpit · 出错了</div>
         <div className="bailongma-error-state">
           <div className="bailongma-error-icon">!</div>
-          <div className="bailongma-error-title">加载 cron 任务失败</div>
+          <div className="bailongma-error-title">加载失败</div>
           <div className="bailongma-error-msg">{error}</div>
-          <div className="bailongma-error-hint">只读模式 — 无法重试或写入</div>
         </div>
       </div>
     );
   }
 
-  // Main view
   return (
     <div className="bailongma-container">
-      {/* POC Header */}
-      <div className="bailongma-poc-badge">
-        只读 POC · 无新增 IPC · 无写入 · 真实 Cron 数据
-      </div>
+      <div className="bailongma-poc-badge">BaiLongma Read-only Cockpit · 只读 · 无新增 IPC · 无写入 · P3.5 soft switch 观察期</div>
 
-      {/* 3-Column Cockpit */}
+      {/* Top: Stage progress */}
+      <StageBar stages={STAGES} />
+
+      {/* Middle: 3-column cockpit */}
       <div className="bailongma-cockpit">
-        {/* Left: Focus Stack */}
-        <div className="bailongma-panel bailongma-panel-left">
-          <div className="bailongma-panel-title">Focus Stack</div>
-          <div className="bailongma-focus-item">
-            <span className="bailongma-focus-dot">●</span>
-            <span>cron failure diagnosis</span>
-          </div>
-
-          {/* Job Summary Stats */}
-          <div className="bailongma-stats">
-            <div className="bailongma-stat">
-              <span className="bailongma-stat-value">{totalJobs}</span>
-              <span className="bailongma-stat-label">total jobs</span>
-            </div>
-            <div className="bailongma-stat">
-              <span className="bailongma-stat-value bailongma-stat-ok">
-                {totalJobs - failedJobs.length}
-              </span>
-              <span className="bailongma-stat-label">ok</span>
-            </div>
-            <div className="bailongma-stat">
-              <span className="bailongma-stat-value bailongma-stat-err">
-                {failedJobs.length}
-              </span>
-              <span className="bailongma-stat-label">errors</span>
-            </div>
-          </div>
+        {/* Left column */}
+        <div className="bailongma-col-left">
+          <GatewayPanel gw={gw} />
+          <VaultStatsPanel groups={vaultGroups} />
         </div>
 
-        {/* Center: Task Canvas */}
-        <div className="bailongma-panel bailongma-panel-center">
-          <div className="bailongma-panel-title">Task Canvas</div>
-
-          {/* Task Header */}
-          <div className="bailongma-task-header">
-            <div className="bailongma-task-goal">Goal: cron failure diagnosis</div>
-            <div className="bailongma-task-state">✓ completed</div>
-          </div>
-
-          {/* Steps */}
-          <div className="bailongma-steps">
-            {steps.map((step, i) => (
-              <div key={step.id} className="bailongma-step">
-                <span className="bailongma-step-num">[{i + 1}]</span>
-                <StepIndicator state={step.state} />
-                <span className="bailongma-step-label">{step.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Diagnosis Card */}
-          {failedJobs.length > 0 ? (
-            <div className="bailongma-diagnosis-card">
-              <div className="bailongma-diagnosis-header">● {failedJobs.length} Failed Jobs</div>
-              <div className="bailongma-diagnosis-body">
-                <div className="bailongma-diagnosis-error">
-                  {failedJobs.length} jobs with errors · {retryableFailures} retryable
-                </div>
-                {Array.from(errorTypeCounts.entries()).map(([type, count]) => (
-                  <div key={type} className="bailongma-error-type-row">
-                    <span className="bailongma-error-type-badge">{errorTypeLabel(type)}</span>
-                    <span className="bailongma-error-type-count">×{count}</span>
-                  </div>
-                ))}
-                <div className="bailongma-diagnosis-suggestion">
-                  Suggestion: Review failed jobs in Schedules screen
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bailongma-diagnosis-card bailongma-diagnosis-ok">
-              <div className="bailongma-diagnosis-header">✓ All Jobs OK</div>
-              <div className="bailongma-diagnosis-body">
-                <div className="bailongma-diagnosis-msg">
-                  No failed cron jobs detected.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Failed Job List */}
-          {failedJobs.length > 0 && (
-            <div className="bailongma-failed-list">
-              <div className="bailongma-failed-list-title">Failed Jobs</div>
-              {classifiedErrors.slice(0, 5).map((e) => (
-                <div key={e.jobId} className="bailongma-failed-item">
-                  <span className="bailongma-failed-badge" data-type={e.errorType}>
-                    {errorTypeLabel(e.errorType).slice(0, 3)}
-                  </span>
-                  <span className="bailongma-failed-name">{e.jobName}</span>
-                  <span className="bailongma-failed-retryable">
-                    {e.retryable ? "retryable" : "manual"}
-                  </span>
-                </div>
-              ))}
-              {classifiedErrors.length > 5 && (
-                <div className="bailongma-failed-more">
-                  +{classifiedErrors.length - 5} more failures
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Action Buttons (no-op in POC) */}
-          <div className="bailongma-actions">
-            <button className="btn btn-secondary" disabled>Open Schedules</button>
-            <button className="btn btn-ghost" disabled>Dismiss</button>
-          </div>
+        {/* Center column */}
+        <div className="bailongma-col-center">
+          <GBrainPanel />
+          <UsageFeedbackPanel />
+          <RisksPanel risks={risks} />
         </div>
 
-        {/* Right: Brain UI */}
-        <div className="bailongma-panel bailongma-panel-right">
-          {/* Context */}
-          <div className="bailongma-brain-section">
-            <div className="bailongma-panel-title">Context</div>
-            <div className="bailongma-brain-item">
-              <span className="bailongma-status-done">✓</span>
-              <span>listCronJobs (read-only)</span>
-            </div>
-            <div className="bailongma-brain-item">
-              <span className="bailongma-status-done">✓</span>
-              <span>error classification</span>
-            </div>
-          </div>
-
-          {/* Artifacts */}
-          <div className="bailongma-brain-section">
-            <div className="bailongma-panel-title">Artifacts</div>
-            <div className="bailongma-brain-item">
-              <span className="bailongma-artifact-tag">diagnosis:</span>
-              <span>{failedJobs.length} failures / {totalJobs} total</span>
-            </div>
-          </div>
-
-          {/* Errors */}
-          <div className="bailongma-brain-section">
-            <div className="bailongma-panel-title">Errors</div>
-            {classifiedErrors.length === 0 ? (
-              <div className="bailongma-brain-item">
-                <span className="bailongma-status-done">✓</span>
-                <span>no errors</span>
-              </div>
-            ) : (
-              classifiedErrors.slice(0, 3).map((e, i) => (
-                <div key={i} className="bailongma-brain-item">
-                  <span className="bailongma-status-pending">!</span>
-                  <span>{e.errorType}: {e.jobName.slice(0, 20)}</span>
-                </div>
-              ))
-            )}
-          </div>
+        {/* Right column */}
+        <div className="bailongma-col-right">
+          <PipelineArtifactsPanel runs={pipelineRuns} />
+          <NextActionsPanel />
+          <CronSummaryPanel totalJobs={totalJobs} failedJobs={failedJobs} />
         </div>
       </div>
 
-      {/* ACUI Event Log (bottom drawer) */}
+      {/* Bottom: Recent events */}
       <div className="bailongma-event-log">
-        <div className="bailongma-event-log-title">ACUI Event Log (from real data)</div>
+        <div className="bailongma-event-log-title">
+          最近系统事件（最新 {events.length} 条，来自 getEvents API）
+        </div>
         <div className="bailongma-event-list">
           {events.map((e, i) => (
             <div key={i} className="bailongma-event-item">
-              <span className="bailongma-event-time">{e.time}</span>
-              <span className="bailongma-event-type">[{e.type}]</span>
-              <span className="bailongma-event-desc">{e.desc}</span>
+              <span className="bailongma-event-time">{e.ts ? timeAgo(e.ts) : ""}</span>
+              <span className="bailongma-event-type">[{e.event}]</span>
+              <span className="bailongma-event-desc">
+                {e.task_id ? `task=${e.task_id}` : ""} {e.role ? `role=${e.role}` : ""}
+              </span>
             </div>
           ))}
         </div>
@@ -386,5 +434,3 @@ function BaiLongma({ profile }: BaiLongmaProps): React.JSX.Element {
     </div>
   );
 }
-
-export default BaiLongma;

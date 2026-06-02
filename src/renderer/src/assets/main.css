@@ -6090,6 +6090,89 @@ body {
 }
 
 /* ========================================================================
+   BAILONGMA P2 — 主驾驶舱
+   ======================================================================== */
+
+/* Stage row */
+.bailongma-stage-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.bailongma-stage-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  min-width: 24px;
+  text-align: center;
+}
+.bailongma-stage-badge.passed { background: var(--success-bg); color: var(--success); }
+.bailongma-stage-badge.active { background: var(--accent-subtle); color: var(--accent-text); }
+.bailongma-stage-badge.pending { background: var(--bg-tertiary); color: var(--text-muted); }
+
+.bailongma-stage-status {
+  font-size: 11px;
+  width: 14px;
+  text-align: center;
+}
+.bailongma-stage-status.passed { color: var(--success); }
+.bailongma-stage-status.active { color: var(--accent); }
+.bailongma-stage-status.pending { color: var(--text-muted); }
+
+.bailongma-stage-detail {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+/* 3-column cockpit */
+.bailongma-cockpit {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bailongma-col-left,
+.bailongma-col-center,
+.bailongma-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.bailongma-col-left { width: 200px; flex-shrink: 0; }
+.bailongma-col-center { flex: 1; min-width: 0; }
+.bailongma-col-right { width: 220px; flex-shrink: 0; }
+
+/* Status indicators */
+.bailongma-status-done { color: var(--success); font-size: 12px; }
+.bailongma-status-pending { color: var(--error); font-size: 12px; }
+.bailongma-status-warn { color: var(--warning); font-size: 12px; }
+.bailongma-text-muted { color: var(--text-muted); font-size: 11px; }
+
+/* Brain item inside panel */
+.bailongma-brain-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.bailongma-brain-item:last-child { border-bottom: none; }
+
+/* ========================================================================
    HCC EXECUTION COCKPIT
    ======================================================================== */
 .hcc-cockpit-container {
