@@ -7,6 +7,23 @@ export type RelationType =
   | "depends_on"
   | "repeats";
 
+export type TrustLevel =
+  | "trusted_verified"   // 来源可信，已验证
+  | "trusted_external"   // 外部来源，已校验
+  | "semi_trusted_local" // 本地 vault 文件，中等信任
+  | "untrusted_external" // 外部未校验内容，低信任
+  | "unknown";           // 未知来源
+
+export interface Provenance {
+  source_type: "vault" | "url" | "llm_generated" | "user_input" | "unknown";
+  source_uri: string;
+  fetched_at: string | null;   // ISO 8601；null 表示未知
+  indexed_at: string | null;   // ISO 8601；vault 文件用 mtime
+  trust_level: TrustLevel;
+  /** 外部内容默认 false；即使 true 也必须 human-in-loop 确认 */
+  safe_to_use_as_instruction: boolean;
+}
+
 export type KnowledgeKind =
   | "vault_file"
   | "understand_result"
@@ -26,6 +43,10 @@ export interface TypedLink {
   createdAt: string; // ISO 8601
   sourceKind: KnowledgeKind;
   targetKind: KnowledgeKind;
+  /** 不可为空；缺失 provenance 则 link 不会被生成 */
+  provenance: Provenance;
+  sourceTrustLevel: TrustLevel;
+  targetTrustLevel: TrustLevel;
 }
 
 export interface KnowledgeNode {
@@ -67,6 +88,19 @@ function extractHorizonDate(path: string): number | null {
   const m = path.match(/horizon-(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return null;
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime();
+}
+
+/** Build Provenance for a vault-sourced node */
+function buildVaultProvenance(node: KnowledgeNode): Provenance {
+  const indexedAt = node.mtime ? new Date(node.mtime).toISOString() : null;
+  return {
+    source_type: "vault",
+    source_uri: node.id,
+    fetched_at: indexedAt,
+    indexed_at: indexedAt,
+    trust_level: "semi_trusted_local",
+    safe_to_use_as_instruction: false,
+  };
 }
 
 // Visible for testing
@@ -111,6 +145,7 @@ export function inferTypedLinks(
       const evidence = STR.inSubPathOf(source.title, target.title);
       if (!evidence.trim()) continue;
 
+      const provenance = buildVaultProvenance(source);
       links.push({
         id: `elaborates-${source.id}-${target.id}`,
         sourceId: source.id,
@@ -121,6 +156,9 @@ export function inferTypedLinks(
         createdAt: now,
         sourceKind: source.kind,
         targetKind: target.kind,
+        provenance,
+        sourceTrustLevel: provenance.trust_level,
+        targetTrustLevel: provenance.trust_level,
       });
     }
   }
@@ -152,6 +190,7 @@ export function inferTypedLinks(
         evidence = STR.topicOverlap(horizon.title, vault.title);
       }
 
+      const provenance = buildVaultProvenance(horizon);
       links.push({
         id: `supersedes-${horizon.id}-${vault.id}`,
         sourceId: horizon.id,
@@ -162,6 +201,9 @@ export function inferTypedLinks(
         createdAt: now,
         sourceKind: horizon.kind,
         targetKind: vault.kind,
+        provenance,
+        sourceTrustLevel: provenance.trust_level,
+        targetTrustLevel: buildVaultProvenance(vault).trust_level,
       });
     }
   }
@@ -175,6 +217,8 @@ export function inferTypedLinks(
     if (!dep.source.trim() || !dep.target.trim()) continue;
 
     const evidence = STR.dependsOn(source.title, target.title);
+    const provSource = buildVaultProvenance(source);
+    const provTarget = buildVaultProvenance(target);
     links.push({
       id: `depends_on-${dep.source}-${dep.target}`,
       sourceId: dep.source,
@@ -185,6 +229,9 @@ export function inferTypedLinks(
       createdAt: now,
       sourceKind: source.kind,
       targetKind: target.kind,
+      provenance: provSource,
+      sourceTrustLevel: provSource.trust_level,
+      targetTrustLevel: provTarget.trust_level,
     });
   }
 
@@ -208,6 +255,8 @@ export function inferTypedLinks(
       if (sim !== null && sim < 1.0) continue;
 
       const score = sim !== null ? Math.max(sim, 1.0) : 1.0;
+      const provA = buildVaultProvenance(a);
+      const provB = buildVaultProvenance(b);
       const evidence = STR.repeatExact(a.title, b.title);
 
       links.push({
@@ -220,6 +269,9 @@ export function inferTypedLinks(
         createdAt: now,
         sourceKind: a.kind,
         targetKind: b.kind,
+        provenance: provA,
+        sourceTrustLevel: provA.trust_level,
+        targetTrustLevel: provB.trust_level,
       });
     }
   }
@@ -246,6 +298,8 @@ export function inferTypedLinks(
         const score = sim;
         if (score < THRESHOLD) continue;
 
+        const provA = buildVaultProvenance(a);
+        const provB = buildVaultProvenance(b);
         const evidence = STR.repeatSim(
           a.title,
           b.title,
@@ -262,6 +316,9 @@ export function inferTypedLinks(
           createdAt: now,
           sourceKind: a.kind,
           targetKind: b.kind,
+          provenance: provA,
+          sourceTrustLevel: provA.trust_level,
+          targetTrustLevel: provB.trust_level,
         });
       }
     }

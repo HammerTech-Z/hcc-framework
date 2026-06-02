@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   inferTypedLinks,
   buildKnowledgeNodes,
+  type Provenance,
+  type TrustLevel,
 } from "../src/shared/lib/typed-links";
 import type { KnowledgeNode } from "../src/shared/lib/typed-links";
 
@@ -421,6 +423,145 @@ describe("confidence threshold handling", () => {
     const provider84 = () => 0.84;
     const links84 = inferTypedLinks(nodes, {}, provider84);
     expect(links84.filter((l) => l.relationType === "repeats")).toHaveLength(0);
+  });
+});
+
+// -----------------------------------------------------------------
+// provenance and trust_level
+// -----------------------------------------------------------------
+
+describe("provenance and trust_level", () => {
+  it("every generated link has provenance", () => {
+    const nodes = [
+      makeNode({
+        id: "vault://wiki/ai/deepseek.md",
+        title: "deepseek",
+        path: "wiki/ai/deepseek.md",
+      }),
+      makeNode({
+        id: "vault://wiki/ai",
+        title: "ai",
+        path: "wiki/ai",
+      }),
+    ];
+
+    const links = inferTypedLinks(nodes);
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(link.provenance).toBeDefined();
+      expect(link.provenance).not.toBeNull();
+    }
+  });
+
+  it("every generated link has sourceTrustLevel and targetTrustLevel", () => {
+    const nodes = [
+      makeNode({
+        id: "vault://wiki/ai/deepseek.md",
+        title: "deepseek",
+        path: "wiki/ai/deepseek.md",
+      }),
+      makeNode({
+        id: "vault://wiki/ai",
+        title: "ai",
+        path: "wiki/ai",
+      }),
+    ];
+
+    const links = inferTypedLinks(nodes);
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(link.sourceTrustLevel).toBeDefined();
+      expect(link.targetTrustLevel).toBeDefined();
+    }
+  });
+
+  it("vault-sourced links default to semi_trusted_local with safe_to_use_as_instruction=false", () => {
+    const nodes = [
+      makeNode({
+        id: "vault://wiki/ai/deepseek.md",
+        title: "deepseek",
+        path: "wiki/ai/deepseek.md",
+        mtime: 1800000000000,
+      }),
+      makeNode({
+        id: "vault://wiki/ai",
+        title: "ai",
+        path: "wiki/ai",
+        mtime: 1700000000000,
+      }),
+    ];
+
+    const links = inferTypedLinks(nodes);
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(link.provenance.trust_level).toBe("semi_trusted_local");
+      expect(link.provenance.safe_to_use_as_instruction).toBe(false);
+    }
+  });
+
+  it("vault provenance has source_type='vault' and source_uri set to node id", () => {
+    const nodes = [
+      makeNode({
+        id: "vault://wiki/ai/deepseek.md",
+        title: "deepseek",
+        path: "wiki/ai/deepseek.md",
+      }),
+      makeNode({
+        id: "vault://wiki/ai",
+        title: "ai",
+        path: "wiki/ai",
+      }),
+    ];
+
+    const links = inferTypedLinks(nodes);
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) {
+      expect(link.provenance.source_type).toBe("vault");
+      expect(link.provenance.source_uri).toBeTruthy();
+    }
+  });
+
+  it("vault provenance indexed_at uses node mtime in ISO 8601", () => {
+    const mtime = 1800000000000;
+    const nodes = [
+      makeNode({
+        id: "vault://wiki/ai/deepseek.md",
+        title: "deepseek",
+        path: "wiki/ai/deepseek.md",
+        mtime,
+      }),
+      makeNode({
+        id: "vault://wiki/ai",
+        title: "ai",
+        path: "wiki/ai",
+      }),
+    ];
+
+    const links = inferTypedLinks(nodes);
+    expect(links.length).toBeGreaterThan(0);
+    const link = links[0];
+    expect(link.provenance.indexed_at).toBe(new Date(mtime).toISOString());
+  });
+
+  it("sourceTrustLevel and targetTrustLevel match provenance trust_level", () => {
+    const nodes = [
+      makeNode({
+        id: "vault://wiki/ai/deepseek.md",
+        title: "deepseek",
+        path: "wiki/ai/deepseek.md",
+      }),
+      makeNode({
+        id: "vault://wiki/ai",
+        title: "ai",
+        path: "wiki/ai",
+      }),
+    ];
+
+    const links = inferTypedLinks(nodes);
+    for (const link of links) {
+      expect(link.sourceTrustLevel).toBe(link.provenance.trust_level);
+      expect(link.targetTrustLevel).toBe(link.provenance.trust_level);
+    }
   });
 });
 
