@@ -26,6 +26,7 @@ for (let i = 2; i < process.argv.length; i += 1) {
 
 const repo = path.resolve(args.get("repo") ?? process.cwd());
 const base = args.get("base") ?? "2f79c75";
+const end = args.get("end") ?? "HEAD";
 const out = path.resolve(
   args.get("out") ??
     "/Users/midoudou/Desktop/Hermes-Pro-Claude-Web-Summary-2026-06-04.md",
@@ -127,7 +128,7 @@ function collectGit() {
 }
 
 function collectDiff() {
-  const rows = sh(`git diff --numstat ${base}^..HEAD`, true)
+  const rows = sh(`git diff --numstat ${base}^..${end}`, true)
     .split("\n")
     .filter(Boolean);
   const result = {
@@ -271,9 +272,9 @@ ${testLine}
 
 Historical test counts in project docs are slice-local evidence only. The current baseline in this generated summary is the line above.
 
-## 3. Knowledge Reuse Chain Diff Truth (auto, from \`git diff --numstat 2f79c75^..HEAD\`)
+## 3. Knowledge Reuse Chain Diff Truth (auto, from \`git diff --numstat ${base}^..${end}\`)
 
-Range: \`${base}^..HEAD\`
+Range: \`${base}^..${end}\`
 
 Total: **${diff.files} files / +${diff.insertions} / -${diff.deletions}**
 
