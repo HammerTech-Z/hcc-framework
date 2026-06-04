@@ -12,6 +12,7 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "summary:claude": "node scripts/build-summary.mjs",
     "start": "ELECTRON_RUN_AS_NODE= electron-vite preview",
     "dev": "ELECTRON_RUN_AS_NODE= electron-vite dev",
     "dev:fresh": "HERMES_HOME=$(mktemp -d -t hermes-fresh) ELECTRON_RUN_AS_NODE= electron-vite dev",
