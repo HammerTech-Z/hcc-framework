@@ -1,0 +1,269 @@
+{
+  "schema_version": "1.0.0",
+  "slice": "008K",
+  "mode": "task_dispatch_prompt_builder_chain",
+  "description": "Chain test for Prompt Builder Integration (Slice 008K). Aggregates 008F Surface B helper + 008G Prompt Snapshot tests + 008J Task Dispatch Prompt Builder into a 5-stage chain. Pure chain. No runtime, no dispatch, no Agent subprocess, no IPC, no gateway, no ingest, no default system prompt mutation, no real handoff/audit write, no Surface C, no L6.",
+  "source_slices": ["008F", "008G", "008J"],
+  "chain_stages": [
+    {
+      "stage": 1,
+      "name": "read_source_fixtures",
+      "sources": [
+        "tests/fixtures/knowledge-reuse/runtime-injection-surface-b.json (008F)",
+        "tests/fixtures/knowledge-reuse/runtime-injection-prompt-snapshots.json (008G)",
+        "tests/fixtures/knowledge-reuse/task-dispatch-prompt-builder.json (008J)",
+        "tests/fixtures/knowledge-reuse/runtime-injection-l5-closeout.json (008H)"
+      ],
+      "kind": "static_read",
+      "side_effects": "none"
+    },
+    {
+      "stage": 2,
+      "name": "call_008J_builder",
+      "helper": "src/main/task-dispatch-prompt-builder.ts (buildTaskDispatchPrompt)",
+      "kind": "pure_function",
+      "side_effects": "none"
+    },
+    {
+      "stage": 3,
+      "name": "compare_with_008G_snapshot",
+      "purpose": "Verify 008J output byte-aligned with 008G snapshot behavior (preamble / final_task_prompt / skip_reason / flags)",
+      "kind": "pure_comparison",
+      "side_effects": "none"
+    },
+    {
+      "stage": 4,
+      "name": "json_round_trip",
+      "purpose": "JSON.stringify → JSON.parse → equality check on 008J output",
+      "kind": "pure_io_in_memory",
+      "side_effects": "none"
+    },
+    {
+      "stage": 5,
+      "name": "no_runtime_invariant_verification",
+      "purpose": "assertTaskDispatchPromptBuilderNoRuntime + cross-validate via 008F assertKnowledgeSurfaceBNoRuntime; verify 4 literal false runtime flags; verify no_l6: true; verify forbidden call expression absent",
+      "kind": "pure_assertion",
+      "side_effects": "none"
+    }
+  ],
+  "snapshot_links_008g": [
+    "flag_disabled_no_preamble",
+    "claude_code_research_preamble",
+    "codex_ingest_draft_preamble",
+    "hermes_pro_local_newly_preamble",
+    "hermes_reserved_no_preamble",
+    "ordinary_code_no_preamble",
+    "truncated_preamble",
+    "base_prompt_preserved_multiline"
+  ],
+  "builder_links_008j": [
+    "flag_disabled_no_attach",
+    "claude_code_research_attach",
+    "codex_ingest_draft_attach",
+    "hermes_pro_local_newly_attach",
+    "hermes_reserved_skip",
+    "ordinary_code_skip",
+    "truncated_prompt",
+    "multiline_base_prompt_preserved"
+  ],
+  "examples": [
+    {
+      "name": "flag_disabled_no_attach",
+      "input": {
+        "featureFlagEnabled": false,
+        "targetAgent": "claude_code",
+        "userRequest": "save to knowledge",
+        "baseTaskPrompt": "task: research X"
+      },
+      "expected": {
+        "knowledge_contract_attached": false,
+        "fallback_to_l4": true,
+        "skip_reason": "flag_disabled",
+        "feature_flag_enabled": false,
+        "preamble_text": null,
+        "final_task_prompt": "task: research X",
+        "no_l6": true
+      }
+    },
+    {
+      "name": "claude_code_research_attach",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "claude_code",
+        "userRequest": "research github project X",
+        "baseTaskPrompt": "task: research X"
+      },
+      "expected": {
+        "knowledge_contract_attached": true,
+        "fallback_to_l4": false,
+        "skip_reason": null,
+        "trigger_flags.research_keyword": true,
+        "preamble_text_contains": "# Hermes Knowledge Reuse Contract",
+        "preamble_text_contains": "Hermes Pro internal knowledge store",
+        "final_task_prompt_contains_base": "task: research X",
+        "no_l6": true
+      }
+    },
+    {
+      "name": "codex_ingest_draft_attach",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "codex",
+        "userRequest": "",
+        "handoffContext": { "hasIngestDraft": true },
+        "baseTaskPrompt": "task: handle ingest"
+      },
+      "expected": {
+        "knowledge_contract_attached": true,
+        "fallback_to_l4": false,
+        "skip_reason": null,
+        "trigger_flags.has_ingest_draft": true,
+        "final_task_prompt_contains_base": "task: handle ingest"
+      }
+    },
+    {
+      "name": "hermes_pro_local_newly_attach",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "hermes_pro",
+        "userRequest": "",
+        "handoffContext": { "hasLocalKnownAndNewlyFound": true },
+        "baseTaskPrompt": "task: handle handoff"
+      },
+      "expected": {
+        "knowledge_contract_attached": true,
+        "fallback_to_l4": false,
+        "skip_reason": null,
+        "trigger_flags.has_local_known_and_newly_found": true,
+        "final_task_prompt_contains_base": "task: handle handoff"
+      }
+    },
+    {
+      "name": "hermes_reserved_skip",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "hermes",
+        "userRequest": "save to knowledge",
+        "baseTaskPrompt": "task: self-call"
+      },
+      "expected": {
+        "knowledge_contract_attached": false,
+        "fallback_to_l4": true,
+        "skip_reason": "hermes_self_call_reserved",
+        "hermes_reserved_marker": true,
+        "final_task_prompt": "task: self-call"
+      }
+    },
+    {
+      "name": "ordinary_code_skip",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "claude_code",
+        "userRequest": "fix the bug in src/foo.ts",
+        "baseTaskPrompt": "task: fix bug"
+      },
+      "expected": {
+        "knowledge_contract_attached": false,
+        "fallback_to_l4": true,
+        "skip_reason": "no_trigger_fired",
+        "trigger_flags.save_keyword": false,
+        "trigger_flags.research_keyword": false
+      }
+    },
+    {
+      "name": "truncated_prompt",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "claude_code",
+        "userRequest": "save to knowledge",
+        "baseTaskPrompt": "task: X",
+        "maxChars": 64
+      },
+      "expected": {
+        "knowledge_contract_attached": true,
+        "max_chars": 64
+      }
+    },
+    {
+      "name": "multiline_base_prompt_preserved",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "claude_code",
+        "userRequest": "save to knowledge",
+        "baseTaskPrompt": "do the thing\nmultiline\nwith $pecial & <chars> and unicode 你好"
+      },
+      "expected": {
+        "knowledge_contract_attached": true,
+        "base_task_prompt_preserved": true,
+        "final_task_prompt_contains_base": "do the thing\nmultiline\nwith $pecial & <chars> and unicode 你好"
+      }
+    }
+  ],
+  "invariants": [
+    "schema_version === '1.0.0'",
+    "slice === '008K'",
+    "mode === 'task_dispatch_prompt_builder_chain'",
+    "source_slices lists 008F/008G/008J in order",
+    "chain has 5 stages (read → call → compare → round-trip → verify)",
+    "snapshot_links_008g covers 8 distinct 008G snapshot ids",
+    "builder_links_008j covers 8 distinct 008J example ids",
+    "every chain example aligns with both 008G snapshot + 008J builder output",
+    "008J builder output is byte-aligned with 008G snapshot for the matching case",
+    "008F helper output is byte-aligned with 008J builder output (008J delegates to 008F)",
+    "schema_version === '1.0.0' (literal)",
+    "slice === '008J' (literal) on every chain output",
+    "mode === 'task_dispatch_prompt_builder' (literal)",
+    "feature_flag_name === 'KNOWLEDGE_CONTRACT_INJECTION_ENABLED' (literal)",
+    "feature_flag_default_state === false (literal)",
+    "surface === 'task_prompt_preamble' (literal)",
+    "no_l6 === true (literal)",
+    "runtime_flush_allowed === false (literal)",
+    "runtime_dispatch_allowed === false (literal)",
+    "real_handoff_write_allowed === false (literal)",
+    "live_adapter_allowed === false (literal)",
+    "base_task_prompt_preserved === true (literal)",
+    "knowledge_contract_attached only when flag+target+trigger+(hermes override OR not hermes)",
+    "skip_reason in {flag_disabled, hermes_self_call_reserved, no_trigger_fired, null}",
+    "fallback_to_l4 === !knowledge_contract_attached",
+    "final_task_prompt is only a returned string (no I/O, no dispatch)",
+    "no call expression (knowledgeIngest( / knowledgeSearch( / runPlaybook( / triggerCronJob( / sendMessage( / fetch() in preamble_text / final_task_prompt",
+    "no call-form fields (executable_steps / verificationCommands / next_actions call action)",
+    "no deceptive copy (已保存 / 写入成功 / saved successfully / will be written after confirm)",
+    "no positive path recommendation (Obsidian / MEMORY.md / .wolf/cerebrum.md positive guidance)",
+    "baseTaskPrompt preserved byte-for-byte when skipped; appears as final substring when attached",
+    "max_chars default 2048",
+    "assertTaskDispatchPromptBuilderNoRuntime rejects forged true runtime flags",
+    "JSON round-trip stable",
+    "fixture covers 8 distinct cases (flag matrix + target matrix + trigger matrix + base preservation + truncation)"
+  ],
+  "forbidden_runtime_checked": true,
+  "no_l6": true,
+  "forbidden_call_tokens": [
+    "knowledgeIngest(",
+    "knowledgeSearch(",
+    "runPlaybook(",
+    "triggerCronJob(",
+    "sendMessage(",
+    "fetch("
+  ],
+  "forbidden_deceptive_phrases": [
+    "已保存",
+    "写入成功",
+    "saved successfully",
+    "will be written after confirm"
+  ],
+  "forbidden_path_markers": [
+    "Obsidian",
+    "MEMORY.md",
+    ".wolf/cerebrum.md"
+  ],
+  "forbidden_call_form_fields": [
+    "executable_steps",
+    "verificationCommands",
+    "next_actions[].action (call-form)"
+  ],
+  "mtime_baseline": {
+    "handoff_packs": 1780195726,
+    "audit": 1780230084
+  }
+}

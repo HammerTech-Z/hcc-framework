@@ -1,0 +1,175 @@
+{
+  "schema_version": "1.0.0",
+  "slice": "008A",
+  "kind": "runtime-default-injection-design",
+  "description": "Design fixture for the future Runtime Default Injection of the Knowledge Contract Snippet into Claude Code / Codex / hermes_pro prompts. This is a spec-only fixture; no runtime, no handoff write, no IPC, no gateway, no ingest, no Claude Code / Codex / Hermes subprocess, no system prompt runtime modification.",
+  "l4_l5_boundary": {
+    "L4_dry_run": "HCC handoff payload can carry snippet at payload.context.contracts.knowledge_reuse. No real injection. (achieved by Slice 007K / 007L / 007M.)",
+    "L5_runtime_default_injection": "Snippet is attached to the agent prompt or task dispatch prompt at runtime, without user manual paste. This is the layer 008A designs, but does NOT implement.",
+    "slice_008A_scope": "Design only. 008A does NOT implement L5. 008A does NOT modify any runtime, default system prompt, or handoff writer."
+  },
+  "targets": [
+    {
+      "name": "claude_code",
+      "default_inject": true,
+      "rationale": "primary executor for P3 code/project tasks; contract snippet is the canonical way to prevent Obsidian / MEMORY / .wolf behavior"
+    },
+    {
+      "name": "codex",
+      "default_inject": true,
+      "rationale": "OpenAI Codex compatibility; same 8-rule contract; target-adjusted but core preserved"
+    },
+    {
+      "name": "hermes_pro",
+      "default_inject": "opt-in",
+      "rationale": "reserved for future Hermes self-call opt-in; today not default-injected to avoid recursion"
+    },
+    {
+      "name": "hermes_self_call",
+      "default_inject": false,
+      "rationale": "reserved: no default attach to avoid recursion. Explicit override only."
+    }
+  ],
+  "surfaces": [
+    {
+      "name": "A_handoff_payload_context_contracts_knowledge_reuse",
+      "description": "Inject snippet at payload.context.contracts.knowledge_reuse during HCC handoff payload build. Read-only contract data; payload remains in memory or tmpDir until 008+.",
+      "scope": "narrow (only the handoff payload carries it)",
+      "rollback": "remove from builder; fall back to L4 handoff-only",
+      "blast_radius": "low"
+    },
+    {
+      "name": "B_task_prompt_preamble",
+      "description": "Inject snippet as a preamble section of the task prompt assembled for the agent at dispatch time. Read-only contract data; the rest of the task prompt is unchanged.",
+      "scope": "medium (every dispatched task prompt gets the preamble, not every system prompt)",
+      "rollback": "remove the preamble step from dispatch prompt assembly",
+      "blast_radius": "medium (affects all dispatched tasks)"
+    },
+    {
+      "name": "C_default_system_prompt_fragment",
+      "description": "Modify the agent's default system prompt to embed the snippet as a permanent fragment. Affects all tasks the agent handles, not only those dispatched by Hermes.",
+      "scope": "global (every task the agent handles, including those outside Hermes)",
+      "rollback": "revert the system prompt change; restore the prior fragment",
+      "blast_radius": "high (pollutes all tasks, including non-Hermes tasks)"
+    }
+  ],
+  "recommended_surface": {
+    "name": "B_task_prompt_preamble",
+    "phase_1_rationale": [
+      "Surface A is already covered by L4 (Slice 007K / 007L / 007M); no further L5 work needed for A",
+      "Surface B is narrower than C: only Hermes-dispatched tasks receive the preamble",
+      "Surface C modifies global default system prompt and pollutes all tasks (including non-Hermes); high blast radius",
+      "Surface B is reversible per slice: if the preamble misbehaves, we remove the preamble step without touching the system prompt"
+    ],
+    "phase_2_rationale": "After Surface B proves stable in production for one or more slices, we may revisit Surface C as a global optimization, but only with a separate ADR and explicit user approval"
+  },
+  "trigger_conditions": [
+    "User says 'save' / 'persist' / 'ingest' / 'archive' / '存到' / '沉淀' / '写入' (zh or en)",
+    "User says 'research' / 'compare' / 'analyze' / '调研' / '对比' / '选型' (zh or en)",
+    "task_kind ∈ {github_research, tool_comparison, technical_selection, project_research, general_research}",
+    "Handoff context has ingest_draft or flush_pending: true",
+    "Handoff context has both local_known + newly_found (canonical 4-section answer shape required)"
+  ],
+  "no_trigger_conditions": [
+    "Ordinary code-only task (refactor / bug fix / test addition) without knowledge save intent",
+    "Simple chat / greeting ('hi')",
+    "Purely local file operation (e.g. 'list files in src')",
+    "Hermes self-call (reserved; no default attach even with all triggers firing)"
+  ],
+  "safety_gates": [
+    "snippet source must come from buildKnowledgeAgentContractSnippet (Slice 007I) or buildKnowledgeHandoffContractSnippet (Slice 007J) — no inline literal",
+    "assertKnowledgeContractNoRuntime (Slice 007I) must pass before snippet is attached",
+    "assertKnowledgeHandoffContractNoRuntime (Slice 007J) must pass before snippet is attached",
+    "snippet envelope must carry runtime_flush_allowed=false and dry_run_only=true (latter during the L5 phase 1 dry-run only)",
+    "snippet must not contain knowledgeIngest( / knowledgeSearch( / runPlaybook( / triggerCronJob( / sendMessage( / fetch( as call expressions",
+    "snippet must not contain Obsidian / MEMORY / .wolf path recommendation",
+    "snippet must not contain deceptive-phrase (已保存 / 写入成功 / saved successfully / will be written after confirm)",
+    "target_agent must not be 'hermes' (self-call reserved) unless caller provides an explicit override flag, and even then must be guarded by shouldAttachKnowledgeContract + caller_explicit_attach",
+    "injection must be visible in a dry-run artifact (e.g. handoff payload's context.contracts.knowledge_reuse envelope) before any real dispatch",
+    "snippet length must be ≤ max_chars (default 2048); overflow truncated with truncated=true and audit trail"
+  ],
+  "failure_modes": [
+    {
+      "name": "snippet missing when expected",
+      "cause": "trigger fires but no snippet is produced (helper throws, or build path skipped)",
+      "detection": "triggers_to_inject_observed but no envelope in dry-run artifact",
+      "response": "fail the dispatch (do not silently send prompt without contract); emit dry-run artifact for review"
+    },
+    {
+      "name": "snippet attached to ordinary code task",
+      "cause": "trigger matching is too permissive; ordinary code-only task gets snippet",
+      "detection": "request_text does not contain save / research keywords AND task_kind ∉ research family AND handoff context has no ingest_draft / flush_pending / local+newly",
+      "response": "fall back to L4 (no preamble); do not inject"
+    },
+    {
+      "name": "snippet attached to hermes self-call",
+      "cause": "target_agent override slips through reserved guard",
+      "detection": "target_agent === 'hermes' AND no explicit override flag",
+      "response": "throw; do not inject; emit dry-run artifact showing the rejection"
+    },
+    {
+      "name": "runtime token leakage in snippet",
+      "cause": "caller mutates the snippet before injection, or future slice introduces a new forbidden token",
+      "detection": "assertKnowledgeContractNoRuntime / assertKnowledgeHandoffContractNoRuntime returns hit",
+      "response": "throw; abort dispatch; emit dry-run artifact for review"
+    },
+    {
+      "name": "overlong snippet",
+      "cause": "snippet exceeds max_chars (default 2048)",
+      "detection": "snippet_text.length > max_chars",
+      "response": "truncate + truncated=true + audit trail; do not silently drop the truncated portion"
+    },
+    {
+      "name": "user-visible overpromise wording",
+      "cause": "snippet drifts to include '已保存' / '写入成功' / 'saved successfully' / 'will be written after confirm'",
+      "detection": "scanForbiddenFlushUiCopy returns hit",
+      "response": "throw; abort dispatch; emit dry-run artifact showing the offending copy"
+    },
+    {
+      "name": "source fidelity or bucket semantics omitted",
+      "cause": "snippet variant loses the 8 core rules",
+      "detection": "assertSnippetShape returns ok=false",
+      "response": "throw; abort dispatch; emit dry-run artifact"
+    },
+    {
+      "name": "dispatch prompt changed without artifact",
+      "cause": "snippet injected but dry-run artifact not updated",
+      "detection": "injection_observed_in_runtime AND dry_run_artifact NOT updated",
+      "response": "throw; abort dispatch; refuse to inject without a matching dry-run artifact"
+    }
+  ],
+  "rollback_strategy": {
+    "feature_flag": {
+      "name": "KNOWLEDGE_CONTRACT_INJECTION_ENABLED",
+      "default": "false (L4 handoff-only is the production default)",
+      "scope": "process-wide; can be toggled per task or per workspace"
+    },
+    "remove_from_dispatch_prompt": "Surface B rollback: remove the preamble step from the dispatch prompt assembly. No code path touches the agent's default system prompt.",
+    "fall_back_to_L4": "After Surface B rollback, handoff payload's context.contracts.knowledge_reuse remains the only place where the snippet lives. L4 behavior is fully preserved.",
+    "preserve_no_write": "Rollback must not write to ~/.hermes/handoff/packs or ~/.hermes/audit. mtime guard at /Users/midoudou/.hermes/handoff/packs and /Users/midoudou/.hermes/audit must remain unchanged.",
+    "keep_live_flush_disabled": "After rollback, runtime_flush_allowed must still be false. knowledgeIngest must still not be called. live search must still not be called."
+  },
+  "test_plan": [
+    "unit: buildKnowledgeAgentContractSnippet invariants (Slice 007I)",
+    "unit: shouldAttachKnowledgeContract 5 trigger true + 4 not-attach false (Slice 007I)",
+    "unit: buildKnowledgeHandoffContractSnippet 13-field envelope (Slice 007J)",
+    "integration: dry-run handoff payload carries envelope (Slice 007L)",
+    "integration: chain test end-to-end (Slice 007M)",
+    "L5 dry-run: payload.context.contracts.knowledge_reuse is the input to the dispatch prompt preamble (NOT yet a runtime change; this slice is design only)",
+    "L5 runtime: deferred to a future slice with explicit user approval and a separate ADR"
+  ],
+  "go_no_go": {
+    "GO": [
+      "008A design only (L5 design documented; injection surface B recommended; safety gates + failure modes + rollback defined)"
+    ],
+    "NOT_GO": [
+      "L5 runtime default injection implementation (留 future slice + 显式批)",
+      "Surface C (global default system prompt) as first step (高 blast radius)",
+      "real handoff write (留 008+)",
+      "live flush (留 008+)",
+      "live search adapter (留 008+)",
+      "IPC / gateway adapter (留 008+)",
+      "renderer UI implementation (留 007H-1+)"
+    ]
+  }
+}

@@ -1,0 +1,269 @@
+{
+  "schema_version": "1.0.0",
+  "slice": "008L",
+  "mode": "l5_runtime_dispatch_closeout_no_l6",
+  "description": "L5 runtime dispatch closeout / No L6. Aggregates 008A-008K L5成果. Locks L4 reached + L5 dry_run_surface_b_reached + L5_task_dispatch_prompt_builder_reached + L5_real_agent_subprocess_not_reached + L6_live_search_not_reached + L6_live_ingest_not_reached + L6_live_flush_not_reached. No runtime, no Agent subprocess, no IPC, no gateway, no ingest, no default system prompt mutation, no real handoff/audit write, no L6.",
+  "reviewed_slices": [
+    "008A",
+    "008B",
+    "008C",
+    "008D",
+    "008E",
+    "008F",
+    "008G",
+    "008H",
+    "008I",
+    "008J",
+    "008K"
+  ],
+  "layer_status": {
+    "L4_dry_run_handoff_payload": "reached (Slice 007K / 007L / 007M)",
+    "L5_dry_run_surface_b_prompt_preamble": "reached (Slice 008F + 008G)",
+    "L5_task_dispatch_prompt_builder": "reached (Slice 008J + 008K; pure main-side entry point; behind KNOWLEDGE_CONTRACT_INJECTION_ENABLED flag)",
+    "L5_real_agent_subprocess": "not_reached",
+    "L5_real_runtime_dispatch_invocation": "not_reached (008J 是 pure entry point; existing chain consumes its return value; 008J+ dispatch chain integration 留 008+ 显式批)",
+    "L5_real_runtime_default_injection_into_default_system_prompt": "not_reached (Surface C 留 Phase 2)",
+    "L6_live_knowledge_search": "not_reached",
+    "L6_live_knowledge_ingest": "not_reached",
+    "L6_live_flush": "not_reached"
+  },
+  "invariant_rollup": {
+    "008A_design": {
+      "safety_gates": 10,
+      "failure_modes": 8,
+      "rollback_steps": 5,
+      "scope": "3 surfaces compared; Surface B recommended"
+    },
+    "008B_feature_flag": {
+      "safety_gates": 11,
+      "failure_modes": 8,
+      "rollback_steps": 5,
+      "scope": "feature flag KNOWLEDGE_CONTRACT_INJECTION_ENABLED; default false; off → fallback L4"
+    },
+    "008C_simulation_helper": {
+      "literal_false_runtime_flags": 4,
+      "tests": 32,
+      "scope": "pure simulation helper; artifact chain only"
+    },
+    "008D_artifact_chain": {
+      "invariants": 20,
+      "tests": 56,
+      "scope": "5-stage chain; design → sim → artifact → round-trip → verify"
+    },
+    "008E_readiness_review": {
+      "safety_gates": 11,
+      "stop_conditions": 12,
+      "discovered_surfaces": 8,
+      "touch_allowed": 3,
+      "touch_forbidden": 5
+    },
+    "008F_surface_b_helper": {
+      "invariants": 18,
+      "literal_false_runtime_flags": 4,
+      "tests": 58
+    },
+    "008G_prompt_snapshot": {
+      "invariants": 24,
+      "snapshots": 8,
+      "tests": 49
+    },
+    "008H_l5_closeout": {
+      "rollup": "008A-008G invariants roll up to a single source of truth",
+      "tests": 71
+    },
+    "008I_dispatch_design": {
+      "design_gates": "3 allowed future files / 14 forbidden future files / 9 feature flag invariants / 4 target agent matrix / 6 trigger matrix / 5 rollback / 8 failure modes / 15 stop conditions / 9 pr_gate",
+      "tests": 79
+    },
+    "008J_task_dispatch_prompt_builder": {
+      "invariants": 24,
+      "literal_false_runtime_flags": 4,
+      "no_l6": true,
+      "tests": 70
+    },
+    "008K_chain_test": {
+      "invariants": 33,
+      "chain_stages": 5,
+      "snapshot_links_008g": 8,
+      "builder_links_008j": 8,
+      "tests": 62
+    }
+  },
+  "surface_matrix": {
+    "Surface_A_handoff_payload_context": "reached (L4) — payload.context.contracts.knowledge_reuse",
+    "Surface_B_task_prompt_preamble": "reached (L5 dry-run + L5 task dispatch prompt builder) — buildTaskDispatchPrompt in src/main/task-dispatch-prompt-builder.ts (NEW file pattern per 008I design)",
+    "Surface_C_default_system_prompt": "frozen_not_recommended_as_first_step —留 Phase 2 + ADR + 显式批"
+  },
+  "target_agent_matrix": {
+    "claude_code": "allowed_behind_flag (Surface B attach when flag+trigger)",
+    "codex": "allowed_behind_flag (Surface B attach when flag+trigger)",
+    "hermes_pro": "allowed_behind_flag (Surface B attach when flag+trigger; opt-in pattern preserved)",
+    "hermes_self_call": "reserved_skip_by_default (only attach with hermesOverride=true; reserved marker text)"
+  },
+  "feature_flag_final": {
+    "name": "KNOWLEDGE_CONTRACT_INJECTION_ENABLED",
+    "default": false,
+    "scope": "Surface B task prompt preamble + 008J task dispatch prompt builder entry point",
+    "does_not_affect": [
+      "global default system prompt (Surface C)",
+      "live flush",
+      "knowledgeSearch",
+      "knowledgeIngest",
+      "real handoff write to ~/.hermes/handoff/packs",
+      "real audit log write to ~/.hermes/audit",
+      "IPC / gateway / serve / run / agent / delegate / playbook / cron",
+      "HCC Auto Executor",
+      "Agent subprocess",
+      "renderer UI (007H-1 留 待批)"
+    ],
+    "behavior_when_disabled": "008J builder returns base task prompt verbatim; no preamble; fallback L4",
+    "behavior_when_enabled_and_no_trigger": "skip no_trigger_fired; fallback L4",
+    "evaluation_point": "before the existing dispatch chain sends the prompt to the target agent (008J entry point returns composed string; existing chain consumes)"
+  },
+  "task_dispatch_prompt_builder_closeout": {
+    "file": "src/main/task-dispatch-prompt-builder.ts",
+    "pattern": "NEW pure file (per 008I design)",
+    "consumes": "buildTaskPromptWithKnowledgeContractSurfaceB (008F)",
+    "consumes_internally": "assertKnowledgeSurfaceBNoRuntime (008F) via assertTaskDispatchPromptBuilderNoRuntime cross-validation",
+    "exports": [
+      "buildTaskDispatchPrompt (3-arg build function)",
+      "shouldApplyKnowledgeContractToDispatchPrompt (boolean)",
+      "assertTaskDispatchPromptBuilderNoRuntime (defense guard, throws on forge)"
+    ],
+    "literal_constants": [
+      "TASK_DISPATCH_BUILDER_SCHEMA_VERSION = 1.0.0",
+      "TASK_DISPATCH_BUILDER_SLICE = 008J",
+      "TASK_DISPATCH_BUILDER_MODE = task_dispatch_prompt_builder",
+      "TASK_DISPATCH_SURFACE = task_prompt_preamble",
+      "DEFAULT_TASK_DISPATCH_MAX_CHARS = 2048",
+      "TASK_DISPATCH_NO_L6 = true (literal)"
+    ],
+    "literal_false_runtime_flags": [
+      "runtime_flush_allowed",
+      "runtime_dispatch_allowed",
+      "real_handoff_write_allowed",
+      "live_adapter_allowed"
+    ],
+    "side_effects": "none (pure function; no I/O; no IPC; no spawn; no fetch)"
+  },
+  "chain_test_closeout": {
+    "file": "tests/safety/task-dispatch-prompt-builder-chain.test.ts",
+    "stages": 5,
+    "verified_alignment": [
+      "008F helper output byte-aligned with 008J builder output (008J delegates to 008F)",
+      "008J builder output byte-aligned with 008G snapshot semantics (same skip_reason / fallback_to_l4 / preamble when attached / base task prompt preservation)",
+      "008K chain test cross-validates 008J output against 008F assertKnowledgeSurfaceBNoRuntime",
+      "008K chain test verifies 4 literal false runtime flags preserved across 8 chain examples",
+      "008K chain test verifies no_l6: true literal across 8 chain examples"
+    ]
+  },
+  "no_go_matrix": {
+    "real_agent_subprocess": "NOT-GO (spawn / child_process / runPlaybook / sendMessage all forbidden)",
+    "real_runtime_dispatch_invocation": "NOT-GO (008J builder returns string only; existing chain consumes; 008J+ chain integration留 008+ 显式批)",
+    "real_handoff_write_to_handoff_packs": "NOT-GO (留 008+ 显式批)",
+    "real_audit_log_write_to_audit": "NOT-GO (留 008+ 显式批)",
+    "ipc_adapter": "NOT-GO (留 008+ 显式批)",
+    "live_knowledge_search": "NOT-GO (L6 留 separate ADR + 显式批)",
+    "live_knowledge_ingest": "NOT-GO (L6 留 separate ADR + 显式批)",
+    "live_flush": "NOT-GO (L6 留 separate ADR + 显式批)",
+    "default_system_prompt_mutation": "NOT-GO (Surface C 留 Phase 2 + separate ADR)",
+    "gateway_serve_run_agent_delegate_playbook_cron": "NOT-GO",
+    "in_place_mutation_of_existing_dispatch_chain": "NOT-GO (008I NEW file pattern only)",
+    "renderer_ui_implementation": "NOT-GO (留 007H-1 显式批)"
+  },
+  "prompt_snapshot_inventory_008g": [
+    "flag_disabled_no_preamble",
+    "claude_code_research_preamble",
+    "codex_ingest_draft_preamble",
+    "hermes_pro_local_newly_preamble",
+    "hermes_reserved_no_preamble",
+    "ordinary_code_no_preamble",
+    "truncated_preamble",
+    "base_prompt_preserved_multiline"
+  ],
+  "task_dispatch_examples_008j": [
+    "flag_disabled_no_attach",
+    "claude_code_research_attach",
+    "codex_ingest_draft_attach",
+    "hermes_pro_local_newly_attach",
+    "hermes_reserved_skip",
+    "ordinary_code_skip",
+    "truncated_prompt",
+    "multiline_base_prompt_preserved"
+  ],
+  "runtime_false_invariants": [
+    "runtime_flush_allowed === false (literal)",
+    "runtime_dispatch_allowed === false (literal)",
+    "real_handoff_write_allowed === false (literal)",
+    "live_adapter_allowed === false (literal)"
+  ],
+  "no_l6_invariant": "no_l6 === true (literal in 008J output + chain fixture)",
+  "stop_conditions": [
+    "discovers need to mutate default system prompt",
+    "discovers need for IPC / gateway / serve / run / agent / delegate / playbook / cron",
+    "discovers need for real handoff writer to ~/.hermes/handoff/packs",
+    "discovers need for real audit log writer to ~/.hermes/audit",
+    "ordinary code-only task gets snippet injected",
+    "feature flag default != false",
+    "hermes self-call gets default injection",
+    "base task prompt is overwritten",
+    "runtime flags can be forged to true",
+    "forbidden copy / deceptive-phrase appears in simulated preamble (no 已保存 / 写入成功 / saved successfully / will be written after confirm)",
+    "mtime changes on ~/.hermes/handoff/packs or ~/.hermes/audit",
+    "knowledgeIngest( / knowledgeSearch( / fetch( appears as call expression",
+    "Agent subprocess spawn attempted",
+    "008J in-place mutation of existing dispatch chain attempted",
+    "renderer UI mutation attempted (留 007H-1)"
+  ],
+  "future_slices": [
+    {
+      "id": "008M",
+      "name": "Pause / Observation",
+      "scope": "current L5 dry-run + L5 task dispatch prompt builder 已完整, 等待用户对 L6 live / Surface C / in-place chain integration 的显式批",
+      "trigger": "user explicit approval"
+    },
+    {
+      "id": "007H-1",
+      "name": "Renderer GateCard Implementation",
+      "scope": "renderer UI; 7 PR gates from 007H § 5",
+      "trigger": "user explicit approval"
+    },
+    {
+      "id": "008 (L6)",
+      "name": "Real Live Adapter",
+      "scope": "real IPC adapter (Handoff Pack / audit log / 幂等 / rate limit / rollback); L6 live search / live flush / knowledgeSearch / knowledgeIngest",
+      "trigger": "separate ADR + user explicit approval"
+    },
+    {
+      "id": "Surface C (Phase 2)",
+      "name": "Default System Prompt Fragment",
+      "scope": "after L5 task dispatch prompt builder stable; high blast radius",
+      "trigger": "L5 stable + separate ADR + user explicit approval"
+    }
+  ],
+  "final_decision": {
+    "go": [
+      "L5 runtime dispatch prompt builder layer is complete and locked (008J + 008K)",
+      "008L closeout done; 008A-008K invariants roll up to a single source of truth",
+      "GO for pause / observation (recommended for current state)",
+      "GO for 007H-1 Renderer GateCard IF user wants UI",
+      "GO for L6 live adapter design only IF user explicitly approves"
+    ],
+    "not_go": [
+      "Real Agent subprocess",
+      "Real runtime dispatch invocation (008J+ chain integration留 008+ 显式批)",
+      "L6 live adapter / live flush / live knowledgeSearch / live knowledgeIngest",
+      "Surface C default system prompt mutation (Phase 2, separate ADR)",
+      "Gateway / IPC / serve / run / agent / delegate / playbook / cron",
+      "Real handoff write to ~/.hermes/handoff/packs",
+      "Real audit log write to ~/.hermes/audit",
+      "Setting KNOWLEDGE_CONTRACT_INJECTION_ENABLED default to true",
+      "In-place mutation of existing dispatch chain (NEW file only per 008I design)",
+      "Renderer UI implementation (留 007H-1 显式批)"
+    ]
+  },
+  "mtime_baseline": {
+    "handoff_packs": 1780195726,
+    "audit": 1780230084
+  }
+}

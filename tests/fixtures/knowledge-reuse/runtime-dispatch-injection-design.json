@@ -1,0 +1,254 @@
+{
+  "schema_version": "1.0.0",
+  "slice": "008I",
+  "mode": "real_runtime_dispatch_design_no_implementation",
+  "description": "Design for future 008J Real Runtime Dispatch Implementation. Spec only; no runtime, no dispatch, no Agent subprocess, no IPC, no gateway, no ingest, no default system prompt mutation, no real handoff/audit write. Identifies exact dispatch surface, allowed files, forbidden files, feature flag gate, target agent gate, trigger gate, rollback plan, PR gate, stop conditions.",
+  "reviewed_slices": ["008A", "008B", "008C", "008D", "008E", "008F", "008G", "008H"],
+  "discovered_surfaces": [
+    {
+      "id": "surface_b_task_prompt_preamble",
+      "path": "src/shared/lib/knowledge-runtime-injection-surface-b.ts (buildTaskPromptWithKnowledgeContractSurfaceB)",
+      "role": "Surface B dry-run helper; produces final_task_prompt string with preamble prepended; no I/O",
+      "future_touch": "consume_only",
+      "rationale": "008J may consume this helper output; do NOT mutate it; do NOT add side effects",
+      "risk": "low"
+    },
+    {
+      "id": "surface_b_chain_consumer",
+      "path": "NEW file (e.g. src/main/task-dispatch-prompt-builder.ts) — gated by KNOWLEDGE_CONTRACT_INJECTION_ENABLED",
+      "role": "Future 008J entry point: read flag, call 008F helper, pass composed prompt to existing task prompt builder chain",
+      "future_touch": "new_file_only",
+      "rationale": "008I recommends creating ONE new pure function file; this file MUST stay pure (no spawn / no IPC / no fetch); the existing task prompt builder chain consumes its return value",
+      "risk": "medium"
+    },
+    {
+      "id": "existing_task_prompt_builder_chain",
+      "path": "does not exist as a single dedicated file in src/main; future 008J must identify the actual prompt builder in the dispatch path before wiring",
+      "role": "Future target: existing chain that builds the final task prompt sent to a target agent",
+      "future_touch": "do_not_modify",
+      "rationale": "008J must not mutate the existing chain in place; instead, the new pure file emits a string that the existing chain consumes (or 008J must wait for chain identification in a separate ADR)",
+      "risk": "medium"
+    },
+    {
+      "id": "default_system_prompt_fragment",
+      "path": "no agent default system prompt mutation anywhere in src/main today",
+      "role": "Future Phase 2 Surface C: embed contract snippet as global default system prompt fragment",
+      "future_touch": "forbidden",
+      "rationale": "008A § 7 + 008H NO-GO: high blast radius, not slice-reversible, touches locked files (CLAUDE.md / AGENTS.md / Hermes default)",
+      "risk": "high"
+    },
+    {
+      "id": "ipc_gateway_live_adapter",
+      "path": "no real handoff/audit writer today; 008E readiness review marked frozen; renderer-bound preload IPC is separate user-invoked path",
+      "role": "Future 008 (留 008+ 显式批): real IPC adapter for handoff/audit live flush",
+      "future_touch": "forbidden",
+      "rationale": "008I NOT-GO for live adapter; 008J must NOT touch IPC / gateway / serve / run / agent / delegate / playbook / cron; live flush is L6 separate ADR",
+      "risk": "high"
+    },
+    {
+      "id": "agent_subprocess_spawn",
+      "path": "no Agent subprocess spawn in src/main today; HCC Auto Executor not approved, not started",
+      "role": "Future real dispatch: spawn Agent subprocess",
+      "future_touch": "forbidden",
+      "rationale": "008I NOT-GO: spawn / child_process / runPlaybook / sendMessage all forbidden; 008J must stay pure (no subprocess)",
+      "risk": "high"
+    }
+  ],
+  "recommended_surface": {
+    "id": "surface_b_chain_consumer",
+    "name": "008J Real Runtime Dispatch — NEW pure task-dispatch-prompt-builder",
+    "phase": "Phase 1 (real runtime dispatch, IF user 显式批)",
+    "rationale": [
+      "Surface B dry-run is mature and locked (008F + 008G + 008H); the missing link is real prompt-builder wiring",
+      "008I recommends a NEW file (not in-place mutation) so the existing chain is unchanged and the change is reversible",
+      "The new file is PURE: read flag, call 008F helper, return composed prompt; the existing chain calls it before sending the prompt to the target agent",
+      "Surface C (default system prompt) is high blast radius and frozen; not the recommended entry point",
+      "Touching IPC / gateway / live adapter is out of scope and not the recommended entry point"
+    ]
+  },
+  "rejected_surfaces": [
+    {
+      "id": "default_system_prompt_fragment",
+      "phase": "Phase 2 (NOT first step)",
+      "rationale": "008A § 7 + 008H NO-GO; high blast radius; touches locked files (CLAUDE.md / AGENTS.md / Hermes default); not slice-reversible"
+    },
+    {
+      "id": "ipc_gateway_live_adapter",
+      "phase": "L6 (separate ADR)",
+      "rationale": "008E / 008H NOT-GO; live adapter is L6留 separate ADR + 显式批; not part of 008J scope"
+    },
+    {
+      "id": "agent_subprocess_spawn",
+      "phase": "Real execution (separate ADR)",
+      "rationale": "008H NOT-GO; spawn / child_process / runPlaybook / sendMessage all forbidden; HCC Auto Executor not approved"
+    },
+    {
+      "id": "in_place_mutation_of_existing_chain",
+      "phase": "Rejected",
+      "rationale": "008I requires a NEW pure file; in-place mutation of existing dispatch chain is not slice-reversible and increases blast radius"
+    }
+  ],
+  "allowed_future_files": [
+    {
+      "path": "src/main/task-dispatch-prompt-builder.ts (NEW, 008J)",
+      "role": "Pure entry point: read KNOWLEDGE_CONTRACT_INJECTION_ENABLED, call 008F helper, return composed prompt",
+      "constraints": [
+        "pure function only",
+        "no I/O",
+        "no fetch / no spawn / no IPC / no runPlaybook",
+        "no real handoff/audit write",
+        "no Agent subprocess"
+      ]
+    },
+    {
+      "path": "src/main/task-dispatch-prompt-builder.test.ts (NEW, 008J)",
+      "role": "Unit test for the new entry point; no real dispatch",
+      "constraints": [
+        "no real prompt builder mutation",
+        "no spawn",
+        "pure assertion only"
+      ]
+    },
+    {
+      "path": "tests/fixtures/knowledge-reuse/task-dispatch-prompt-builder.json (NEW, 008J)",
+      "role": "Snapshot fixture for the new entry point",
+      "constraints": [
+        "declarative only",
+        "no real write"
+      ]
+    }
+  ],
+  "forbidden_future_files": [
+    "src/main/dispatch/ (any new directory attempting to wire IPC / gateway / serve / run / agent / delegate / playbook)",
+    "src/main/agent-launcher.ts (any Agent subprocess spawn wrapper)",
+    "src/main/system-prompt-fragment.ts (any default system prompt mutation)",
+    "src/main/live-handoff-writer.ts (any real ~/.hermes/handoff/packs writer)",
+    "src/main/live-audit-writer.ts (any real ~/.hermes/audit writer)",
+    "src/main/knowledge-flush.ts (any real knowledgeIngest / knowledgeSearch adapter)",
+    "src/main/gateway.ts (any HTTP gateway to Hermes backend)",
+    "modifications to src/main/hermes.ts (no real execution entry point)",
+    "modifications to src/main/index.ts (no new IPC handlers)",
+    "modifications to src/main/cronjobs.ts (no new cron delivery)",
+    "modifications to src/main/skills.ts (no skill dispatch change)",
+    "modifications to CLAUDE.md (no agent default system prompt change)",
+    "modifications to AGENTS.md (no Codex default system prompt change)",
+    "modifications to docs/roadmap-locked-2026-05-28.md (no locked roadmap change)"
+  ],
+  "feature_flag_invariants": [
+    "name=KNOWLEDGE_CONTRACT_INJECTION_ENABLED",
+    "default=false (must stay false until 008J+ explicit user approval)",
+    "off=return base task prompt verbatim (no preamble, no mutation)",
+    "on=read flag, call 008F helper, if apply then use composed prompt else use base",
+    "scope=Surface B task prompt preamble ONLY",
+    "does_not_affect=default system prompt, live flush, knowledgeSearch, knowledgeIngest, IPC, gateway, handoff/audit write, HCC Auto Executor, renderer UI",
+    "evaluation_point=before the existing dispatch chain sends the prompt to the target agent",
+    "rollback=set flag false at evaluation point; entry point returns base prompt verbatim; no chain mutation needed"
+  ],
+  "target_agent_matrix": {
+    "claude_code": "allowed_behind_flag (Surface B attach when flag+trigger)",
+    "codex": "allowed_behind_flag (Surface B attach when flag+trigger)",
+    "hermes_pro": "allowed_behind_flag (Surface B attach when flag+trigger; opt-in pattern preserved)",
+    "hermes_self_call": "reserved_skip_by_default (only attach with hermesOverride=true; reserved marker text)"
+  },
+  "trigger_matrix": [
+    "save_keyword (en/zh)",
+    "research_keyword (en/zh)",
+    "research_task_kind in {github_research, tool_comparison, technical_selection, project_research, general_research}",
+    "handoff_context.has_ingest_draft",
+    "handoff_context.has_flush_pending",
+    "handoff_context.has_local_known_and_newly_found"
+  ],
+  "rollback_plan": [
+    "set KNOWLEDGE_CONTRACT_INJECTION_ENABLED=false at evaluation point; entry point returns base task prompt verbatim; no code revert needed",
+    "remove entry point from dispatch chain; 008F helper still exists but is not called; no surface regression",
+    "fall back to 008F dry-run + L4 handoff-only (007L payload.context.contracts.knowledge_reuse still works as data contract)",
+    "no real handoff/audit write at any point; mtime guard baseline preserved (handoff_packs=1780195726, audit=1780230084)",
+    "knowledgeIngest / knowledgeSearch / live flush still NOT called; runtime_flush_allowed / runtime_dispatch_allowed / real_handoff_write_allowed / live_adapter_allowed still literal false"
+  ],
+  "failure_modes": [
+    {
+      "name": "flag_enabled_for_wrong_task",
+      "detection": "shouldApplyKnowledgeContractSurfaceB returns false AND flag is true",
+      "response": "return base task prompt verbatim; no preamble; skip silently"
+    },
+    {
+      "name": "flag_disabled_but_expected",
+      "detection": "flag is false AND shouldApply returns true",
+      "response": "respect flag; return base task prompt verbatim; no preamble"
+    },
+    {
+      "name": "snippet_overlong",
+      "detection": "body.length > maxChars",
+      "response": "008F helper truncates + truncated=true; entry point passes composed prompt verbatim"
+    },
+    {
+      "name": "target_agent_blocked",
+      "detection": "targetAgent=hermes AND hermesOverride !== true",
+      "response": "008F helper returns reserved skip; entry point returns base task prompt verbatim"
+    },
+    {
+      "name": "runtime_token_detected",
+      "detection": "008F assertKnowledgeSurfaceBNoRuntime throws",
+      "response": "abort; do NOT call dispatch chain with poisoned prompt; surface error in dry-run artifact"
+    },
+    {
+      "name": "prompt_overpromise_detected",
+      "detection": "forbidden deceptive-phrase present in preamble",
+      "response": "abort; do NOT call dispatch chain; surface error in dry-run artifact"
+    },
+    {
+      "name": "default_system_prompt_mutation_discovered",
+      "detection": "008J implementation requires CLAUDE.md / AGENTS.md / Hermes default prompt change",
+      "response": "abort implementation; raise as separate ADR; Surface C is Phase 2 only"
+    },
+    {
+      "name": "ipc_gateway_required",
+      "detection": "008J implementation requires IPC / gateway / serve / run / agent / delegate / playbook / cron",
+      "response": "abort implementation; raise as separate ADR for L6; not 008J scope"
+    }
+  ],
+  "stop_conditions": [
+    "discovers need to mutate default system prompt (CLAUDE.md / AGENTS.md / Hermes default)",
+    "discovers need for IPC / gateway / serve / run / agent / delegate / playbook wiring in the dispatch path",
+    "discovers need for real handoff writer to ~/.hermes/handoff/packs",
+    "discovers need for real audit log writer to ~/.hermes/audit",
+    "ordinary code-only task gets snippet injected (skip_reason should be 'no_trigger_fired')",
+    "feature flag default != false (must stay false until 008J+ explicit user approval)",
+    "hermes self-call gets default injection (must stay reserved skip unless explicit override)",
+    "base task prompt is overwritten (must be preserved verbatim, only preamble prepended)",
+    "runtime flags can be forged to true (008F assertKnowledgeSurfaceBNoRuntime must reject)",
+    "forbidden copy appears in simulated preamble (no 已保存 / 写入成功 / saved successfully / will be written after confirm; deceptive-phrase detector must reject)",
+    "mtime changes on ~/.hermes/handoff/packs or ~/.hermes/audit",
+    "knowledgeIngest( / knowledgeSearch( / fetch( appears as call expression in entry point output",
+    "executable_steps / verificationCommands / next_actions call-form action appears in any payload",
+    "Agent subprocess spawn attempted (no spawn / child_process / runPlaybook)",
+    "renderer UI mutation attempted (留 007H-1)"
+  ],
+  "pr_gate": [
+    "typecheck EXIT 0",
+    "008J unit tests PASS",
+    "vitest full suite PASS (no regression)",
+    "git diff --check clean",
+    "forbidden token scan: 0 真 runtime call 表达式 in entry point + test + fixture + doc",
+    "mtime guard: ~/.hermes/handoff/packs unchanged AND ~/.hermes/audit unchanged",
+    "assertKnowledgeSurfaceBNoRuntime passes for normal composed prompt",
+    "4 literal false runtime flags preserved (runtime_flush_allowed / runtime_dispatch_allowed / real_handoff_write_allowed / live_adapter_allowed)",
+    "008E / 008F / 008G / 008H invariants still PASS"
+  ],
+  "go_no_go_decision": {
+    "go": [
+      "GO for 008J Real Runtime Dispatch Implementation — ONLY if user explicitly approves",
+      "GO for 007H-1 Renderer GateCard — IF user wants UI"
+    ],
+    "not_go": [
+      "NOT-GO for implementation in 008I (008I is design only)",
+      "NOT-GO for default system prompt mutation (Surface C留 Phase 2 + separate ADR)",
+      "NOT-GO for L6 live adapter / live flush / live knowledgeSearch / live knowledgeIngest",
+      "NOT-GO for gateway / IPC / Agent subprocess unless separately approved",
+      "NOT-GO for real handoff/audit write (留 008+ 显式批)",
+      "NOT-GO for setting KNOWLEDGE_CONTRACT_INJECTION_ENABLED default to true (留 008J+ 显式批)",
+      "NOT-GO for in-place mutation of existing dispatch chain (new file only)",
+      "NOT-GO for renderer UI implementation (留 007H-1 显式批)"
+    ]
+  }
+}

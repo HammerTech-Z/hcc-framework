@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0.0",
+  "slice": "007F",
+  "kind": "forbidden-copy-assertions",
+  "description": "Defines the bad-phrase inventory that the renderer must never render as user-visible action copy, and the expected block / pass semantics for each. The Slice 007D scanner ('scanForbiddenFlushUiCopy') is the canonical mechanism. This fixture is the spec layer; future component tests (007G+) will assert that rendered text passes this scan.",
+  "scanner_function": "scanForbiddenFlushUiCopy",
+  "source_constants": [
+    "FORBIDDEN_FLUSH_PROMISE_PHRASES",
+    "FORBIDDEN_FLUSH_DESTINATION_PHRASES",
+    "ALL_FORBIDDEN_FLUSH_COPY_PHRASES"
+  ],
+  "scanner_module": "src/shared/lib/knowledge-live-flush-ui-contract.ts",
+  "expected_scanner_input": [
+    "flattenCopyDeckForScan(buildKnowledgeFlushCopyDeck())",
+    "fixture: tests/fixtures/knowledge-reuse/ui-confirmation/draft-ready-pass.json → all flatten() text",
+    "fixture: tests/fixtures/knowledge-reuse/ui-confirmation/blocked-by-source-fidelity.json → all flatten() text",
+    "fixture: tests/fixtures/knowledge-reuse/ui-confirmation/confirmation-captured-pending-adapter.json → all flatten() text",
+    "future: rendered textContent of any renderer component (after 007G+)"
+  ],
+  "forbidden_phrase_inventory": {
+    "promise_phrases_zh": [
+      "已保存",
+      "写入成功",
+      "已写入",
+      "保存成功",
+      "写入完成",
+      "已存入",
+      "存入成功"
+    ],
+    "promise_phrases_en": [
+      "saved successfully",
+      "saved!",
+      "write successful",
+      "written successfully",
+      "written!",
+      "stored!"
+    ],
+    "implied_promise_phrases_zh": [
+      "确认后将写入",
+      "确认后会写入",
+      "点击后将写入知识库"
+    ],
+    "implied_promise_phrases_en": [
+      "will be written after confirm",
+      "will be written after confirmation",
+      "will save after confirm",
+      "will persist after confirm",
+      "writing on confirm"
+    ],
+    "destination_phrases": [
+      "Obsidian Vault path",
+      "Obsidian vault 路径",
+      "选择 Vault 目录",
+      "choose a vault folder",
+      "MEMORY.md",
+      ".claude/memory",
+      ".wolf/cerebrum",
+      ".wolf/anatomy",
+      ".wolf/memory",
+      "notes/<topic>.md",
+      "research/<date>.md",
+      "any custom note path"
+    ]
+  },
+  "block_semantics": {
+    "matched_phrase_action": "scanner returns hit; renderer test fails",
+    "scanner_result_for_clean_text": "{ ok: true, hits: [], scanned_texts: N }",
+    "scanner_result_for_bad_text": "{ ok: false, hits: [{ phrase, index, excerpt }], scanned_texts: N }",
+    "case_sensitivity": "case-insensitive substring match",
+    "scanner_module_origin": "src/shared/lib/knowledge-live-flush-ui-contract.ts (Slice 007D)"
+  },
+  "pass_semantics": {
+    "clean_copy_deck_passes": true,
+    "clean_3_fixtures_pass": true,
+    "renderer_render_text_must_pass": true,
+    "expected_post_implementation_test_pattern": "expect(scanForbiddenFlushUiCopy({ text: container.textContent ?? '' }).ok).toBe(true)"
+  },
+  "ci_gate_integration": {
+    "pr_check": "npx vitest run tests/knowledge-live-flush-ui-copy-deck.test.ts",
+    "must_pass_before_merge": true,
+    "blocker_on_hit": true
+  }
+}

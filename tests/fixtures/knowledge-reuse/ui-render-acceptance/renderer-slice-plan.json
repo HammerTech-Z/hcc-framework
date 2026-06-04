@@ -1,0 +1,473 @@
+{
+  "schema_version": "1.0.0",
+  "slice": "007H",
+  "kind": "renderer-implementation-slice-plan",
+  "description": "Planning fixture for the future renderer implementation slices. Maps each implementation slice (007H-1 through 007H-9) to its goal, allowed files, disallowed files, required tests, acceptance criteria, no-runtime assertions, rollback point, and merge prerequisite. This is a spec-only fixture; no React, no IPC, no runtime.",
+  "slices": [
+    {
+      "id": "007H-1",
+      "name": "GateCard implementation",
+      "goal": "Implement KnowledgeFlushGateCard as a leaf presentational component. Render 3 status states (pass/warn/fail) for one of 5 gates. No internal state. No props mutation.",
+      "allowed_files": [
+        "src/renderer/src/components/Flush/KnowledgeFlushGateCard.tsx",
+        "src/renderer/src/components/Flush/KnowledgeFlushGateCard.test.tsx",
+        "src/renderer/src/components/Flush/FlushGateCard.module.css (optional, if not using Tailwind utility classes)"
+      ],
+      "disallowed_files": [
+        "src/preload/**",
+        "src/main/**",
+        "src/shared/lib/knowledge-live-flush-ui-contract.ts (read-only consumption)",
+        "src/shared/lib/knowledge-live-flush-contract.ts",
+        "src/shared/lib/knowledge-reuse-protocol.ts",
+        "src/shared/lib/knowledge-reuse-integration.ts",
+        "src/renderer/src/screens/Knowledge/Knowledge.tsx",
+        "package.json",
+        "electron.vite.config.ts"
+      ],
+      "required_tests": [
+        "component test: 5 gate types × 3 status (pass/warn/fail) snapshot",
+        "component test: fail triggers aria-live=assertive (one-shot)",
+        "component test: pass/warn role=status, aria-live=polite",
+        "fixture test: mount with 3 ui-confirmation fixtures, render no forbidden copy"
+      ],
+      "required_fixtures": [
+        "tests/fixtures/knowledge-reuse/ui-confirmation/draft-ready-pass.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/blocked-by-source-fidelity.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/confirmation-captured-pending-adapter.json"
+      ],
+      "acceptance_criteria": [
+        "5 gate types render distinctly (user_confirmation / source_fidelity / bucket_semantics / roadmap_guard / secret_guard)",
+        "3 status states have distinct visual treatment (pass / warn / fail)",
+        "fail component propagates 'gate failed' affordance to parent (via aria-live=assertive)",
+        "no forbidden copy in rendered text (scanForbiddenFlushUiCopy ok=true)",
+        "no IPC / preload / fetch / runtime calls"
+      ],
+      "forbidden_copy_assertions": [
+        "no '已保存' / '写入成功' / '确认后将写入'",
+        "no 'saved successfully' / 'will be written after confirm'",
+        "no 'Obsidian Vault path' / 'MEMORY.md' / '.wolf/cerebrum'"
+      ],
+      "no_runtime_assertions": [
+        "no window.hermesAPI.knowledgeIngest / knowledgeSearch / runPlaybook / sendMessage / triggerCronJob / gateway*",
+        "no fetch / axios / XMLHttpRequest",
+        "no Node-only import (fs / child_process / path in renderer)"
+      ],
+      "rollback_point": "git revert 007H-1 PR; no shared helper changes; no preload changes; safe to revert at any time",
+      "merge_prerequisite": [
+        "no IPC / preload diff",
+        "typecheck EXIT 0",
+        "vitest full suite PASS",
+        "git diff --check clean",
+        "rg src/renderer/src/components/Flush/ 0 forbidden tokens (knowledgeIngest etc.)"
+      ]
+    },
+    {
+      "id": "007H-2",
+      "name": "RiskCard implementation",
+      "goal": "Implement KnowledgeFlushRiskCard as a leaf presentational component. Render 1 of 6 risk categories with severity badge. No internal state.",
+      "allowed_files": [
+        "src/renderer/src/components/Flush/KnowledgeFlushRiskCard.tsx",
+        "src/renderer/src/components/Flush/KnowledgeFlushRiskCard.test.tsx"
+      ],
+      "disallowed_files": [
+        "src/preload/**",
+        "src/main/**",
+        "src/shared/lib/knowledge-live-flush-ui-contract.ts (read-only)",
+        "src/renderer/src/screens/Knowledge/Knowledge.tsx"
+      ],
+      "required_tests": [
+        "component test: 6 risk categories snapshot",
+        "component test: severity visual badge (info / warn / block)",
+        "fixture test: scanForbiddenFlushUiCopy ok=true"
+      ],
+      "required_fixtures": [
+        "tests/fixtures/knowledge-reuse/ui-confirmation/draft-ready-pass.json (6 risks)",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/blocked-by-source-fidelity.json (2 risks)",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/confirmation-captured-pending-adapter.json (1 risk)"
+      ],
+      "acceptance_criteria": [
+        "6 risk categories render distinctly (roadmap_mutation / stale_source_promotion / secret_leak / vault_authority_claim / external_instruction_authority / live_flush_pending_hardening)",
+        "live_flush_pending_hardening is always info severity",
+        "block severity triggers acknowledgement affordance",
+        "no forbidden copy",
+        "no IPC / preload / fetch / runtime calls"
+      ],
+      "forbidden_copy_assertions": [
+        "no overpromise wording (已保存 / saved / written)"
+      ],
+      "no_runtime_assertions": [
+        "no IPC / fetch / runtime calls"
+      ],
+      "rollback_point": "git revert 007H-2 PR",
+      "merge_prerequisite": [
+        "no IPC / preload diff",
+        "typecheck EXIT 0",
+        "vitest PASS"
+      ]
+    },
+    {
+      "id": "007H-3",
+      "name": "DraftPreview implementation",
+      "goal": "Implement KnowledgeFlushDraftPreview as a composed panel. Renders title / summary / local_findings / web_findings / stale_sources / provenance / trust_level / retrieval_keywords via projectRequestToSummary.",
+      "allowed_files": [
+        "src/renderer/src/components/Flush/KnowledgeFlushDraftPreview.tsx",
+        "src/renderer/src/components/Flush/KnowledgeFlushDraftPreview.test.tsx"
+      ],
+      "disallowed_files": [
+        "src/preload/**",
+        "src/shared/lib/knowledge-live-flush-ui-contract.ts (read-only)"
+      ],
+      "required_tests": [
+        "component test: 3 fixture mount + snapshot",
+        "stale_sources visible (not silently dropped)",
+        "no forbidden copy in rendered text"
+      ],
+      "required_fixtures": [
+        "tests/fixtures/knowledge-reuse/ui-confirmation/draft-ready-pass.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/blocked-by-source-fidelity.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/confirmation-captured-pending-adapter.json"
+      ],
+      "acceptance_criteria": [
+        "renders title / summary / primary source / counts / keywords",
+        "renders local_findings / web_findings / stale_sources (3 sections, stale never hidden)",
+        "renders provenance block (source_type / source_uri / fetched_at / trust_level / safe_to_use_as_instruction)",
+        "no forbidden copy"
+      ],
+      "forbidden_copy_assertions": [
+        "no '已保存' / 'saved' / 'written' / 'will be written'"
+      ],
+      "no_runtime_assertions": [
+        "no IPC / fetch / runtime",
+        "does not mutate request prop (deep-clone if needed)"
+      ],
+      "rollback_point": "git revert 007H-3 PR",
+      "merge_prerequisite": [
+        "no IPC / preload diff",
+        "typecheck EXIT 0",
+        "vitest PASS"
+      ]
+    },
+    {
+      "id": "007H-4",
+      "name": "SourceFidelityPanel implementation",
+      "goal": "Implement KnowledgeFlushSourceFidelityPanel. Renders 3 lists (local_findings / web_findings / stale_sources) with exact source_uri / fetched_at preservation.",
+      "allowed_files": [
+        "src/renderer/src/components/Flush/KnowledgeFlushSourceFidelityPanel.tsx",
+        "src/renderer/src/components/Flush/KnowledgeFlushSourceFidelityPanel.test.tsx"
+      ],
+      "disallowed_files": [
+        "src/preload/**",
+        "src/shared/lib/knowledge-live-flush-ui-contract.ts (read-only)"
+      ],
+      "required_tests": [
+        "verbatim source_uri preservation test",
+        "verbatim fetched_at preservation test",
+        "vault source_type only for vault:// URI",
+        "no forbidden copy"
+      ],
+      "required_fixtures": [
+        "tests/fixtures/knowledge-reuse/ui-confirmation/draft-ready-pass.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/blocked-by-source-fidelity.json"
+      ],
+      "acceptance_criteria": [
+        "source_uri verbatim (no rewrite, no drift)",
+        "fetched_at verbatim (no rewrite, no drift)",
+        "vault source_type only for vault:// URI (HARD FAIL on mismatch)",
+        "HARD FAIL propagates blocking_issue_count > 0"
+      ],
+      "forbidden_copy_assertions": [
+        "no '已保存' / 'saved' / 'written' / 'will be written'"
+      ],
+      "no_runtime_assertions": [
+        "no IPC / fetch / runtime"
+      ],
+      "rollback_point": "git revert 007H-4 PR",
+      "merge_prerequisite": [
+        "no IPC / preload diff",
+        "typecheck EXIT 0",
+        "vitest PASS"
+      ]
+    },
+    {
+      "id": "007H-5",
+      "name": "BucketSemanticsPanel implementation",
+      "goal": "Implement KnowledgeFlushBucketSemanticsPanel. Renders 3 bucket sections (local_known / newly_found / historical_only) with per-check status badge.",
+      "allowed_files": [
+        "src/renderer/src/components/Flush/KnowledgeFlushBucketSemanticsPanel.tsx",
+        "src/renderer/src/components/Flush/KnowledgeFlushBucketSemanticsPanel.test.tsx"
+      ],
+      "disallowed_files": [
+        "src/preload/**",
+        "src/shared/lib/knowledge-live-flush-ui-contract.ts (read-only)"
+      ],
+      "required_tests": [
+        "3 bucket sections render distinctly",
+        "local_plan in newly_found surfaces as soft_fail highlight",
+        "do_not_use_as_current_truth=true in newly_found surfaces as hard_fail highlight"
+      ],
+      "required_fixtures": [
+        "tests/fixtures/knowledge-reuse/ui-confirmation/draft-ready-pass.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/blocked-by-source-fidelity.json"
+      ],
+      "acceptance_criteria": [
+        "3 bucket sections render (local_known / newly_found / historical_only)",
+        "misplacement surfaces as visible issue badge",
+        "no forbidden copy"
+      ],
+      "forbidden_copy_assertions": [
+        "no '已保存' / 'saved' / 'written' / 'will be written'"
+      ],
+      "no_runtime_assertions": [
+        "no IPC / fetch / runtime"
+      ],
+      "rollback_point": "git revert 007H-5 PR",
+      "merge_prerequisite": [
+        "no IPC / preload diff",
+        "typecheck EXIT 0",
+        "vitest PASS"
+      ]
+    },
+    {
+      "id": "007H-6",
+      "name": "FooterActions implementation",
+      "goal": "Implement KnowledgeFlushFooterActions. Holds phrase input / risks checkbox / Confirm Flush / Reject / Close. Wires dispatch + computeConfirmButtonEnabled.",
+      "allowed_files": [
+        "src/renderer/src/components/Flush/KnowledgeFlushFooterActions.tsx",
+        "src/renderer/src/components/Flush/KnowledgeFlushFooterActions.test.tsx"
+      ],
+      "disallowed_files": [
+        "src/preload/**",
+        "src/shared/lib/knowledge-live-flush-ui-contract.ts (read-only, except for types)"
+      ],
+      "required_tests": [
+        "3-gate enablement: phase=open + 0 blocking + acked + phrase match",
+        "disabled_reason renders for awaiting_phrase / awaiting_risks_ack / blocked_by_validation",
+        "Reject / Cancel available in every state",
+        "Copy draft json non-mutating (deep clone)",
+        "phrase input: aria-required / aria-invalid / aria-describedby"
+      ],
+      "required_fixtures": [
+        "tests/fixtures/knowledge-reuse/ui-confirmation/draft-ready-pass.json (awaiting_phrase + awaiting_risks_ack)",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/blocked-by-source-fidelity.json (blocked_by_validation)",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/confirmation-captured-pending-adapter.json (terminal)"
+      ],
+      "acceptance_criteria": [
+        "Confirm Flush disabled until 3-gate enablement met",
+        "disabled_reason visible",
+        "Reject / Cancel always in tab order",
+        "Copy draft json non-mutating"
+      ],
+      "forbidden_copy_assertions": [
+        "no '已保存' / '写入成功' / '确认后将写入' / 'saved successfully' / 'will be written after confirm'"
+      ],
+      "no_runtime_assertions": [
+        "no IPC / fetch / runtime",
+        "approve action only dispatches reducer; never triggers IPC"
+      ],
+      "rollback_point": "git revert 007H-6 PR",
+      "merge_prerequisite": [
+        "no IPC / preload diff",
+        "typecheck EXIT 0",
+        "vitest PASS",
+        "rg src/renderer/src/components/Flush/KnowledgeFlushFooterActions.tsx 0 forbidden tokens"
+      ]
+    },
+    {
+      "id": "007H-7",
+      "name": "ConfirmationPanel composition",
+      "goal": "Implement KnowledgeFlushConfirmationPanel. Top-level container with useReducer(reduceConfirmation, INITIAL_CONFIRMATION_STATE). Composes all 6 prior components. Manages 3-step wizard flow.",
+      "allowed_files": [
+        "src/renderer/src/components/Flush/KnowledgeFlushConfirmationPanel.tsx",
+        "src/renderer/src/components/Flush/KnowledgeFlushConfirmationPanel.test.tsx",
+        "src/renderer/src/screens/Knowledge/Knowledge.tsx (add knowledgeFlushConfirm tab only, no other behavior change)"
+      ],
+      "disallowed_files": [
+        "src/preload/**",
+        "src/main/**",
+        "src/shared/lib/knowledge-live-flush-ui-contract.ts (read-only)"
+      ],
+      "required_tests": [
+        "3-step wizard navigation (advance_to / go_back)",
+        "open → reducer state populated",
+        "approve (enabled) → state.phase=approved + onCapturedPending callback",
+        "approve (disabled) → no-op",
+        "close → state resets to INITIAL_CONFIRMATION_STATE",
+        "reject with / without reason",
+        "20-step tab order",
+        "9 key event assertions",
+        "focus trap in terminal state"
+      ],
+      "required_fixtures": [
+        "tests/fixtures/knowledge-reuse/ui-confirmation/draft-ready-pass.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/blocked-by-source-fidelity.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/confirmation-captured-pending-adapter.json"
+      ],
+      "acceptance_criteria": [
+        "3-step flow renders (review_request / review_evidence / review_risks)",
+        "state badge visible (pending_live_flush / live adapter approval pending)",
+        "safety footer visible (runtime_flush_allowed = false · live adapter not approved · confirmation only makes the draft eligible)",
+        "approve transitions state but does not trigger IPC",
+        "approved phase shows 'Awaiting live flush adapter approval' label",
+        "no forbidden copy"
+      ],
+      "forbidden_copy_assertions": [
+        "no '已保存' / '写入成功' / '确认后将写入' / 'saved successfully' / 'will be written after confirm'",
+        "no 'Obsidian Vault path' / 'MEMORY.md' / '.wolf/cerebrum' / '.wolf/anatomy'"
+      ],
+      "no_runtime_assertions": [
+        "no IPC / fetch / runtime / knowledgeIngest / knowledgeSearch / gateway",
+        "approve only dispatches reducer",
+        "Knowledge.tsx integration: only adds knowledgeFlushConfirm tab; no other behavior change; no IPC wiring"
+      ],
+      "rollback_point": "git revert 007H-7 PR; revert Knowledge.tsx tab addition",
+      "merge_prerequisite": [
+        "no IPC / preload diff (other than Knowledge.tsx tab addition, which is a UI integration)",
+        "typecheck EXIT 0",
+        "vitest PASS",
+        "rg src/renderer/src/components/Flush/ src/renderer/src/screens/Knowledge/Knowledge.tsx 0 forbidden tokens",
+        "all prior 007H-1 to 007H-6 PRs merged"
+      ]
+    },
+    {
+      "id": "007H-8",
+      "name": "Screenshot QA slice",
+      "goal": "After 007H-7 is merged and dev server is approved + started, capture 3 screenshots into .wolf/designqc-captures/ and validate visual state matches fixture expectations. NOT in this slice; deferred to a future slice explicitly approved by user.",
+      "allowed_files": [
+        "(deferred; will be specified in a future slice)"
+      ],
+      "disallowed_files": [
+        "(deferred; will be specified in a future slice)"
+      ],
+      "required_tests": [
+        "screenshot diff against expected golden state",
+        "forbidden copy scanner over rendered text"
+      ],
+      "required_fixtures": [
+        "tests/fixtures/knowledge-reuse/ui-confirmation/draft-ready-pass.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/blocked-by-source-fidelity.json",
+        "tests/fixtures/knowledge-reuse/ui-confirmation/confirmation-captured-pending-adapter.json"
+      ],
+      "acceptance_criteria": [
+        "3 screenshots captured to .wolf/designqc-captures/knowledge-flush-{draft-ready,blocked,pending}.png",
+        "no visual regression vs expected state"
+      ],
+      "forbidden_copy_assertions": [
+        "scanner over captured rendered text ok=true"
+      ],
+      "no_runtime_assertions": [
+        "screenshot capture only; no IPC / fetch / runtime"
+      ],
+      "rollback_point": "delete 3 screenshots; revert dev server approval",
+      "merge_prerequisite": [
+        "user explicitly approves dev server start",
+        "007H-7 merged",
+        "all prior gates pass"
+      ]
+    },
+    {
+      "id": "007H-9",
+      "name": "Final renderer closeout",
+      "goal": "Final closeout for the renderer implementation phase. Records final test pyramid, final fixture inventory, final forbidden copy gate, and declares the renderer implementation phase complete.",
+      "allowed_files": [
+        "(closeout report only; no .tsx)"
+      ],
+      "disallowed_files": [
+        "src/renderer/src/components/Flush/* (no further changes)",
+        "src/preload/**",
+        "src/main/**"
+      ],
+      "required_tests": [
+        "final full suite PASS",
+        "final forbidden token rg 0 hits",
+        "final no-renderer-files check 0 hits"
+      ],
+      "acceptance_criteria": [
+        "all 7 component tests + 3 fixture mounts PASS",
+        "all 15 no-runtime acceptance criteria (007F § 12) PASS",
+        "no IPC / preload / runtime / HCC / cron / WeChat / iLink / write / live adapter touch"
+      ],
+      "rollback_point": "n/a (closeout is documentation-only)",
+      "merge_prerequisite": [
+        "007H-7 merged",
+        "007H-8 (screenshot QA) merged"
+      ]
+    }
+  ],
+  "dependencies": {
+    "007H-1": [],
+    "007H-2": [],
+    "007H-3": ["007H-1", "007H-2"],
+    "007H-4": ["007H-1", "007H-2"],
+    "007H-5": ["007H-1", "007H-2"],
+    "007H-6": ["007H-1", "007H-2"],
+    "007H-7": ["007H-1", "007H-2", "007H-3", "007H-4", "007H-5", "007H-6"],
+    "007H-8": ["007H-7"],
+    "007H-9": ["007H-7", "007H-8"]
+  },
+  "allowed_files_global": [
+    "src/renderer/src/components/Flush/KnowledgeFlush*.tsx",
+    "src/renderer/src/components/Flush/KnowledgeFlush*.test.tsx",
+    "src/renderer/src/components/Flush/*.module.css (optional)",
+    "src/renderer/src/screens/Knowledge/Knowledge.tsx (007H-7 only; knowledgeFlushConfirm tab addition; no IPC wiring)"
+  ],
+  "disallowed_files_global": [
+    "src/preload/**",
+    "src/main/**",
+    "src/shared/lib/knowledge-live-flush-ui-contract.ts (read-only consumption; not modified)",
+    "src/shared/lib/knowledge-live-flush-contract.ts",
+    "src/shared/lib/knowledge-reuse-protocol.ts",
+    "src/shared/lib/knowledge-reuse-integration.ts",
+    "package.json (no dependency changes)",
+    "electron.vite.config.ts (no build config changes)",
+    ".env, .env.local, .env.*",
+    "src/shared/i18n/** (read-only; no locale changes)",
+    "src/shared/contracts/** (read-only)"
+  ],
+  "stop_conditions": [
+    "any IPC / preload diff (other than Knowledge.tsx tab addition in 007H-7)",
+    "any knowledgeIngest / gateway / runtime call (knowledgeIngest / knowledgeSearch / runPlaybook / sendMessage / triggerCronJob / fetch / axios / XMLHttpRequest)",
+    "any 'saved / written / will write / 已保存 / 写入成功 / 确认后将写入' promise copy",
+    "any 'Obsidian Vault path / MEMORY.md / .wolf/cerebrum / .wolf/anatomy' destination recommendation",
+    "any HCC / cron / handoff / audit touch (src/renderer cannot touch these; defensive guard)",
+    "any screenshot mismatch in 007H-8 QA slice",
+    "any source fidelity or bucket semantics regression (validated by Slice 006.8 / 006.9 helpers; if any regression surfaces, halt and roll back)",
+    "any typecheck / vitest / git diff --check failure",
+    "any forbidden token rg hit on renderer src",
+    "any shared helper (knowledge-live-flush-ui-contract.ts etc.) modification by renderer slice (must be separate ADR + user explicit approval)"
+  ],
+  "merge_order": [
+    "007H-1",
+    "007H-2",
+    "007H-3",
+    "007H-4",
+    "007H-5",
+    "007H-6",
+    "007H-7",
+    "007H-8",
+    "007H-9"
+  ],
+  "decision": {
+    "go": "GO for renderer implementation planning",
+    "not_go_for": [
+      "actual implementation in this slice (007H is plan only)",
+      "runtime / live adapter (Slice 008 not approved)",
+      "IPC / preload changes",
+      "real write to Hermes Knowledge / Vault / any file"
+    ],
+    "next_implementation_slice_needed": "user explicit approval of 007H-1 (GateCard implementation) before any .tsx is written",
+    "approval_required_before": "any React / .tsx / IPC / runtime call"
+  },
+  "still_forbidden": [
+    "knowledgeIngest(",
+    "knowledgeSearch(",
+    "ipcMain",
+    "ipcRenderer",
+    "triggerCronJob",
+    "sendMessage",
+    "runPlaybook",
+    "child_process",
+    "delegate_task",
+    "serve",
+    "agent"
+  ]
+}

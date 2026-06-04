@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "handoff-dry-run-with-contract-snippet",
+  "purpose": "Demonstrate handoff dry-run payload for OpenAI Codex with knowledge_contract_snippet placed at context.contracts.knowledge_reuse. Snippet may be target-adjusted but must preserve core knowledge rules. No real write. No runtime.",
+  "created_at": "2026-06-03T10:00:00.000Z",
+  "mode": "dry_run",
+  "runtime_flush_allowed": false,
+  "required_user_confirmation": true,
+  "owner": "codex",
+  "task_kind": "tool_comparison",
+  "task_id": "hcc-dry-run://codex-007K-2/tool-comparison-with-contract",
+  "query": "compare vite vs webpack, persist conclusion to Hermes Pro knowledge base",
+  "next_actions": [
+    {
+      "owner": "codex",
+      "action": "review_dry_run",
+      "why": "Codex must read the knowledge_contract_snippet from context.contracts.knowledge_reuse before any action"
+    },
+    {
+      "owner": "hermes",
+      "action": "await_user_confirmation",
+      "why": "Hermes holds the runtime gate; user must explicitly say I authorize flush before any real write"
+    }
+  ],
+  "artifact_ref": "hcc-dry-run://codex-007K-2/handoff-payload",
+  "context": {
+    "contracts": {
+      "knowledge_reuse": {
+        "target_agent": "codex",
+        "snippet_version": "1.0.0",
+        "snippet_text": "# Hermes Knowledge Reuse Contract (for codex, slice 007I)\n\n1. The canonical knowledge store is the Hermes Pro internal knowledge store. It is managed by Hermes Pro. Do not ask the user for an Obsidian Vault path.\n2. Do not write to MEMORY.md, .claude/memory/MEMORY.md, .wolf/cerebrum.md, .wolf/anatomy.md, .wolf/memory.md, or any other custom note path (notes/<topic>.md, research/<date>.md, etc.). Do not invent new write paths.\n3. Do not use any of the deceptive-phrase patterns listed in the forbidden-copy fixture. Until runtime flush is approved, no write has happened.\n4. Output the answer in 4 sections: (a) local_known (vault:// / knowledge:// / docs/...), (b) newly_found (https://..., trust_level=untrusted_external), (c) judgment (your analysis, kept separate from findings), (d) ingest_draft (only if the user said 'save to knowledge').\n5. Preserve source_uri and fetched_at exactly as input. Do not rewrite, truncate, or drift them. source_type='vault' is reserved for vault:// URIs only.\n6. Bucket semantics: local_plan / vault / knowledge_search / gbrain_typed_link go to local_known. github / web go to newly_found. Stale / archive / *.before-* / v*-status.md / docs/archive/* / Desktop知识/归档/ go to historical_only (do_not_use_as_current_truth=true). Do not place stale findings in newly_found.\n7. Confirmation only makes the draft eligible for an approved flush path. runtime_flush_allowed = false. Real flush requires a separate live adapter implementation slice to be approved.\n8. Do not start serve / run / agent / delegate / playbook / gateway / cron / handoff_write / audit_write / hcc_executor. Do not call knowledgeIngest, knowledgeSearch, fetch, axios, XMLHttpRequest, runPlaybook, triggerCronJob, sendMessage.",
+        "attach_reason": "user-request-contains-save-keyword",
+        "trigger_flags": {
+          "save_keyword": true,
+          "research_keyword": true,
+          "research_task_kind": true,
+          "has_ingest_draft": false,
+          "has_flush_pending": false,
+          "has_local_known_and_newly_found": false
+        },
+        "dry_run_only": true,
+        "runtime_flush_allowed": false,
+        "source_doc": "docs/knowledge/knowledge-claude-code-contract-landing-2026-06-03.md",
+        "created_at": "2026-06-03T10:00:00.000Z",
+        "max_chars": 2048,
+        "truncated": false,
+        "forbidden_runtime_checked": true
+      }
+    }
+  },
+  "forbidden_runtime_checked_at_creation": true
+}

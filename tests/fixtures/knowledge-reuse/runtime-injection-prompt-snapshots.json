@@ -1,0 +1,217 @@
+{
+  "schema_version": "1.0.0",
+  "slice": "008G",
+  "mode": "prompt_snapshot_tests",
+  "description": "Prompt snapshot tests for Surface B (task prompt preamble) dry-run implementation (Slice 008G). Locks down byte-level behavior of buildTaskPromptWithKnowledgeContractSurfaceB across the full matrix. No runtime, no dispatch, no Agent subprocess, no IPC, no gateway, no ingest / search, no default system prompt mutation, no real handoff/audit write.",
+  "source_helper": "knowledge-runtime-injection-surface-b",
+  "source_slice": "008F",
+  "separator": "\n\n",
+  "preamble_header_template": [
+    "# Hermes Knowledge Reuse Contract — Surface B dry-run preamble",
+    "# target_agent: {target_agent}",
+    "# feature_flag: KNOWLEDGE_CONTRACT_INJECTION_ENABLED={flag}",
+    "# runtime_flush_allowed: false | dry_run_only: true",
+    ""
+  ],
+  "snapshots": [
+    {
+      "id": "flag_disabled_no_preamble",
+      "input": {
+        "featureFlagEnabled": false,
+        "targetAgent": "claude_code",
+        "userRequest": "save to knowledge",
+        "baseTaskPrompt": "task: research X"
+      },
+      "expected": {
+        "preamble_attached": false,
+        "preamble_text": null,
+        "final_task_prompt": "task: research X",
+        "skip_reason": "flag_disabled",
+        "fallback_to_l4": true,
+        "feature_flag_enabled": false,
+        "hermes_reserved_marker": false,
+        "truncated": false
+      }
+    },
+    {
+      "id": "claude_code_research_preamble",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "claude_code",
+        "userRequest": "research github project X",
+        "baseTaskPrompt": "task: research X"
+      },
+      "expected": {
+        "preamble_attached": true,
+        "skip_reason": null,
+        "fallback_to_l4": false,
+        "feature_flag_enabled": true,
+        "trigger_flags.save_keyword": false,
+        "trigger_flags.research_keyword": true,
+        "preamble_text_starts_with": "# Hermes Knowledge Reuse Contract — Surface B dry-run preamble",
+        "preamble_text_contains": "# target_agent: claude_code",
+        "preamble_text_contains": "# feature_flag: KNOWLEDGE_CONTRACT_INJECTION_ENABLED=true",
+        "preamble_text_contains": "# runtime_flush_allowed: false | dry_run_only: true",
+        "preamble_text_contains": "Hermes Pro internal knowledge store",
+        "preamble_text_contains": "Do not write to MEMORY.md",
+        "final_task_prompt_contains_preamble": true,
+        "final_task_prompt_contains_base": "task: research X",
+        "separator_present": true
+      }
+    },
+    {
+      "id": "codex_ingest_draft_preamble",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "codex",
+        "userRequest": "",
+        "handoffContext": { "hasIngestDraft": true },
+        "baseTaskPrompt": "task: handle ingest"
+      },
+      "expected": {
+        "preamble_attached": true,
+        "skip_reason": null,
+        "fallback_to_l4": false,
+        "trigger_flags.has_ingest_draft": true,
+        "preamble_text_contains": "# target_agent: codex",
+        "final_task_prompt_contains_base": "task: handle ingest"
+      }
+    },
+    {
+      "id": "hermes_pro_local_newly_preamble",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "hermes_pro",
+        "userRequest": "",
+        "handoffContext": { "hasLocalKnownAndNewlyFound": true },
+        "baseTaskPrompt": "task: handle handoff"
+      },
+      "expected": {
+        "preamble_attached": true,
+        "skip_reason": null,
+        "fallback_to_l4": false,
+        "trigger_flags.has_local_known_and_newly_found": true,
+        "preamble_text_contains": "# target_agent: hermes_pro",
+        "final_task_prompt_contains_base": "task: handle handoff"
+      }
+    },
+    {
+      "id": "hermes_reserved_no_preamble",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "hermes",
+        "userRequest": "save to knowledge",
+        "baseTaskPrompt": "task: self-call"
+      },
+      "expected": {
+        "preamble_attached": false,
+        "preamble_text": null,
+        "final_task_prompt": "task: self-call",
+        "skip_reason": "hermes_self_call_reserved",
+        "fallback_to_l4": true,
+        "hermes_reserved_marker": true
+      }
+    },
+    {
+      "id": "ordinary_code_no_preamble",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "claude_code",
+        "userRequest": "fix the bug in src/foo.ts",
+        "baseTaskPrompt": "task: fix bug"
+      },
+      "expected": {
+        "preamble_attached": false,
+        "preamble_text": null,
+        "final_task_prompt": "task: fix bug",
+        "skip_reason": "no_trigger_fired",
+        "fallback_to_l4": true,
+        "trigger_flags.save_keyword": false,
+        "trigger_flags.research_keyword": false,
+        "trigger_flags.research_task_kind": false,
+        "trigger_flags.has_ingest_draft": false,
+        "trigger_flags.has_flush_pending": false,
+        "trigger_flags.has_local_known_and_newly_found": false
+      }
+    },
+    {
+      "id": "truncated_preamble",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "claude_code",
+        "userRequest": "save to knowledge",
+        "baseTaskPrompt": "task: X",
+        "maxChars": 64,
+        "overridePreambleText": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefXX"
+      },
+      "expected": {
+        "preamble_attached": true,
+        "truncated": true,
+        "max_chars": 64,
+        "preamble_body_substring_length_lte_max_chars": 64
+      }
+    },
+    {
+      "id": "base_prompt_preserved_multiline",
+      "input": {
+        "featureFlagEnabled": true,
+        "targetAgent": "claude_code",
+        "userRequest": "save to knowledge",
+        "baseTaskPrompt": "do the thing\nmultiline\nwith $pecial & <chars> and unicode 你好"
+      },
+      "expected": {
+        "preamble_attached": true,
+        "final_task_prompt_contains_base": "do the thing\nmultiline\nwith $pecial & <chars> and unicode 你好",
+        "base_task_prompt_preserved": true
+      }
+    }
+  ],
+  "invariants": [
+    "schema_version === '1.0.0'",
+    "slice === '008G'",
+    "mode === 'prompt_snapshot_tests'",
+    "source_helper === 'knowledge-runtime-injection-surface-b'",
+    "source_slice === '008F'",
+    "separator === '\\n\\n' (stable, no implicit drift)",
+    "preamble header contains 4 comment lines + 1 blank line before body",
+    "preamble header includes 'runtime_flush_allowed: false | dry_run_only: true'",
+    "preamble body comes from buildKnowledgeAgentContractSnippet (007I) — not inline literal",
+    "hermes reserved marker is the literal string '[reserved — no default attach for hermes self-call]'",
+    "skip case: final_task_prompt === baseTaskPrompt (verbatim, no preamble)",
+    "attach case: final_task_prompt === preamble + '\\n\\n' + baseTaskPrompt",
+    "baseTaskPrompt is preserved byte-for-byte (no rewrite, no trim, no escape)",
+    "max_chars default 2048; overflow → truncated=true",
+    "preamble_hash is sha256 of wrapped preamble (header + body)",
+    "runtime_flush_allowed === false (literal)",
+    "runtime_dispatch_allowed === false (literal)",
+    "real_handoff_write_allowed === false (literal)",
+    "live_adapter_allowed === false (literal)",
+    "no call expression in preamble_text or final_task_prompt (knowledgeIngest( / knowledgeSearch( / runPlaybook( / triggerCronJob( / sendMessage( / fetch()",
+    "no deceptive copy in preamble (已保存 / 写入成功 / 已写入 / saved successfully / written successfully / will be written after confirm)",
+    "no positive path recommendation (Obsidian Vault / MEMORY.md / .wolf/cerebrum.md / notes/<topic>.md); 007I mentions of these as 'do not' are allowed",
+    "JSON.stringify(fixture) === JSON.parse(JSON.stringify(fixture)) (stable round-trip)",
+    "fixture covers 8 distinct cases (flag matrix + target matrix + trigger matrix + base preservation + truncation)"
+  ],
+  "forbidden_runtime_checked": true,
+  "forbidden_call_tokens": [
+    "knowledgeIngest(",
+    "knowledgeSearch(",
+    "runPlaybook(",
+    "triggerCronJob(",
+    "sendMessage(",
+    "fetch("
+  ],
+  "forbidden_deceptive_phrases": [
+    "已保存",
+    "写入成功",
+    "已写入",
+    "saved successfully",
+    "written successfully",
+    "will be written after confirm"
+  ],
+  "forbidden_path_markers": [
+    "Obsidian",
+    "MEMORY.md",
+    ".wolf/cerebrum.md"
+  ]
+}
