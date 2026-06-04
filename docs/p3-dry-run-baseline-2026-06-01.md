@@ -1,10 +1,10 @@
 # P3 dry-run baseline (2026-06-01)
 
-> 状态：P3 dry-run 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换 + soft switch 1-2 天观察期均已通过（2026-06-02）。P7 WeChat/iLink 4 个低优先级 cron job 已切 `deliver=local`（2026-06-02）。BaiLongma Read-only Cockpit Final Polish PASS（2026-06-02）。V5 保持 `MVP_PARTIAL`；C4/C5 暂缓（非技术失败）。HCC Auto Executor 仍不可用、未启动、未接线。
+> 状态：P3 dry-run 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换 + soft switch 1-2 天观察期均已通过（2026-06-02）。P7 WeChat/iLink 4 个低优先级 cron job 已切 `deliver=local`（2026-06-02）。BaiLongma Read-only Cockpit Final Polish PASS（2026-06-02）。**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2026-06-04：2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469），closeout base HEAD == origin/hermes-pro-main == d5a6469efd84ba98730c2fa3924e769019756077；当时工作区 clean**。V5 保持 `MVP_PARTIAL`；C4/C5 暂缓（非技术失败）。**HCC Auto Executor 仍不可用、未启动、未接线；P3 真实执行仍暂停；hard cutover 仍未批准；BaiLongma/HCC Productionization NOT APPROVED；L6 live knowledge flush 未批准；Knowledge Reuse Chain 当前只到 L5 dry-run / prompt-builder，不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用**。
 > 用途：把 001-006 + 008 + 009 的成果归档为当前 P3 基线事实源，让 Claude Code / Hermes / 后续 Agent 读到同一上下文，不再重复追问或误判 HCC Auto Executor 已经处于可用/已启动状态。
 > 最高约束：`~/.hermes/HERMES-SOUL.md` v5.3。
 >
-> **当前测试基线（2026-06-02 21:51 更新）**：本文 §2 中 Slice 008 / Slice 009 引用的 `tests/safety 19 files / 470/470 PASS` 与 `tests/safety 20 files, 515/515 PASS / 45 tests` 是当时切片收口时的历史快照，**保留作历史证据，不再代表当前全量**。当前 Hermes Pro 全量测试基线为 **46 files / 995 tests PASS**（typecheck EXIT 0；执行：`npm run typecheck && npx vitest run`）。后续 §2 中任何"X files / Y tests"数字均为该切片收口时点的局部事实源。
+> **当前测试基线（2026-06-04 更新）**：本文 §2 中 Slice 008 / Slice 009 / §8 P3 harness 引用的 `tests/safety 19 files / 470/470 PASS` / `tests/safety 20 files, 515/515 PASS` / `tests/safety 23 files, 625/625 PASS` / BaiLongma Final Polish `46 files / 995 tests PASS` 等数字均为该切片收口时点的局部事实源，**保留作历史证据，不再代表当前全量**。当前 Hermes Pro 全量测试基线为 **81 files / 2931 tests PASS**（typecheck EXIT 0；执行：`npm run typecheck && npx vitest run`；closeout base HEAD == `d5a6469efd84ba98730c2fa3924e769019756077`；当时工作区 clean）。后续 §2 / §8 中任何"X files / Y tests"数字均为该切片收口时点的局部事实源；新引入的"X files / Y tests"必须与提交时点对应。
 
 ---
 
@@ -228,6 +228,19 @@ ln -sf /Users/midoudou/.hermes/hermes-agent/venv/bin/hermes        /Users/midoud
 - 监控 `~/.hermes/handoff/packs` 和 `~/.hermes/audit` mtime 变化（HARD 触发 rollback）
 - 监控 `ps aux` 看是否有长驻进程出现（HARD 触发 rollback）
 - 观察期结束决定 rollback / 保持 / 升级为 hard cutover
+
+### 8.5 Knowledge Reuse Chain 增补（2026-06-04）
+
+| Slice | 范围 | 状态 | 6 commits 中对应 |
+|------|------|------|-----------------|
+| 004-006.9 | protocol / prompt contract / fixtures / integration | ✅ PASS | `2f79c75` docs + `2a8dc08` fixtures + `cdeea86` shared lib + `7c3e89b` tests（部分）|
+| 007A-007N | handoff contract + optional hcc handoff knowledge envelope | ✅ PASS | `7c3e89b` tests（部分）+ `d5a6469` hcc-handoff wire envelope |
+| 008A-008M | Surface B + task-dispatch prompt builder | ✅ PASS | `d997914` feat(main) task-dispatch-prompt-builder + `7c3e89b` tests（部分）|
+
+- closeout base HEAD == `d5a6469efd84ba98730c2fa3924e769019756077` == `origin/hermes-pro-main`；当时工作区 clean。
+- 全量基线：**81 files / 2931 tests PASS**（`npm run typecheck` EXIT 0；`npx vitest run`）。
+- Chain 当前只到 L5 dry-run / prompt-builder。**不代表** live `knowledgeIngest` / live `knowledgeSearch` / default system prompt injection / Agent subprocess / L6 live knowledge flush 已启用。
+- L6 live knowledge flush 仍**未批准**；BaiLongma/HCC Productionization 仍**NOT APPROVED**；hard cutover 仍**未批准**；Round 2 C 仍**冻结**。
 
 ---
 
