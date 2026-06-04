@@ -1,6 +1,6 @@
 # Hermes Pro — 当前上下文入口
 
-> 更新：2026-06-04（最终计划同步：Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469）、HEAD == origin/hermes-pro-main == d5a6469efd84ba98730c2fa3924e769019756077；当前全量测试基线 **81 files / 2931 tests PASS**（npm run typecheck EXIT 0；npx vitest run 全量）；P3.5 soft switch 仍 ACTIVE 1-2 天观察期、hermes 默认入口仍指向 candidate v0.15.1；P7 4 个低优先级 cron job `deliver=local` 已切；BaiLongma Read-only Cockpit Final Polish PASS；V5 保持 MVP_PARTIAL，C4/C5 因生图/视频执行不可控 + 成本不可控暂缓；**HCC Auto Executor 仍不可用、未启动、未接线**；P3 真实执行仍暂停；**hard cutover 仍未批准**；**Round 2 C 仍冻结**；**BaiLongma/HCC Productionization NOT APPROVED**；**L6 live knowledge flush 未批准**。Knowledge Reuse Chain 当前只到 L5 dry-run / prompt-builder，**不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用**。）
+> 更新：2026-06-04（最终计划同步：Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469）、HEAD == origin/hermes-pro-main == d5a6469efd84ba98730c2fa3924e769019756077；当前全量测试基线 **81 files / 2931 tests PASS**（npm run typecheck EXIT 0；npx vitest run 全量）；**P3.5 soft switch 1-2 天观察期已收尾、由用户裁决 KEEP v0.15.1（ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）、`hermes` 入口保持指向 candidate v0.15.1、rollback 备份仍可回滚**；P7 4 个低优先级 cron job `deliver=local` 已切；BaiLongma Read-only Cockpit Final Polish PASS；V5 保持 MVP_PARTIAL，C4/C5 因生图/视频执行不可控 + 成本不可控暂缓；**HCC Auto Executor 仍不可用、未启动、未接线**；P3 真实执行仍暂停；**hard cutover 仍未批准**；**Round 2 C 仍冻结**；**BaiLongma/HCC Productionization NOT APPROVED**；**L6 live knowledge flush 未批准**。Knowledge Reuse Chain 当前只到 L5 dry-run / prompt-builder，**不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用**。）
 
 ## Knowledge Reuse Chain 完成度（2026-06-04）
 
@@ -55,7 +55,7 @@ Hermes Pro 当前不是单纯知识库，也不是单纯代码执行器，而是
 
 以 `NEXT_STEP.md` 为准：
 
-当前阶段：**P3 dry-run baseline 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换 + soft switch 1-2 天观察期均已通过（2026-06-02）；Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成（2026-06-04，6 commits，全量基线 81 files / 2931 tests PASS）；HCC Auto Executor 仍不可用、未启动；P3 真实执行仍暂停；hard cutover 仍未批准；L6 live knowledge flush 未批准。**
+当前阶段：**P3 dry-run baseline 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换均已通过（2026-06-02）；P3.5 soft switch 1-2 天观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）；Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成（2026-06-04，6 commits，全量基线 81 files / 2931 tests PASS）；HCC Auto Executor 仍不可用、未启动；P3 真实执行仍暂停；hard cutover 仍未批准；L6 live knowledge flush 未批准。**
 
 已完成：
 
@@ -90,7 +90,7 @@ P3.5 upgrade candidate 完成（2026-06-02）：
 24. live-vs-candidate read-only compare — PASS（7 pair；6 byte-identical + config 1 行差 + tools 1 行差）
 25. Round 2 C scoping review — REVIEW ONLY（18 files 分类：14 dead-infrastructure 0 importers + 4 high-risk hard-constraint-touching；推荐 0-file 迁移 / 软切换）
 26. soft-to-live switch 排练 — PASS（`hermes` symlink 默认指向 candidate `.venv/bin/hermes`；6/6 smoke 全过）
-27. soft switch observation baseline — ACTIVE 1-2 天观察期（`hermes` 默认入口当前为 candidate v0.15.1）
+27. soft switch observation baseline — **KEEP v0.15.1**（观察期已结束，2026-06-04 用户裁决 KEEP；ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1；`hermes` 默认入口当前为 candidate v0.15.1，rollback 备份仍可回滚）
 28. Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 推送 6 commits — PASS（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469；closeout base HEAD == origin/hermes-pro-main == d5a6469efd84ba98730c2fa3924e769019756077；当时工作区 clean；全量基线 81 files / 2931 tests PASS）
 
 **测试基线规则（2026-06-04 统一）**：历史快照（46 files / 995 tests、23 files / 625 tests、tests/safety 20 files / 515/515 等）保留为该切片收口时的当时证据；当前最新全量基线为 **81 files / 2931 tests PASS**（typecheck EXIT 0；`npm run typecheck && npx vitest run`）。任何后续 §X.Y 提到的"X files / Y tests"数字均为切片收口时点的局部事实源。
@@ -102,7 +102,7 @@ P3 真实执行仍未恢复：HCC Auto Executor 未批准、未启动、未接�
 1. P3 代码/项目任务由 Claude Code 按 dry-run 契约执行（已完成 6 切片 + harness 8 artifact）。
 2. Hermes 暂时只负责需求整理、计划审查、知识检索、Handoff Pack、执行结果归档。
 3. 后续给执行 Agent 的提示词默认面向 Claude Code，直到 HCC Auto Executor 可用并经用户明确授权。
-4. **当前处于 P3.5 soft switch 1-2 天观察期（2026-06-02 起）；默认 `hermes` 入口指向 candidate v0.15.1；观察期内仅做 read-only 使用，避免 `serve` / `run` / `agent` / `delegate` / `update` / `config set|edit` 等危险子命令。**
+4. **P3.5 soft switch 观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）；默认 `hermes` 入口保持指向 candidate v0.15.1；保持期内仍仅做 read-only 使用，避免 `serve` / `run` / `agent` / `delegate` / `update` / `config set|edit` 等危险子命令；如需回滚，使用 `ln -sf /Users/midoudou/.hermes/hermes-agent/venv/bin/hermes /Users/midoudou/.local/bin/hermes`（备份保留在 `~/.hermes/backups/hermes-live-wrapper-pre-soft-switch-20260602/`）**。
 5. Round 2 C 仍冻结（14 dead-infrastructure + 4 high-risk 待用户显式批 + Action Gate 部署）。
 6. hard cutover 仍未批准。
 7. 真实执行入口（spawn / runPlaybook / HCC executor）必须另批。
@@ -137,7 +137,7 @@ Locked roadmap drift reset（2026-06-02）：
 
 不要重新执行 P0/P0.5/P1/P1.5/P2/P2.5/P3 dry-run 001-006 + 008 + 009；不要重跑 P3 harness 8 artifact；不要重跑 P3.5 Round 1-2 A/B-impl/B-smoke/B-fix / B-runtime-smoke / A-remain / hermes-candidate wrapper v1.2.0 / soft-to-live switch 排练。除非用户明确要求复验。
 
-soft switch 1-2 天观察期内不做以下动作：
+soft switch KEEP 期（2026-06-04 起，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）内不做以下动作：
 - 不改 `~/.local/bin/hermes` symlink（除 rollback 外）
 - 不跑长驻进程（`serve` / `run` / `agent` / `delegate` / `gateway`）
 - 不写真实 `~/.hermes/handoff/packs` 或 `~/.hermes/audit`

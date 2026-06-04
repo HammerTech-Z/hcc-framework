@@ -1,6 +1,6 @@
 # P3 dry-run baseline (2026-06-01)
 
-> 状态：P3 dry-run 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换 + soft switch 1-2 天观察期均已通过（2026-06-02）。P7 WeChat/iLink 4 个低优先级 cron job 已切 `deliver=local`（2026-06-02）。BaiLongma Read-only Cockpit Final Polish PASS（2026-06-02）。**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2026-06-04：2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469），closeout base HEAD == origin/hermes-pro-main == d5a6469efd84ba98730c2fa3924e769019756077；当时工作区 clean**。V5 保持 `MVP_PARTIAL`；C4/C5 暂缓（非技术失败）。**HCC Auto Executor 仍不可用、未启动、未接线；P3 真实执行仍暂停；hard cutover 仍未批准；BaiLongma/HCC Productionization NOT APPROVED；L6 live knowledge flush 未批准；Knowledge Reuse Chain 当前只到 L5 dry-run / prompt-builder，不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用**。
+> 状态：P3 dry-run 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换均已通过（2026-06-02）；**P3.5 soft switch 1-2 天观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）、`hermes` 入口保持指向 candidate v0.15.1、rollback 备份仍可回滚**。P7 WeChat/iLink 4 个低优先级 cron job 已切 `deliver=local`（2026-06-02）。BaiLongma Read-only Cockpit Final Polish PASS（2026-06-02）。**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2026-06-04：2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469），closeout base HEAD == origin/hermes-pro-main == d5a6469efd84ba98730c2fa3924e769019756077；当时工作区 clean**。V5 保持 `MVP_PARTIAL`；C4/C5 暂缓（非技术失败）。**HCC Auto Executor 仍不可用、未启动、未接线；P3 真实执行仍暂停；hard cutover 仍未批准；BaiLongma/HCC Productionization NOT APPROVED；L6 live knowledge flush 未批准；Knowledge Reuse Chain 当前只到 L5 dry-run / prompt-builder，不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用**。
 > 用途：把 001-006 + 008 + 009 的成果归档为当前 P3 基线事实源，让 Claude Code / Hermes / 后续 Agent 读到同一上下文，不再重复追问或误判 HCC Auto Executor 已经处于可用/已启动状态。
 > 最高约束：`~/.hermes/HERMES-SOUL.md` v5.3。
 >
@@ -10,7 +10,7 @@
 
 ## 1. P3 dry-run 当前状态（一句话）
 
-**P3 端到端 dry-run 契约（001-006）已完整，Slice 008 补 Handoff payload temp fixture + local verifier-only check，Slice 009 补 Artifact Store dry-run record（plan + handoff 可被 P2.5 append-only audit log 消费）；真实执行入口未启、未批、未接线。P3 harness 8 artifact（Chain Test 002 + Code Task 003-006 + Doc-Sync 009 + Closeout/Final Closeout）已 PASS，tests/safety 23 files / 625/625 PASS。P3.5 upgrade candidate 软切换 + soft switch 1-2 天观察期 ACTIVE。Claude Code 继续按 dry-run 契约执行 P3 代码/项目任务；Hermes 只做需求整理、计划审查、知识检索、Handoff Pack、结果归档。**
+**P3 端到端 dry-run 契约（001-006）已完整，Slice 008 补 Handoff payload temp fixture + local verifier-only check，Slice 009 补 Artifact Store dry-run record（plan + handoff 可被 P2.5 append-only audit log 消费）；真实执行入口未启、未批、未接线。P3 harness 8 artifact（Chain Test 002 + Code Task 003-006 + Doc-Sync 009 + Closeout/Final Closeout）已 PASS，tests/safety 23 files / 625/625 PASS。P3.5 upgrade candidate 软切换已通过（2026-06-02）；P3.5 soft switch 1-2 天观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）。Claude Code 继续按 dry-run 契约执行 P3 代码/项目任务；Hermes 只做需求整理、计划审查、知识检索、Handoff Pack、结果归档。**
 
 | 事实 | 状态 |
 |------|------|
@@ -196,7 +196,7 @@
 | Round 2 C Scoping Review | `~/.hermes/pipeline-runs/HCC-20260602-P3.5-ROUND2-C-SCOPING/01-report.md` | 18 files 分类：14 dead-infrastructure 0 importers + 4 high-risk hard-constraint-touching；推荐 0-file 迁移 / 软切换 |
 | Hermes live vs candidate readonly compare | `~/.hermes/pipeline-runs/HCC-20260602-HERMES-LIVE-VS-CANDIDATE-READONLY-COMPARE/01-report.md` | 7 pair；6 byte-identical + config 1 行差 + tools 1 行差 |
 | Soft-to-Live Switch Rehearsal | `~/.hermes/pipeline-runs/HCC-20260602-HERMES-SOFT-TO-LIVE-SWITCH-REHEARSAL/01-report.md` | `hermes` symlink 默认指向 candidate `.venv/bin/hermes`；6/6 smoke 全过 |
-| Soft Switch Observation Baseline | `~/.hermes/pipeline-runs/HCC-20260602-HERMES-SOFT-SWITCH-OBSERVATION/01-baseline.md` | ACTIVE 1-2 天观察期；rollback 命令就位 |
+| Soft Switch Observation Baseline | `~/.hermes/pipeline-runs/HCC-20260602-HERMES-SOFT-SWITCH-OBSERVATION/01-baseline.md` | 1-2 天观察期已结束（2026-06-04 由用户裁决 KEEP v0.15.1，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）；rollback 命令就位 |
 
 **当前入口**：`hermes` 默认指向 `/Users/midoudou/.hermes/hermes-agent-upgrade-candidate/.venv/bin/hermes`（candidate v0.15.1）。
 
@@ -217,7 +217,7 @@ ln -sf /Users/midoudou/.hermes/hermes-agent/venv/bin/hermes        /Users/midoud
 | P3 候选 010 | ❌ 受控 worktree dry-run；需单独批准；仅在 HCC Auto Executor 解冻后才有意义 |
 | 真实执行入口（spawn / runPlaybook / 真 verificationCommands / 真 Artifact Store 写入）| ❌ 必须另批 |
 | BaiLongma Productionization | ❌ NOT APPROVED；仅允许只读增强 |
-| Hermes Agent hard cutover | ❌ 未批准；当前仅 P3.5 soft switch 1-2 天观察期 ACTIVE |
+| Hermes Agent hard cutover | ❌ 未批准；当前为 P3.5 soft switch KEEP v0.15.1 期（2026-06-04 ADR），如需 hard cutover 仍需新 ADR + 30 天 dual-run + Action Gate |
 | P7 高优先级投递策略 | ❌ 仍待独立决策（独立 ticket；本任务只完成低优先级 4 job `deliver=local`） |
 | V5 C4 / C5 | ❌ 暂缓（非技术失败；生图/视频外部 API 不可控 + 成本不可控） |
 
