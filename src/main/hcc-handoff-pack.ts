@@ -8,6 +8,10 @@ import * as fs from "fs";
 import * as path from "path";
 
 import type { HCCTaskPlan } from "./hcc-task-types";
+import {
+  buildKnowledgeHandoffContractSnippet,
+  type KnowledgeHandoffContractSnippet,
+} from "../shared/lib/knowledge-handoff-contract";
 
 // -----------------------------------------------------------------
 // Handoff Pack payload schema
@@ -68,6 +72,14 @@ export interface HCCHandoffPayload {
   safety: HandoffSafety;
   artifact_ref: string;
   content_hash: string | null;
+  // Slice 007L: read-only contract field. Always absent (or present) per
+  // knowledgeContract option. NEVER carries executable payload. NEVER
+  // overrides dry_run_only / runtime_flush_allowed invariants.
+  context?: {
+    contracts?: {
+      knowledge_reuse?: KnowledgeHandoffContractSnippet;
+    };
+  };
 }
 
 // Forbidden fields that must never appear in the payload (builder/verifier
@@ -118,6 +130,21 @@ export interface BuildHCCHandoffPayloadOptions {
   gitRef?: string | null;
   /** Compute a content hash (sha256 of the payload minus the hash field). */
   includeContentHash?: boolean;
+  /**
+   * Slice 007L: optional knowledge contract snippet input. When provided
+   * AND the helper decides to attach, the snippet is placed at
+   * `payload.context.contracts.knowledge_reuse`. Pure, dry-run only;
+   * never writes to disk. When omitted, payload.context is absent and
+   * old behavior is preserved.
+   */
+  knowledgeContract?: {
+    targetAgent: "claude_code" | "codex" | "hermes_pro" | "hermes";
+    userRequest?: string;
+    taskKind?: string;
+    hasIngestDraft?: boolean;
+    hasFlushPending?: boolean;
+    hasLocalKnownAndNewlyFound?: boolean;
+  };
 }
 
 // -----------------------------------------------------------------
@@ -263,6 +290,52 @@ export function buildHCCHandoffPayload(
     artifact_ref: artifactRef,
     content_hash: null,
   };
+
+  // Slice 007L: attach knowledge contract snippet to context.contracts.knowledge_reuse
+  // when caller supplies knowledgeContract option. Pure, dry-run only, no IPC.
+  // When omitted, payload.context is absent (old behavior).
+  if (options.knowledgeContract) {
+    const kc = options.knowledgeContract;
+    const isHermes = kc.targetAgent === "hermes";
+    // For hermes, set reserved=true via attach_reason; snippet_text is the
+    // 8-line contract marker (still valid). Pure, no handoff write.
+    const envelope = buildKnowledgeHandoffContractSnippet({
+      target_agent: kc.targetAgent,
+      now_iso: createdAt,
+      max_chars: 2048,
+      // Slice 007L: caller is the HCC handoff builder at the system
+      // boundary; explicit attach intent. Bypass 007J's shouldAttach
+      // trigger check (which expects end-user-style request_text). The
+      // envelope's own literal invariants (dry_run_only / runtime_flush_allowed
+      // / forbidden_runtime_checked) still apply.
+      caller_explicit_attach: true,
+      attach_context: {
+        request_text: kc.userRequest ?? "",
+        task_kind: (kc.taskKind ?? undefined) as never,
+        handoff_context: {
+          has_ingest_draft: kc.hasIngestDraft,
+          has_flush_pending: kc.hasFlushPending,
+          has_local_known: undefined,
+          has_newly_found: kc.hasLocalKnownAndNewlyFound,
+        },
+      },
+      // For hermes, force a reserved marker so the contract is inert.
+      override_snippet_text: isHermes
+        ? "[reserved — no default attach for hermes self-call]"
+        : undefined,
+    });
+    if (isHermes) {
+      // Override the derived attach_reason to make "reserved" the explicit
+      // signal for hermes. The helper's priority ordering would otherwise
+      // surface "task-kind-is-research" or "user-request-contains-research-keyword".
+      envelope.attach_reason = "hermes-reserved-no-default-attach";
+    }
+    payload.context = {
+      contracts: {
+        knowledge_reuse: envelope,
+      },
+    };
+  }
 
   if (options.includeContentHash) {
     const { content_hash: _ignored, ...rest } = payload;
