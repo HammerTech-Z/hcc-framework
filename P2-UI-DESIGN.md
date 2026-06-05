@@ -1,5 +1,9 @@
 # Hermes Pro — v2.2 UI 设计规范
 
+> Superseded / historical reference (2026-06-05): 当前 UI redesign 方向以
+> `docs/design/HERMES-PRO-UI-DESIGN-SPEC-2026-06-04.md` 为准。
+> 本文保留为 P2-era 视觉方案与 token 历史参考，不作为当前 UI implementation 任务入口。
+
 > 基于 BaiLongma（执行手册-v1.2）+ Voltagent + Linear 设计系统
 > 目标：知识库状态可视化，让用户看见碎片从识别到被用上的全程
 > 更新：Phase 0 配套组件（T0.1-T0.5）
