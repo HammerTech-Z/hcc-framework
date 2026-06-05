@@ -28,6 +28,7 @@ pnpm-debug.log*
 # Electron packaging artifacts
 release/
 .claude/worktrees
+.claude/settings.*.bak
 
 # Tauri
 **/src-tauri/target/
