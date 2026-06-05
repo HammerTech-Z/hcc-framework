@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0.0",
+  "mode": "dry_run",
+  "status": "planned",
+  "active_profile": "hermes-balanced-2026-06",
+  "check_type_for_local_fallback": "structural_only",
+  "matrix": [
+    {
+      "lane": "daily",
+      "provider_id": "minimax",
+      "model_id": "MiniMax 3.0",
+      "check_type": "structural_only",
+      "verification_state": "unverified",
+      "checks": [
+        "provider_catalog_resolution_check",
+        "capability_alignment_check",
+        "endpoint_alias_check"
+      ]
+    },
+    {
+      "lane": "daily_fallback",
+      "provider_id": "custom",
+      "model_id": "gemma-4-12b-it",
+      "check_type": "structural_only",
+      "verification_state": "unverified",
+      "checks": [
+        "local_base_url_structure_check",
+        "loopback_host_check",
+        "path_prefix_check"
+      ]
+    },
+    {
+      "lane": "light_task",
+      "provider_id": "minimax",
+      "model_id": "MiniMax 3.0",
+      "check_type": "structural_only",
+      "verification_state": "unverified",
+      "checks": [
+        "provider_catalog_resolution_check",
+        "capability_alignment_check"
+      ]
+    },
+    {
+      "lane": "complex_code",
+      "provider_id": "openai",
+      "model_id": "gpt-5.5",
+      "check_type": "structural_only",
+      "verification_state": "unverified",
+      "checks": [
+        "provider_catalog_resolution_check",
+        "user_intent_gate_check",
+        "capability_alignment_check"
+      ]
+    },
+    {
+      "lane": "task_fallback",
+      "provider_id": "deepseek",
+      "model_id": "deepseek-v4-pro",
+      "check_type": "structural_only",
+      "verification_state": "unverified",
+      "checks": [
+        "provider_catalog_resolution_check",
+        "rollback_baseline_match_check",
+        "legacy_alias_drift_check"
+      ]
+    },
+    {
+      "lane": "god",
+      "provider_id": "anthropic",
+      "model_id": "provider_current_opus",
+      "check_type": "structural_only",
+      "verification_state": "unverified",
+      "checks": [
+        "provider_catalog_resolution_check",
+        "user_intent_gate_check",
+        "capability_alignment_check"
+      ]
+    }
+  ],
+  "safety_invariants": {
+    "live_config_writes_allowed": false,
+    "automatic_runtime_routing_enabled": false,
+    "hcc_auto_executor_allowed": false,
+    "runtime_router_allowed": false,
+    "network_probe_allowed": false
+  }
+}
