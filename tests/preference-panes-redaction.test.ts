@@ -75,6 +75,5 @@ describe("Slice 6A Settings preference pane boundary", () => {
     expect(cssSrc).toContain(".settings-pref-layout");
     expect(cssSrc).toContain(".settings-pref-nav");
     expect(cssSrc).toContain(".settings-pref-content");
-    expect(cssSrc).not.toContain(".models-pref");
   });
 });

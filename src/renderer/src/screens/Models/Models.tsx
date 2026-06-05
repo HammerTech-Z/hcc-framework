@@ -142,7 +142,7 @@ function Models(): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="settings-container">
+      <div className="settings-container models-pref-container">
         <h1 className="settings-header">{t("models.title")}</h1>
         <div className="models-loading">
           <div className="loading-spinner" />
@@ -152,98 +152,122 @@ function Models(): React.JSX.Element {
   }
 
   return (
-    <div className="settings-container">
-      <div className="models-header">
+    <div className="settings-container models-pref-container">
+      <div className="models-pref-header">
         <div>
+          <div className="models-pref-kicker">Model Registry</div>
           <h1 className="settings-header" style={{ marginBottom: 4 }}>
             {t("models.title")}
           </h1>
           <p className="models-subtitle">{t("models.subtitle")}</p>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={openAddModal}>
-          <Plus size={14} />
-          {t("models.addModel")}
-        </button>
+        <div className="models-pref-actions" id="models-actions">
+          <div className="models-pref-boundary">
+            Secrets redacted · explicit model writes · delete confirmation preserved
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={openAddModal}>
+            <Plus size={14} />
+            {t("models.addModel")}
+          </button>
+        </div>
       </div>
 
-      {models.length > 0 && (
-        <div className="models-search">
-          <Search size={14} />
-          <input
-            className="models-search-input"
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t("models.searchPlaceholder")}
-          />
-        </div>
-      )}
+      <div className="models-pref-layout">
+        <aside className="models-pref-nav" aria-label="Model sections">
+          <a href="#models-library" className="models-pref-nav-item">
+            Library
+          </a>
+          <a href="#models-search" className="models-pref-nav-item">
+            Search
+          </a>
+          <a href="#models-actions" className="models-pref-nav-item">
+            Actions
+          </a>
+        </aside>
 
-      {filtered.length === 0 ? (
-        <div className="models-empty">
-          {models.length === 0 ? (
-            <>
-              <p className="models-empty-text">{t("models.empty")}</p>
-              <p className="models-empty-hint">{t("models.emptyHint")}</p>
-            </>
-          ) : (
-            <p className="models-empty-text">{t("models.noMatch")}</p>
+        <div className="models-pref-content">
+          {models.length > 0 && (
+            <div className="models-search" id="models-search">
+              <Search size={14} />
+              <input
+                className="models-search-input"
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("models.searchPlaceholder")}
+              />
+            </div>
           )}
-        </div>
-      ) : (
-        <div className="models-grid">
-          {filtered.map((m) => (
-            <div
-              key={m.id}
-              className="models-card"
-              onClick={() => openEditModal(m)}
-            >
-              <div className="models-card-header">
-                <div className="models-card-name">{m.name}</div>
-                <span className="models-card-provider">
-                  {t(providerLabelKey(m.provider))}
-                </span>
-              </div>
-              <div className="models-card-model">{m.model}</div>
-              {m.baseUrl && <div className="models-card-url">{m.baseUrl}</div>}
-              <div className="models-card-footer">
-                {confirmDelete === m.id ? (
-                  <div
-                    className="models-card-confirm"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span>{t("models.deleteConfirm")}</span>
-                    <button
-                      className="btn btn-sm"
-                      style={{ color: "var(--error)" }}
-                      onClick={() => handleDelete(m.id)}
-                    >
-                      {t("models.yes")}
-                    </button>
-                    <button
-                      className="btn btn-sm"
-                      onClick={() => setConfirmDelete(null)}
-                    >
-                      {t("models.no")}
-                    </button>
-                  </div>
+
+          <div id="models-library">
+            {filtered.length === 0 ? (
+              <div className="models-empty">
+                {models.length === 0 ? (
+                  <>
+                    <p className="models-empty-text">{t("models.empty")}</p>
+                    <p className="models-empty-hint">{t("models.emptyHint")}</p>
+                  </>
                 ) : (
-                  <button
-                    className="btn-ghost models-card-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDelete(m.id);
-                    }}
-                    title={t("models.deleteModelTitle")}
-                  >
-                    <Trash size={14} />
-                  </button>
+                  <p className="models-empty-text">{t("models.noMatch")}</p>
                 )}
               </div>
-            </div>
-          ))}
+            ) : (
+              <div className="models-grid">
+                {filtered.map((m) => (
+                  <div
+                    key={m.id}
+                    className="models-card"
+                    onClick={() => openEditModal(m)}
+                  >
+                    <div className="models-card-header">
+                      <div className="models-card-name">{m.name}</div>
+                      <span className="models-card-provider">
+                        {t(providerLabelKey(m.provider))}
+                      </span>
+                    </div>
+                    <div className="models-card-model">{m.model}</div>
+                    {m.baseUrl && <div className="models-card-url">{m.baseUrl}</div>}
+                    <div className="models-card-footer">
+                      {confirmDelete === m.id ? (
+                        <div
+                          className="models-card-confirm"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span>{t("models.deleteConfirm")}</span>
+                          <button
+                            className="btn btn-sm"
+                            style={{ color: "var(--error)" }}
+                            onClick={() => handleDelete(m.id)}
+                          >
+                            {t("models.yes")}
+                          </button>
+                          <button
+                            className="btn btn-sm"
+                            onClick={() => setConfirmDelete(null)}
+                          >
+                            {t("models.no")}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="btn-ghost models-card-delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDelete(m.id);
+                          }}
+                          title={t("models.deleteModelTitle")}
+                        >
+                          <Trash size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {showModal && (
         <div className="models-modal-overlay" onClick={closeModal}>

@@ -289,7 +289,7 @@ function Tools({ profile }: ToolsProps): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="tools-container">
+      <div className="tools-container tools-pref-container">
         <div className="tools-loading">
           <div className="loading-spinner" />
         </div>
@@ -298,88 +298,107 @@ function Tools({ profile }: ToolsProps): React.JSX.Element {
   }
 
   return (
-    <div className="tools-container">
-      <div className="tools-header">
-        <h2 className="tools-title">{t("tools.title")}</h2>
-        <p className="tools-subtitle">{t("tools.subtitle")}</p>
+    <div className="tools-container tools-pref-container">
+      <div className="tools-pref-header">
+        <div>
+          <div className="tools-pref-kicker">Capability Matrix</div>
+          <h2 className="tools-title">{t("tools.title")}</h2>
+          <p className="tools-subtitle">{t("tools.subtitle")}</p>
+        </div>
+        <div className="tools-pref-boundary">
+          Toggle writes explicit · MCP inventory read-only · no runtime launch
+        </div>
       </div>
 
-      <div className="tools-grid">
-        {toolsets.map((t) => (
-          <div
-            key={t.key}
-            className={`tools-card ${t.enabled ? "tools-card-enabled" : "tools-card-disabled"}`}
-            onClick={() => handleToggle(t.key, t.enabled)}
-          >
-            <div className="tools-card-top">
-              <ToolIcon toolKey={t.key} />
-              <label
-                className="tools-toggle"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <input
-                  type="checkbox"
-                  checked={t.enabled}
-                  onChange={() => handleToggle(t.key, t.enabled)}
-                />
-                <span className="tools-toggle-track" />
-              </label>
-            </div>
-            <div className="tools-card-label">{t.label}</div>
-            <div className="tools-card-description">{t.description}</div>
-          </div>
-        ))}
-      </div>
+      <div className="tools-pref-layout">
+        <aside className="tools-pref-nav" aria-label="Tool sections">
+          <a href="#tools-toolsets" className="tools-pref-nav-item">
+            Toolsets
+          </a>
+          <a href="#tools-mcp" className="tools-pref-nav-item">
+            MCP Servers
+          </a>
+        </aside>
 
-      {mcpServers.length > 0 && (
-        <>
-          <div className="tools-header" style={{ marginTop: 32 }}>
-            <h2 className="tools-title">{t("tools.mcpServers")}</h2>
-            <p className="tools-subtitle" dangerouslySetInnerHTML={{ __html: t("tools.mcpDescription") }} />
-          </div>
-          <div className="tools-grid">
-            {mcpServers.map((s) => (
+        <div className="tools-pref-content">
+          <div className="tools-grid" id="tools-toolsets">
+            {toolsets.map((t) => (
               <div
-                key={s.name}
-                className={`tools-card ${s.enabled ? "tools-card-enabled" : "tools-card-disabled"}`}
+                key={t.key}
+                className={`tools-card ${t.enabled ? "tools-card-enabled" : "tools-card-disabled"}`}
+                onClick={() => handleToggle(t.key, t.enabled)}
               >
                 <div className="tools-card-top">
-                  <div className="tools-card-icon">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect x="2" y="2" width="20" height="8" rx="2" />
-                      <rect x="2" y="14" width="20" height="8" rx="2" />
-                      <circle cx="6" cy="6" r="1" />
-                      <circle cx="6" cy="18" r="1" />
-                    </svg>
-                  </div>
-                  <span
-                    className="tools-card-description"
-                    style={{ fontSize: 10 }}
+                  <ToolIcon toolKey={t.key} />
+                  <label
+                    className="tools-toggle"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {s.type === "http" ? t("tools.http") : t("tools.stdio")}
-                  </span>
+                    <input
+                      type="checkbox"
+                      checked={t.enabled}
+                      onChange={() => handleToggle(t.key, t.enabled)}
+                    />
+                    <span className="tools-toggle-track" />
+                  </label>
                 </div>
-                <div className="tools-card-label">{s.name}</div>
-                <div className="tools-card-description">
-                  {s.detail}
-                  {!s.enabled && (
-                    <span style={{ color: "var(--error)", marginLeft: 6 }}>
-                      ({t("tools.disabled")})
-                    </span>
-                  )}
-                </div>
+                <div className="tools-card-label">{t.label}</div>
+                <div className="tools-card-description">{t.description}</div>
               </div>
             ))}
           </div>
-        </>
-      )}
+
+          {mcpServers.length > 0 && (
+            <div id="tools-mcp">
+              <div className="tools-header" style={{ marginTop: 32 }}>
+                <h2 className="tools-title">{t("tools.mcpServers")}</h2>
+                <p className="tools-subtitle" dangerouslySetInnerHTML={{ __html: t("tools.mcpDescription") }} />
+              </div>
+              <div className="tools-grid">
+                {mcpServers.map((s) => (
+                  <div
+                    key={s.name}
+                    className={`tools-card ${s.enabled ? "tools-card-enabled" : "tools-card-disabled"}`}
+                  >
+                    <div className="tools-card-top">
+                      <div className="tools-card-icon">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect x="2" y="2" width="20" height="8" rx="2" />
+                          <rect x="2" y="14" width="20" height="8" rx="2" />
+                          <circle cx="6" cy="6" r="1" />
+                          <circle cx="6" cy="18" r="1" />
+                        </svg>
+                      </div>
+                      <span
+                        className="tools-card-description"
+                        style={{ fontSize: 10 }}
+                      >
+                        {s.type === "http" ? t("tools.http") : t("tools.stdio")}
+                      </span>
+                    </div>
+                    <div className="tools-card-label">{s.name}</div>
+                    <div className="tools-card-description">
+                      {s.detail}
+                      {!s.enabled && (
+                        <span style={{ color: "var(--error)", marginLeft: 6 }}>
+                          ({t("tools.disabled")})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

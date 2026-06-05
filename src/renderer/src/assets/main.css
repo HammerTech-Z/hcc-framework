@@ -2481,6 +2481,105 @@ body {
   min-width: 0;
 }
 
+.models-pref-container,
+.tools-pref-container,
+.skills-pref-container {
+  background: var(--hp-bg-base, var(--bg-primary));
+}
+
+.models-pref-header,
+.tools-pref-header,
+.skills-pref-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.models-pref-kicker,
+.tools-pref-kicker,
+.skills-pref-kicker {
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.models-pref-actions,
+.skills-pref-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.models-pref-boundary,
+.tools-pref-boundary,
+.skills-pref-boundary {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--hp-divider, var(--border));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.models-pref-layout,
+.tools-pref-layout,
+.skills-pref-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.models-pref-nav,
+.tools-pref-nav,
+.skills-pref-nav {
+  position: sticky;
+  top: 0;
+  border: 1px solid var(--hp-divider, var(--border));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.models-pref-nav-item,
+.tools-pref-nav-item,
+.skills-pref-nav-item {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--hp-radius-sm, var(--radius-sm));
+  color: var(--hp-label-secondary, var(--text-secondary));
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 9px;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.models-pref-nav-item:hover,
+.tools-pref-nav-item:hover,
+.skills-pref-nav-item:hover {
+  background: var(--hp-bg-surface-2, var(--bg-tertiary));
+  color: var(--hp-label, var(--text-primary));
+}
+
+.models-pref-content,
+.tools-pref-content,
+.skills-pref-content {
+  min-width: 0;
+}
+
 .settings-section {
   background: var(--hp-bg-surface, var(--bg-secondary));
   border: 1px solid var(--hp-divider, var(--border));
