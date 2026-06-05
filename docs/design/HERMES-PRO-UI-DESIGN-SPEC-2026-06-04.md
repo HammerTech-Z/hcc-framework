@@ -5,6 +5,7 @@
 > Ground truth: `docs/design/UI-GROUND-TRUTH-2026-06-04.md`.
 > Research run: 2026-06-04 → `~/.hermes/pipeline-runs/HCC-20260604-UI-DESIGN-SPEC-REFERENCE-RESEARCH/01-report.md`.
 > License boundaries: ClawPanel AGPL-3.0 → design pattern reference only, zero code copy. BaiLongma license unknown → visual/conceptual reference only, no code copy.
+> Approval: User approved spec direction 2026-06-05 (Mac Intelligence Console). 8 remaining open questions locked at spec defaults same day. Slice 0 (Contract Audit) unblocked, requires its own user approval to start.
 
 ## 0. One-Line Direction
 
@@ -742,22 +743,33 @@ This spec does NOT approve:
 
 Any UI implementation slice that touches one of these must surface a STOP marker and request explicit user approval before continuing.
 
-## 15. Open Questions (carried forward)
+## 15. Open Questions — All Locked 2026-06-05
 
-Locked defaults (no longer open, can be revisited post-Slice 1):
+User approved all 8 remaining open questions at spec defaults on 2026-06-05. No outstanding decisions. Slice 0 (Contract Audit) is unblocked but requires its own user approval to start.
 
-- **Q4 Token naming** — LOCKED: additive `--hp-*` prefix. Existing tokens untouched. Override-shadow is rejected (too risky for a shell-only first slice).
-- **Q9 BaiLongma CSS classes** — LOCKED: rename `bailongma-*` to `mission-*` in Slice 4 for visual unity. Existing Final Polish tests must still pass.
+### 15.1 Locked with default value
 
-Still open (resolve before Slice 1 begins unless noted):
+| # | Question | Locked value |
+|---|---|---|
+| Q1 | Knowledge Control ingest boundary | **Keep** `knowledgeIngest` tab in Knowledge.tsx as the only live write path. Knowledge Control board is read-only. Do not duplicate. |
+| Q2 | Voice entry placeholder styling | **Visible with tooltip** "Voice coming soon". Inert — no runtime. |
+| Q3 | BaiLongma → Mission Control rename | **Rename** to "Mission Control" when Slice 4 ships. Alias redirect for one release. |
+| Q4 | Token naming convention | **Additive** `--hp-*` prefix. Existing tokens untouched. (Locked earlier in final review.) |
+| Q5 | Font stack adoption | **Adopt** `-apple-system` as primary, keep Google Sans as fallback. |
+| Q6 | File drop in composer | **Out of v1.** Add to v2 backlog if requested; would require new IPC. |
+| Q7 | Inspector default state | **Closed** for first-time users. `⌥⌘I` discoverable via tooltip. |
+| Q8 | Knowledge Control drag-drop writes | **Hidden.** No drag-drop writes in v1. Promote/archive via explicit button only. |
+| Q9 | BaiLongma Final Polish CSS classes | **Rename** `bailongma-*` → `mission-*` in Slice 4. (Locked earlier in final review.) |
+| Q10 | Settings/Models/Providers layout | **macOS preference-pane** layout in Slice 6. |
 
-1. **Knowledge Control ingest boundary** — Should the existing `knowledgeIngest` tab in Knowledge.tsx be disabled, or kept as the only live write path? Default: keep as-is, do not duplicate.
-2. **Voice entry placeholder styling** — Inert mic icon — tooltip "Voice coming soon" or fully invisible? Default: visible with tooltip.
-3. **BaiLongma vs Mission Control merge** — Default: rename to "Mission Control" once Slice 4 ships; alias redirect for one release.
-5. **Font stack adoption** — Adopt `-apple-system` as primary or keep Google Sans? Default: adopt system, keep Google Sans as fallback.
-6. **File drop in composer** — Out of v1 or in? Default: out (requires new IPC for file attach).
-7. **Inspector default state** — Open or closed for first-time users? Default: closed, with `⌥⌘I` discoverable via tooltip.
-8. **Knowledge Control drag-drop write behavior** — Allowed via existing read-only IPC, or hidden behind explicit button? Default: hidden button, no drag-drop writes in v1.
-10. **Settings / Models / Providers preference pane** — Restyle to macOS preference-pane layout, or keep current card layout? Default: preference-pane layout, slice 6.
+### 15.2 Carried-out prerequisites for Slice 0
 
-These questions should be resolved before the first implementation slice (Slice 1) begins.
+Before Slice 0 begins, the following must hold (all green as of 2026-06-05):
+
+- [x] User approval of spec direction
+- [x] All open questions resolved
+- [x] No source-file mutations
+- [x] No locked roadmap mutation
+- [x] No handoff/audit writes
+
+Slice 0 (Contract Audit) itself requires its own explicit user approval to start. It is read-only: enumerate screens, enumerate IPC, confirm read/write/runtime boundaries, update ground truth if needed. **No visual changes, no new IPC, no renderer edits.**
