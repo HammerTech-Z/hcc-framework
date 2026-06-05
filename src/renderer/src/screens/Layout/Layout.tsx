@@ -15,8 +15,7 @@ import Understand from "../Understand/Understand";
 import Models from "../Models/Models";
 import Providers from "../Providers/Providers";
 import Schedules from "../Schedules/Schedules";
-import BaiLongma from "../BaiLongma";
-import HccCockpit from "../HccCockpit";
+import Mission from "../Mission";
 import RemoteNotice from "../../components/RemoteNotice";
 import hermeslogo from "../../assets/hermes.png";
 import {
@@ -57,6 +56,7 @@ type View =
   | "monitor"
   | "playbooks"
   | "understand"
+  | "mission"
   | "hccCockpit"
   | "settings"
   | "bailongma";
@@ -79,6 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
       { view: "chat", icon: ChatBubble, labelKey: "navigation.chat" },
       { view: "sessions", icon: Clock, labelKey: "navigation.sessions" },
       { view: "office", icon: Building, labelKey: "navigation.office" },
+      { view: "mission", icon: Monitor, labelKey: "navigation.mission" },
       { view: "playbooks", icon: Layers, labelKey: "navigation.playbooks" },
       { view: "understand", icon: Sparkles, labelKey: "navigation.understand" },
     ],
@@ -458,15 +459,21 @@ function Layout(): React.JSX.Element {
           </div>
         )}
 
+        {visitedViews.has("mission") && (
+          <div style={paneStyle("mission")}>
+            <Mission profile={activeProfile} />
+          </div>
+        )}
+
         {visitedViews.has("bailongma") && (
           <div style={paneStyle("bailongma")}>
-            <BaiLongma profile={activeProfile} />
+            <Mission profile={activeProfile} legacySource="bailongma" />
           </div>
         )}
 
         {visitedViews.has("hccCockpit") && (
           <div style={paneStyle("hccCockpit")}>
-            <HccCockpit />
+            <Mission profile={activeProfile} legacySource="hcc" />
           </div>
         )}
 
@@ -497,7 +504,7 @@ function Layout(): React.JSX.Element {
           </div>
           <div className="shell-inspector-section">
             <span className="shell-inspector-label">Boundary</span>
-            <span>Slice 2 shell only. No new IPC or runtime action.</span>
+            <span>UI slice guardrails. No new IPC or runtime action.</span>
           </div>
           <div className="shell-inspector-section">
             <span className="shell-inspector-label">Future use</span>

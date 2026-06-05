@@ -3,6 +3,7 @@ export default {
   sessions: "Sessões",
   agents: "Perfis",
   office: "Escritório",
+  mission: "Mission Control",
   models: "Modelos",
   providers: "Provedores",
   skills: "Habilidades",

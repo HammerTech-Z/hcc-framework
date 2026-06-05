@@ -6654,6 +6654,413 @@ body {
 .bailongma-brain-item:last-child { border-bottom: none; }
 
 /* ========================================================================
+   MISSION CONTROL
+   ======================================================================== */
+.mission-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
+  padding: 18px;
+  gap: 14px;
+  background: var(--hp-bg-base, var(--bg-primary));
+  color: var(--hp-label, var(--text-primary));
+}
+
+.mission-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 2px;
+}
+
+.mission-eyebrow {
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 10px;
+  color: var(--hp-label-tertiary, var(--text-muted));
+  text-transform: uppercase;
+}
+
+.mission-hero h1 {
+  margin: 3px 0 4px;
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.mission-hero p {
+  margin: 0;
+  max-width: 680px;
+  color: var(--hp-label-secondary, var(--text-secondary));
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.mission-boundary-badge {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--hp-warning, var(--warning));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: color-mix(in srgb, var(--hp-warning, var(--warning)) 12%, transparent);
+  color: var(--hp-warning, var(--warning));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mission-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mission-stat {
+  min-width: 0;
+  border: 1px solid var(--hp-divider, var(--border));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  padding: 10px;
+}
+
+.mission-stat-value {
+  display: block;
+  overflow: hidden;
+  color: var(--hp-label, var(--text-primary));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-stat-label {
+  display: block;
+  margin-top: 5px;
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.mission-stat.tone-ok .mission-stat-value,
+.mission-pill.tone-ok,
+.mission-status-dot.tone-ok {
+  color: var(--hp-success, var(--success));
+}
+
+.mission-stat.tone-warn .mission-stat-value,
+.mission-pill.tone-warn {
+  color: var(--hp-warning, var(--warning));
+}
+
+.mission-stat.tone-error .mission-stat-value,
+.mission-pill.tone-error {
+  color: var(--hp-danger, var(--error));
+}
+
+.mission-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(360px, 1.4fr) minmax(260px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.mission-lower-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mission-panel {
+  min-width: 0;
+  border: 1px solid var(--hp-divider, var(--border));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.mission-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--hp-divider, var(--border));
+  color: var(--hp-label-secondary, var(--text-secondary));
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mission-stage-list,
+.mission-compact-list,
+.mission-event-list,
+.mission-guardrail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mission-stage-row,
+.mission-list-row,
+.mission-compact-row,
+.mission-event-row,
+.mission-guardrail-item,
+.mission-warning-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border-radius: var(--hp-radius-sm, var(--radius-sm));
+  background: var(--hp-bg-surface-2, var(--bg-tertiary));
+  padding: 8px;
+  color: var(--hp-label-secondary, var(--text-secondary));
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.mission-stage-row.active {
+  border: 1px solid color-mix(in srgb, var(--hp-accent, var(--accent)) 42%, transparent);
+}
+
+.mission-stage-row.pending {
+  opacity: 0.78;
+}
+
+.mission-stage-badge {
+  flex: 0 0 46px;
+  padding: 3px 6px;
+  border-radius: var(--hp-radius-sm, var(--radius-sm));
+  background: color-mix(in srgb, var(--hp-accent, var(--accent)) 12%, transparent);
+  color: var(--hp-accent, var(--accent-text));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.mission-stage-detail,
+.mission-compact-row span:nth-child(2),
+.mission-event-row em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-active-run {
+  position: relative;
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: var(--hp-bg-surface-2, var(--bg-tertiary));
+  padding: 12px;
+}
+
+.mission-active-title {
+  padding-right: 86px;
+  color: var(--hp-label, var(--text-primary));
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.mission-active-id {
+  margin-top: 4px;
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.mission-pill {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  max-width: 80px;
+  overflow: hidden;
+  padding: 3px 7px;
+  border-radius: var(--hp-radius-sm, var(--radius-sm));
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mission-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--hp-divider, var(--border));
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-size: 12px;
+}
+
+.mission-detail-row strong,
+.mission-list-row strong,
+.mission-compact-row strong {
+  color: var(--hp-label, var(--text-primary));
+  font-weight: 650;
+  text-align: right;
+}
+
+.mission-muted-line,
+.mission-empty {
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mission-guardrail-item svg {
+  flex: 0 0 auto;
+  color: var(--hp-success, var(--success));
+}
+
+.mission-warning-row {
+  border-left: 3px solid var(--hp-warning, var(--warning));
+  color: var(--hp-label, var(--text-primary));
+}
+
+.mission-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--hp-label-tertiary, var(--text-muted));
+}
+
+.mission-status-dot.tone-ok {
+  background: var(--hp-success, var(--success));
+}
+
+.mission-status-dot.tone-warn {
+  background: var(--hp-warning, var(--warning));
+}
+
+.mission-status-dot.tone-error {
+  background: var(--hp-danger, var(--error));
+}
+
+.mission-event-row {
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 11px;
+}
+
+.mission-event-row span,
+.mission-event-row strong {
+  flex: 0 0 auto;
+}
+
+.mission-event-row strong {
+  color: var(--hp-accent, var(--accent-text));
+}
+
+.mission-event-row em {
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-style: normal;
+}
+
+.mission-source-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mission-source-grid span {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--hp-radius-sm, var(--radius-sm));
+  background: var(--hp-bg-surface-2, var(--bg-tertiary));
+  padding: 7px 8px;
+  color: var(--hp-label-secondary, var(--text-secondary));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-loading,
+.mission-error-state {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--hp-label-secondary, var(--text-secondary));
+}
+
+.mission-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--hp-divider, var(--border));
+  border-top-color: var(--hp-accent, var(--accent));
+  border-radius: 50%;
+  animation: mission-spin 0.8s linear infinite;
+}
+
+@keyframes mission-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mission-error-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hp-danger, var(--error)) 16%, transparent);
+  color: var(--hp-danger, var(--error));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.mission-error-title {
+  color: var(--hp-label, var(--text-primary));
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mission-error-msg {
+  max-width: 520px;
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 1180px) {
+  .mission-stat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mission-grid,
+  .mission-lower-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .mission-hero {
+    flex-direction: column;
+  }
+
+  .mission-stat-grid,
+  .mission-grid,
+  .mission-lower-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================================================
    HCC EXECUTION COCKPIT
    ======================================================================== */
 .hcc-cockpit-container {
