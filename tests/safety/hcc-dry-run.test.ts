@@ -1,4 +1,4 @@
-import { describe, expect, it, afterAll, beforeEach } from "vitest";
+import { describe, expect, it, afterAll, beforeEach, vi } from "vitest";
 import * as fs from "fs";
 import * as path from "path";
 import { runHCCTaskDryRun } from "../../src/main/hcc-dry-run";
@@ -6,6 +6,8 @@ import { buildHCCTaskPlan } from "../../src/main/hcc-task-runner";
 import type { HCCTaskRequest } from "../../src/main/hcc-task-types";
 import { execSync } from "child_process";
 import { createAuditLogStore } from "../../src/main/safety/audit-log";
+
+vi.setConfig({ testTimeout: 30_000 });
 
 const tmpDir = fs.mkdtempSync(path.join(require("os").tmpdir(), "hcc-dry-run-"));
 

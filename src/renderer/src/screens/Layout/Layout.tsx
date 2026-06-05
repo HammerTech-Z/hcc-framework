@@ -234,6 +234,23 @@ function Layout(): React.JSX.Element {
     [goTo],
   );
 
+  useEffect(() => {
+    function handleShellShortcut(event: KeyboardEvent): void {
+      const key = event.key.toLowerCase();
+      if (event.metaKey && event.key === "\\") {
+        event.preventDefault();
+        setSidebarCollapsed((value) => !value);
+      }
+      if (event.metaKey && event.altKey && key === "i") {
+        event.preventDefault();
+        setInspectorOpen((value) => !value);
+      }
+    }
+
+    window.addEventListener("keydown", handleShellShortcut);
+    return () => window.removeEventListener("keydown", handleShellShortcut);
+  }, []);
+
   const activeItem = NAV_ITEMS.find((item) => item.view === view);
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("common.appName");
 
@@ -251,12 +268,13 @@ function Layout(): React.JSX.Element {
             className="sidebar-collapse-btn"
             onClick={() => setSidebarCollapsed((value) => !value)}
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-pressed={sidebarCollapsed}
           >
             <ChevronDown size={14} />
           </button>
         </div>
 
-        <nav className="sidebar-nav overflow-y-auto custom-scrollbar">
+        <nav className="sidebar-nav overflow-y-auto custom-scrollbar" aria-label="Primary navigation">
           {NAV_GROUPS.map((group) => (
             <div key={group.label} className="sidebar-nav-group">
               <div className="sidebar-nav-group-label">{group.label}</div>
@@ -266,6 +284,7 @@ function Layout(): React.JSX.Element {
                   className={`sidebar-nav-item ${view === v ? "active" : ""}`}
                   onClick={() => goTo(v)}
                   title={sidebarCollapsed ? t(labelKey) : undefined}
+                  aria-current={view === v ? "page" : undefined}
                 >
                   <Icon size={16} />
                   <span className="sidebar-nav-label">{t(labelKey)}</span>
@@ -314,13 +333,16 @@ function Layout(): React.JSX.Element {
               type="button"
               className={`shell-inspector-toggle ${inspectorOpen ? "active" : ""}`}
               onClick={() => setInspectorOpen((value) => !value)}
+              aria-label={inspectorOpen ? "Close inspector" : "Open inspector"}
+              aria-expanded={inspectorOpen}
+              aria-pressed={inspectorOpen}
             >
               Inspector
             </button>
           </div>
         </header>
 
-        <main className="content">
+        <main className="content" aria-label={activeLabel}>
           <div style={paneStyle("chat")}>
             <Chat
               messages={messages}
