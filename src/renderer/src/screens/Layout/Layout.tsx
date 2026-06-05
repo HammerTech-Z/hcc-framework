@@ -6,6 +6,8 @@ import Settings from "../Settings/Settings";
 import Skills from "../Skills/Skills";
 import Soul from "../Soul/Soul";
 import Memory from "../Memory/Memory";
+import Knowledge from "../Knowledge";
+import KnowledgeControl from "../KnowledgeControl";
 import Tools from "../Tools/Tools";
 import Gateway from "../Gateway/Gateway";
 import AgentMonitor from "../AgentMonitor";
@@ -50,6 +52,8 @@ type View =
   | "skills"
   | "soul"
   | "memory"
+  | "knowledgeControl"
+  | "knowledge"
   | "tools"
   | "schedules"
   | "gateway"
@@ -88,6 +92,8 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Knowledge",
     items: [
       { view: "skills", icon: Puzzle, labelKey: "navigation.skills" },
+      { view: "knowledgeControl", icon: Brain, labelKey: "navigation.knowledgeControl" },
+      { view: "knowledge", icon: Puzzle, labelKey: "navigation.knowledge" },
       { view: "soul", icon: Sparkles, labelKey: "navigation.soul" },
       { view: "memory", icon: Brain, labelKey: "navigation.memory" },
     ],
@@ -407,6 +413,26 @@ function Layout(): React.JSX.Element {
               <RemoteNotice feature="Memory" />
             ) : (
               <Memory profile={activeProfile} />
+            )}
+          </div>
+        )}
+
+        {visitedViews.has("knowledgeControl") && (
+          <div style={paneStyle("knowledgeControl")}>
+            {remoteMode ? (
+              <RemoteNotice feature="Knowledge Control" />
+            ) : (
+              <KnowledgeControl />
+            )}
+          </div>
+        )}
+
+        {visitedViews.has("knowledge") && (
+          <div style={paneStyle("knowledge")}>
+            {remoteMode ? (
+              <RemoteNotice feature="Knowledge" />
+            ) : (
+              <Knowledge />
             )}
           </div>
         )}

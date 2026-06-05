@@ -6,6 +6,8 @@ export default {
   mission: "Mission Control",
   models: "Modelos",
   providers: "Provedores",
+  knowledgeControl: "Knowledge Control",
+  knowledge: "Knowledge",
   skills: "Habilidades",
   soul: "Persona",
   memory: "Memória",

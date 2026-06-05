@@ -6,6 +6,8 @@ export default {
   mission: "任务总控",
   models: "模型",
   providers: "提供商",
+  knowledgeControl: "知识管控",
+  knowledge: "知识库",
   skills: "技能",
   soul: "人格",
   memory: "记忆",
