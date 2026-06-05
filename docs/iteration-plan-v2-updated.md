@@ -64,6 +64,7 @@
 | Dograh STT/TTS | 候选池 |
 | Mano-P visual E2E | 待定项目，不推进 |
 | MiroFish simulation | 暂缓 |
+| ECC harness-native skills/rules/checklists | HCC v2 Auto 后续候选；仅做只读审计与 Hermes 本地重写，不接 runtime；方案见 [ecc-hcc-v2-auto-non-destructive-adoption-plan-2026-06-05.md](./research/ecc-hcc-v2-auto-non-destructive-adoption-plan-2026-06-05.md) |
 
 ---
 
