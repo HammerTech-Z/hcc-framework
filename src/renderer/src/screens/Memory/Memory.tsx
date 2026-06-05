@@ -196,18 +196,37 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   }
 
   return (
-    <div className="settings-container">
-      <div className="memory-header">
+    <div className="settings-container memory-pref-container">
+      <div className="memory-pref-header">
         <div>
+          <div className="memory-pref-kicker">Memory &amp; persona</div>
           <h1 className="settings-header" style={{ marginBottom: 4 }}>
             {t("memory.title")}
           </h1>
           <p className="memory-subtitle">{t("memory.subtitle")}</p>
         </div>
+        <div className="memory-pref-boundary">
+          Delete confirms preserved · password redaction preserved · no auto-save
+        </div>
         <button className="btn btn-secondary btn-sm" onClick={loadData}>
           <Refresh size={13} />
         </button>
       </div>
+
+      <div className="memory-pref-layout">
+        <aside className="memory-pref-nav" aria-label="Memory sections">
+          <a href="#memory-entries" className="memory-pref-nav-item">
+            {t("memory.agentMemory")}
+          </a>
+          <a href="#memory-profile" className="memory-pref-nav-item">
+            {t("memory.userProfile")}
+          </a>
+          <a href="#memory-providers" className="memory-pref-nav-item">
+            {t("memory.providersTitle")}
+          </a>
+        </aside>
+
+        <div className="memory-pref-content">
 
       {/* Stats */}
       <div className="memory-stats">
@@ -280,6 +299,7 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
 
       {/* Agent Memory Entries */}
       {tab === "entries" && (
+        <div id="memory-entries">
         <div className="memory-entries">
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
               来源：~/.hermes/memories/MEMORY.md · 用途：保存 Hermes 对项目、任务、长期事实的记忆
@@ -415,10 +435,12 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
             ))
           )}
         </div>
+        </div>
       )}
 
       {/* User Profile */}
       {tab === "profile" && (
+        <div id="memory-profile">
         <div className="memory-profile">
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
               来源：~/.hermes/memories/USER.md · 用途：保存用户偏好、长期背景和交互习惯
@@ -463,10 +485,12 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
             )}
           </div>
         </div>
+        </div>
       )}
 
       {/* Memory Providers */}
       {tab === "providers" && (
+        <div id="memory-providers">
         <div className="memory-providers">
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
               来源：~/.hermes/config.yaml 中的 memory.provider · 用途：选择外部记忆服务或关闭外部记忆接入
@@ -612,7 +636,10 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
             </div>
           )}
         </div>
+        </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

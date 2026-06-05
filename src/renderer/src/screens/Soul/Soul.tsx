@@ -74,51 +74,66 @@ function Soul({ profile }: SoulProps): React.JSX.Element {
   }
 
   return (
-    <div className="soul-container">
-      <div className="soul-header">
+    <div className="soul-container soul-pref-container">
+      <div className="soul-pref-header">
         <div>
+          <div className="soul-pref-kicker">Persona &amp; SOUL</div>
           <h2 className="soul-title">
             {t("soul.title")}
             {saved && <span className="soul-saved">{t("common.saved")}</span>}
           </h2>
           <p className="soul-subtitle">{t("soul.subtitle")}</p>
         </div>
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={() => setShowReset(true)}
-          title={t("soul.resetTitle")}
-        >
-          <Refresh size={14} />
-          {t("soul.reset")}
-        </button>
+        <div className="soul-pref-boundary">
+          Reset confirms preserved · 500ms auto-save preserved · loaded.current guard active
+        </div>
       </div>
 
-      {showReset && (
-        <div className="soul-reset-confirm">
-          <span>{t("soul.resetConfirm")}</span>
-          <div className="soul-reset-actions">
-            <button className="btn btn-primary btn-sm" onClick={handleReset}>
-              {t("soul.reset")}
-            </button>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => setShowReset(false)}
-            >
-              {t("common.cancel")}
-            </button>
-          </div>
+      <div className="soul-pref-layout">
+        <aside className="soul-pref-nav" aria-label="Soul sections">
+          <a href="#soul-editor" className="soul-pref-nav-item">
+            {t("soul.title")}
+          </a>
+        </aside>
+
+        <div className="soul-pref-content" id="soul-editor">
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowReset(true)}
+            title={t("soul.resetTitle")}
+          >
+            <Refresh size={14} />
+            {t("soul.reset")}
+          </button>
+
+          {showReset && (
+            <div className="soul-reset-confirm">
+              <span>{t("soul.resetConfirm")}</span>
+              <div className="soul-reset-actions">
+                <button className="btn btn-primary btn-sm" onClick={handleReset}>
+                  {t("soul.reset")}
+                </button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowReset(false)}
+                >
+                  {t("common.cancel")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <textarea
+            className="soul-editor"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={t("soul.placeholder")}
+            spellCheck={false}
+          />
+
+          <div className="soul-hint">{t("soul.hint")}</div>
         </div>
-      )}
-
-      <textarea
-        className="soul-editor"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder={t("soul.placeholder")}
-        spellCheck={false}
-      />
-
-      <div className="soul-hint">{t("soul.hint")}</div>
+      </div>
     </div>
   );
 }

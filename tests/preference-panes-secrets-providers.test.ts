@@ -47,7 +47,5 @@ describe("Slice 6B-1 Providers preference pane secrets boundary", () => {
     expect(cssSrc).toContain(".providers-pref-layout");
     expect(cssSrc).toContain(".providers-pref-nav");
     expect(cssSrc).toContain(".providers-pref-content");
-    expect(cssSrc).not.toContain(".memory-pref");
-    expect(cssSrc).not.toContain(".soul-pref");
   });
 });
