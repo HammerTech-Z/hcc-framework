@@ -1,6 +1,6 @@
-# Hermes Pro — UI Ground Truth（2026-06-04）
+# Hermes Pro — UI Ground Truth（2026-06-04 / synced 2026-06-05）
 
-> 状态：UI redesign **未开始实现**；本文为事实汇总，**不是** UI 实现任务派发单。
+> 状态：UI redesign **未开始实现**；UI Design Spec 方向已获用户批准（2026-06-05），8 个 open questions 已锁定默认值；本文为事实汇总，**不是** UI 实现任务派发单。
 > 最高约束：`~/.hermes/HERMES-SOUL.md` v5.3；锁定路线图 `docs/roadmap-locked-2026-05-28.md`。
 > 关联入口：`CONTEXT.md` / `NEXT_STEP.md` / `docs/current-fusion-plan-2026-05-30.md` / `docs/p3-dry-run-baseline-2026-06-01.md` / `docs/iteration-plan-v2-updated.md`。
 > 关联脚本：`scripts/build-summary.mjs`（用于 Claude Web 审核的 summary 生成器）。
@@ -12,10 +12,13 @@
 | 维度 | 状态 |
 |------|------|
 | UI redesign 实现 | ❌ **未开始** |
-| 可做：DESIGN.md / UI style spec / 组件 token | ✅ 可开始 |
-| 不可做：组件库替换 / 路由重构 / 主题切换 | ❌ 需先完成下面 §3 的前置 |
+| UI Design Spec 方向 | ✅ 已获用户批准（2026-06-05，Mac Intelligence Console） |
+| 8 个 open questions | ✅ 已按 spec defaults 锁定 |
+| Slice 0 Contract Audit | ⏳ unblocked, 但仍需用户单独批准 |
+| 可做：只读 Contract Audit / DESIGN.md 落地准备 / 组件 token 草案 | ✅ 可开始（需按 slice 批准） |
+| 不可做：组件库替换 / 路由重构 / 主题切换 / renderer 实装 | ❌ 需先完成 Slice 0 + 用户显式批 |
 
-进入 UI 实现前必须先补齐 §3 的 6 项前置。
+进入 UI 实现前必须先完成 Slice 0 Contract Audit，并由用户显式批准后续 implementation slice。
 
 ---
 
@@ -41,16 +44,16 @@
 
 ---
 
-## 3. UI 实现前置（必填，缺一不可）
+## 3. UI 实现前置（已锁默认值；Slice 0 仍需执行）
 
-1. **BaiLongma cockpit 当前组件 / IPC 契约与允许展示范围**：列出每个 panel 的数据源、是否走 IPC、是否允许 read-only 写扩展、是否允许触发 action。
-2. **Knowledge 页当前状态**：列出所有现有 UI surface（search / bucket / trust badge / provenance drawer 等），标注哪些是 mock / 哪些是 live 接入（live 端明确不得启用 `knowledgeIngest` / `knowledgeSearch` 写入侧）。
-3. **Hermes soft switch candidate v0.15.1 观察状态**：`hermes` 默认入口当前指向 `~/.hermes/hermes-agent-upgrade-candidate/.venv/bin/hermes`；观察期 ACTIVE 1-2 天（2026-06-02 起）；UI 实现不得依赖 candidate runtime 行为。
+1. **BaiLongma cockpit 当前组件 / IPC 契约与允许展示范围**：Slice 0 只读枚举每个 panel 的数据源、是否走 IPC、是否允许 read-only 展示扩展、是否允许触发 action。
+2. **Knowledge 页当前状态**：Slice 0 只读枚举所有现有 UI surface（search / bucket / trust badge / provenance drawer 等），标注 mock/live；live 端明确不得启用新的 `knowledgeIngest` / `knowledgeSearch` 写入侧。
+3. **Hermes soft switch candidate v0.15.1 状态**：观察期已结束，用户裁决 KEEP v0.15.1（ADR-20260604）；UI 实现不得依赖 candidate runtime 行为。
 4. **P7 local delivery 当前状态**：4 个低优先级 cron job 已切 `deliver=local`（`db41a513ebfd` / `21129f505fb4` / `28f0bff3083d` / `skill-cleanup-weekly`）；UI 实现不得触发新投递 / 重发 / 重试。
 5. **V1-V7 完成度矩阵**：见 §5。
-6. **设计方向 spec**：见 §1（macOS 简约 + 科技感 / Chat 复刻 / 左导航可隐藏 / Knowledge Control 新页）。
+6. **设计方向 spec**：已获用户批准，见 `docs/design/HERMES-PRO-UI-DESIGN-SPEC-2026-06-04.md`（macOS intelligence console / Chat 复刻 / 左导航可隐藏 / Knowledge Control 新页）。
 
-> 这 6 项补齐前，UI 实现（包括 DESIGN.md 落地之外的任何 src/renderer 改动）必须先经用户显式批。
+> Slice 0 Contract Audit 仍需用户单独批准。Slice 0 是只读枚举：screens / IPC / read-write-runtime boundaries / current component surfaces；不做视觉改动、不新增 IPC、不改 renderer。
 
 ---
 
@@ -82,13 +85,15 @@
 
 ---
 
-## 6. UI 实现工作流（仅 spec 通过后）
+## 6. UI 实现工作流（spec 已通过；implementation 仍需分 slice 批准）
 
-1. 完成 §3 的 6 项前置 → 用户批准。
-2. 在 `docs/design/DESIGN.md` 落地（不是当前任务）。
-3. 每个新组件先在 `src/renderer/src/screens/<new>/<New>.tsx` 起骨架，不直接替换现有 screen。
-4. 任何 IPC 改动必须先在 `src/preload/index.ts`（待定路径）登记，并跑 `tests/safety` 全量。
-5. 任何新外部动作（CLI-Anything / Safari MCP / HCC / handoff 写入）必须经 Action Gate，不允许在 UI 层直接调用。
+1. 用户单独批准 Slice 0 Contract Audit。
+2. Slice 0 只读枚举 screens / IPC / read-write-runtime boundaries，必要时更新 ground truth。
+3. 用户批准后续 implementation slice。
+4. 在 `docs/design/DESIGN.md` 落地 token / style contract（不是当前任务）。
+5. 每个新组件先在 `src/renderer/src/screens/<new>/<New>.tsx` 起骨架，不直接替换现有 screen。
+6. 任何 IPC 改动必须先在 `src/preload/index.ts`（待定路径）登记，并跑 `tests/safety` 全量。
+7. 任何新外部动作（CLI-Anything / Safari MCP / HCC / handoff 写入）必须经 Action Gate，不允许在 UI 层直接调用。
 
 > 现阶段不允许做的事：替换 component library / 改路由 / 改主题色 / 直接操作 `~/.hermes/handoff` 或 `~/.hermes/audit`。
 

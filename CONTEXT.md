@@ -1,6 +1,6 @@
 # Hermes Pro — 当前上下文入口
 
-> 更新：2026-06-04（最终计划同步：Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469）、HEAD == origin/hermes-pro-main == d5a6469efd84ba98730c2fa3924e769019756077；当前全量测试基线 **81 files / 2931 tests PASS**（npm run typecheck EXIT 0；npx vitest run 全量）；**P3.5 soft switch 1-2 天观察期已收尾、由用户裁决 KEEP v0.15.1（ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）、`hermes` 入口保持指向 candidate v0.15.1、rollback 备份仍可回滚**；P7 4 个低优先级 cron job `deliver=local` 已切；BaiLongma Read-only Cockpit Final Polish PASS；V5 保持 MVP_PARTIAL，C4/C5 因生图/视频执行不可控 + 成本不可控暂缓；**HCC Auto Executor 仍不可用、未启动、未接线**；P3 真实执行仍暂停；**hard cutover 仍未批准**；**Round 2 C 仍冻结**；**BaiLongma/HCC Productionization NOT APPROVED**；**L6 live knowledge flush 未批准**。Knowledge Reuse Chain 当前只到 L5 dry-run / prompt-builder，**不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用**。）
+> 更新：2026-06-05（Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成并提交；当前全量测试基线仍以 closeout 为准：**81 files / 2931 tests PASS**（npm run typecheck EXIT 0；npx vitest run 全量）；**P3.5 soft switch 已由用户裁决 KEEP v0.15.1**（ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1），`hermes` 入口保持指向 candidate v0.15.1，rollback 备份仍可回滚；**Hermes Pro UI Design Spec 已提交并获用户批准方向**（`411954b` + `e171213`），8 个 open questions 已按默认值锁定，Slice 0 Contract Audit 解锁但仍需单独用户批准；P7 4 个低优先级 cron job `deliver=local` 已切；BaiLongma Read-only Cockpit Final Polish PASS；V5 保持 MVP_PARTIAL，C4/C5 因生图/视频执行不可控 + 成本不可控暂缓；**HCC Auto Executor 仍不可用、未启动、未接线**；P3 真实执行仍暂停；**hard cutover 仍未批准**；**Round 2 C 仍冻结**；**BaiLongma/HCC Productionization NOT APPROVED**；**L6 live knowledge flush 未批准**。Knowledge Reuse Chain 当前只到 L5 dry-run / prompt-builder，**不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用**。）
 
 ## Knowledge Reuse Chain 完成度（2026-06-04）
 
@@ -12,7 +12,7 @@
 
 - 6 commits（按时间序）：`2f79c75 docs` → `2a8dc08 test(fixtures)` → `cdeea86 feat(shared)` → `7c3e89b test` → `d997914 feat(main)` → `d5a6469 feat(hcc-handoff)`。
 - `git diff --numstat 2f79c75^..d5a6469` 真值：107 files / +36901 / -0；分桶为 docs 35 / fixtures 27 / tests 35 / shared/lib 8 / main 2 / renderer 0 / other 0。
-- Knowledge Reuse closeout base：HEAD == `d5a6469efd84ba98730c2fa3924e769019756077` == `origin/hermes-pro-main`；当前文档同步若尚未提交，`git status` 可能显示 entry docs 为 modified。
+- Knowledge Reuse closeout base：`d5a6469efd84ba98730c2fa3924e769019756077`；UI spec 后续提交 `411954b` / `e171213` 已在本地分支之上。若尚未推送，`git status --short --branch` 可能显示本地 ahead。
 - 全量验证：`npm run typecheck` EXIT 0；`npx vitest run` 81 files / 2931 tests PASS；`git diff --check` clean。
 - 关键源：`src/shared/lib/knowledge-reuse-protocol.ts` / `knowledge-reuse-integration.ts` / `knowledge-agent-contract-snippet.ts` / `knowledge-handoff-contract.ts` / `knowledge-runtime-injection-surface-b.ts` / `knowledge-live-flush-contract.ts` / `knowledge-live-flush-ui-contract.ts`；`src/main/task-dispatch-prompt-builder.ts` / `hcc-handoff-pack.ts` / `hcc-artifact-store.ts`。
 ### Chain 显式边界（不可越线声明）
@@ -55,7 +55,7 @@ Hermes Pro 当前不是单纯知识库，也不是单纯代码执行器，而是
 
 以 `NEXT_STEP.md` 为准：
 
-当前阶段：**P3 dry-run baseline 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换均已通过（2026-06-02）；P3.5 soft switch 1-2 天观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）；Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成（2026-06-04，6 commits，全量基线 81 files / 2931 tests PASS）；HCC Auto Executor 仍不可用、未启动；P3 真实执行仍暂停；hard cutover 仍未批准；L6 live knowledge flush 未批准。**
+当前阶段：**P3 dry-run baseline 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换均已通过（2026-06-02）；P3.5 soft switch 观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）；Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成（2026-06-04，6 commits，全量基线 81 files / 2931 tests PASS）；UI Design Spec 方向已获用户批准（2026-06-05），但 UI 实现仍未开始，Slice 0 Contract Audit 仍需另批；HCC Auto Executor 仍不可用、未启动；P3 真实执行仍暂停；hard cutover 仍未批准；L6 live knowledge flush 未批准。**
 
 已完成：
 
@@ -91,7 +91,8 @@ P3.5 upgrade candidate 完成（2026-06-02）：
 25. Round 2 C scoping review — REVIEW ONLY（18 files 分类：14 dead-infrastructure 0 importers + 4 high-risk hard-constraint-touching；推荐 0-file 迁移 / 软切换）
 26. soft-to-live switch 排练 — PASS（`hermes` symlink 默认指向 candidate `.venv/bin/hermes`；6/6 smoke 全过）
 27. soft switch observation baseline — **KEEP v0.15.1**（观察期已结束，2026-06-04 用户裁决 KEEP；ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1；`hermes` 默认入口当前为 candidate v0.15.1，rollback 备份仍可回滚）
-28. Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 推送 6 commits — PASS（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469；closeout base HEAD == origin/hermes-pro-main == d5a6469efd84ba98730c2fa3924e769019756077；当时工作区 clean；全量基线 81 files / 2931 tests PASS）
+28. Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 推送 6 commits — PASS（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469；closeout base `d5a6469efd84ba98730c2fa3924e769019756077`；当时工作区 clean；全量基线 81 files / 2931 tests PASS）
+29. Hermes Pro UI Design Spec — SPEC APPROVED（411954b / e171213；用户于 2026-06-05 批准 Mac Intelligence Console 方向；8 个 open questions 锁定默认值；Slice 0 Contract Audit unblocked 但仍需用户单独批准；无 renderer 实现）
 
 **测试基线规则（2026-06-04 统一）**：历史快照（46 files / 995 tests、23 files / 625 tests、tests/safety 20 files / 515/515 等）保留为该切片收口时的当时证据；当前最新全量基线为 **81 files / 2931 tests PASS**（typecheck EXIT 0；`npm run typecheck && npx vitest run`）。任何后续 §X.Y 提到的"X files / Y tests"数字均为切片收口时点的局部事实源。
 
