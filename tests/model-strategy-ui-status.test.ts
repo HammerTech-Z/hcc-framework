@@ -32,9 +32,9 @@ import {
   validateModelStrategyDisabledStatuses,
 } from "../src/shared/lib/model-strategy-ui-status";
 
-import fixture001Json from "./fixtures/model-strategy/model-strategy-dry-run-2026-06-05.json";
-import catalogJson from "./fixtures/model-strategy/provider-catalog-2026-06-05.json";
-import smokeMatrixJson from "./fixtures/model-strategy/smoke-test-matrix-2026-06-05.json";
+import fixture001Json from "./fixtures/model-strategy/model-strategy-dry-run-2026-06-05";
+import catalogJson from "./fixtures/model-strategy/provider-catalog-2026-06-05";
+import smokeMatrixJson from "./fixtures/model-strategy/smoke-test-matrix-2026-06-05";
 
 const ROOT = join(__dirname, "..");
 const helperSrc = readFileSync(

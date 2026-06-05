@@ -25,8 +25,8 @@ import {
   validateProviderCatalogResolution,
 } from "../src/shared/lib/provider-catalog-resolver";
 
-import catalogJson from "./fixtures/model-strategy/provider-catalog-2026-06-05.json";
-import fixture001Json from "./fixtures/model-strategy/model-strategy-dry-run-2026-06-05.json";
+import catalogJson from "./fixtures/model-strategy/provider-catalog-2026-06-05";
+import fixture001Json from "./fixtures/model-strategy/model-strategy-dry-run-2026-06-05";
 
 const ROOT = join(__dirname, "..");
 const helperSrc = readFileSync(
@@ -34,11 +34,11 @@ const helperSrc = readFileSync(
   "utf-8",
 );
 const catalogSrc = readFileSync(
-  join(ROOT, "tests/fixtures/model-strategy/provider-catalog-2026-06-05.json"),
+  join(ROOT, "tests/fixtures/model-strategy/provider-catalog-2026-06-05.ts"),
   "utf-8",
 );
 const fixture001Src = readFileSync(
-  join(ROOT, "tests/fixtures/model-strategy/model-strategy-dry-run-2026-06-05.json"),
+  join(ROOT, "tests/fixtures/model-strategy/model-strategy-dry-run-2026-06-05.ts"),
   "utf-8",
 );
 
@@ -389,14 +389,36 @@ describe("MODEL-STRATEGY-002A source and fixture guardrails", () => {
     }
   });
 
-  it("catalog fixture has no live config write signal", () => {
-    expect(catalogSrc).toContain("\"live_config_writes_allowed\": false");
-    expect(catalogSrc).toContain("\"requires_secrets_out_of_band\": true");
+  it("catalog fixture shim re-exports the canonical snapshot", () => {
+    expect(catalogSrc).toContain("PROVIDER_CATALOG_SNAPSHOT");
+    expect(catalog).toEqual(
+      expect.objectContaining({
+        schema_version: "1.0.0",
+        safety_invariants: expect.objectContaining({
+          live_config_writes_allowed: false,
+        }),
+        provider_catalog: expect.arrayContaining([
+          expect.objectContaining({
+            provider_id: "minimax",
+            requires_secrets_out_of_band: true,
+          }),
+        ]),
+      }),
+    );
   });
 
-  it("001 fixture still pins MiniMax 3.0, gpt-5.5, and deepseek baseline", () => {
-    expect(fixture001Src).toContain("\"candidate_model\": \"MiniMax 3.0\"");
-    expect(fixture001Src).toContain("\"candidate_model\": \"gpt-5.5\"");
-    expect(fixture001Src).toContain("\"task_fallback_model\": \"deepseekV4pro\"");
+  it("001 fixture shim re-exports the canonical dry-run snapshot", () => {
+    expect(fixture001Src).toContain("MODEL_STRATEGY_DRY_RUN_SNAPSHOT");
+    expect(fixture001).toEqual(
+      expect.objectContaining({
+        lanes: expect.arrayContaining([
+          expect.objectContaining({ candidate_model: "MiniMax 3.0" }),
+          expect.objectContaining({ candidate_model: "gpt-5.5" }),
+        ]),
+        rollback_baseline: expect.objectContaining({
+          task_fallback_model: "deepseekV4pro",
+        }),
+      }),
+    );
   });
 });

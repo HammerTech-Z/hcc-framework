@@ -24,9 +24,9 @@ import {
   validateSmokeTestMatrix,
 } from "../src/shared/lib/smoke-test-matrix";
 
-import smokeMatrixJson from "./fixtures/model-strategy/smoke-test-matrix-2026-06-05.json";
-import catalogJson from "./fixtures/model-strategy/provider-catalog-2026-06-05.json";
-import fixture001Json from "./fixtures/model-strategy/model-strategy-dry-run-2026-06-05.json";
+import smokeMatrixJson from "./fixtures/model-strategy/smoke-test-matrix-2026-06-05";
+import catalogJson from "./fixtures/model-strategy/provider-catalog-2026-06-05";
+import fixture001Json from "./fixtures/model-strategy/model-strategy-dry-run-2026-06-05";
 
 const ROOT = join(__dirname, "..");
 const helperSrc = readFileSync(
@@ -34,7 +34,7 @@ const helperSrc = readFileSync(
   "utf-8",
 );
 const matrixSrc = readFileSync(
-  join(ROOT, "tests/fixtures/model-strategy/smoke-test-matrix-2026-06-05.json"),
+  join(ROOT, "tests/fixtures/model-strategy/smoke-test-matrix-2026-06-05.ts"),
   "utf-8",
 );
 
@@ -427,9 +427,17 @@ describe("MODEL-STRATEGY-002B source and fixture guardrails", () => {
     }
   });
 
-  it("matrix fixture pins structural_only and forbids network_probe", () => {
-    expect(matrixSrc).toContain("\"check_type_for_local_fallback\": \"structural_only\"");
-    expect(matrixSrc).toContain("\"network_probe_allowed\": false");
-    expect(matrixSrc).toContain("\"live_config_writes_allowed\": false");
+  it("matrix fixture shim re-exports the canonical smoke-test snapshot", () => {
+    expect(matrixSrc).toContain("SMOKE_TEST_MATRIX_SNAPSHOT");
+    expect(smokeMatrix).toEqual(
+      expect.objectContaining({
+        schema_version: "1.0.0",
+        check_type_for_local_fallback: "structural_only",
+        safety_invariants: expect.objectContaining({
+          network_probe_allowed: false,
+          live_config_writes_allowed: false,
+        }),
+      }),
+    );
   });
 });

@@ -16,7 +16,7 @@ import {
   type ModelStrategyDryRunFixture,
 } from "../src/shared/lib/model-strategy-dry-run";
 
-import fixtureJson from "./fixtures/model-strategy/model-strategy-dry-run-2026-06-05.json";
+import fixtureJson from "./fixtures/model-strategy/model-strategy-dry-run-2026-06-05";
 
 const ROOT = join(__dirname, "..");
 const helperSrc = readFileSync(
