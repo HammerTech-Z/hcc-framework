@@ -91,13 +91,13 @@ Last Updated: 2026-05-28
 
 ### TD-MODEL-001: Gemma 4 E4B 未拉取 vs model-strategy
 - **Title**: Gemma 4 E4B 未拉取 vs model-strategy 规划冲突
-- **Status**: blocked
+- **Status**: planned
 - **Owner**: unassigned
 - **Estimate**: M
 - **Risk**: High
 - **Dependency**: None
 - **Priority**: P2
-- **Notes**: Sprint 2 需决策：E4B 本地模型策略 vs API-only。影响 model-strategy.md 方向。
+- **Notes**: Sprint 2 采用 dry-run 计划先行：参考 Phoenix 分档思想，但不复制 Phoenix runtime；当前 MiniMax + DeepSeek 作为 rollback baseline；本地兜底优先评估 Gemma 4 12B，多模态/语言/代码综合能力不足或本机不可用时再降级到 Gemma 4 E4B。计划见 `docs/model-strategy/hermes-model-strategy-2026-06-05.md`。本阶段不改 `~/.hermes/config.yaml`。
 
 ---
 
