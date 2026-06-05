@@ -151,13 +151,34 @@ function Providers({
   const isCustomProvider = modelProvider === "custom";
 
   return (
-    <div className="settings-container">
-      <h1 className="settings-header">{t("providers.title")}</h1>
-      <p className="models-subtitle" style={{ marginBottom: 16 }}>
-        {t("providers.subtitle")}
-      </p>
+    <div className="settings-container providers-pref-container">
+      <div className="providers-pref-header">
+        <div>
+          <div className="providers-pref-kicker">Model access</div>
+          <h1 className="settings-header">{t("providers.title")}</h1>
+          <p className="models-subtitle">{t("providers.subtitle")}</p>
+        </div>
+        <div className="providers-pref-boundary">
+          Secrets redacted · explicit key writes · existing autosave preserved
+        </div>
+      </div>
 
-      <div className="settings-section">
+      <div className="providers-pref-layout">
+        <aside className="providers-pref-nav" aria-label="Provider sections">
+          <a href="#providers-model" className="providers-pref-nav-item">
+            {t("common.model")}
+          </a>
+          <a href="#providers-credential-pool" className="providers-pref-nav-item">
+            {t("settings.sections.credentialPool")}
+          </a>
+          <a href="#providers-api-keys" className="providers-pref-nav-item">
+            API Keys
+          </a>
+        </aside>
+
+        <div className="providers-pref-content">
+
+      <div className="settings-section" id="providers-model">
         <div className="settings-section-title">
           {t("common.model")}
           {modelSaved && (
@@ -224,7 +245,7 @@ function Providers({
         )}
       </div>
 
-      <div className="settings-section">
+      <div className="settings-section" id="providers-credential-pool">
         <div className="settings-section-title">
           {t("settings.sections.credentialPool")}
         </div>
@@ -311,6 +332,7 @@ function Providers({
         </div>
       </div>
 
+      <div id="providers-api-keys">
       {SETTINGS_SECTIONS.map((section) => (
         <div key={section.title} className="settings-section">
           <div className="settings-section-title">{t(section.title)}</div>
@@ -351,6 +373,9 @@ function Providers({
           ))}
         </div>
       ))}
+      </div>
+        </div>
+      </div>
     </div>
   );
 }

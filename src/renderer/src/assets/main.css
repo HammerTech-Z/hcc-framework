@@ -2402,6 +2402,85 @@ body {
   min-width: 0;
 }
 
+.providers-pref-container {
+  background: var(--hp-bg-base, var(--bg-primary));
+}
+
+.providers-pref-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.providers-pref-kicker {
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.providers-pref-header .models-subtitle {
+  margin: 6px 0 0;
+  max-width: 680px;
+}
+
+.providers-pref-boundary {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--hp-divider, var(--border));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.providers-pref-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.providers-pref-nav {
+  position: sticky;
+  top: 0;
+  border: 1px solid var(--hp-divider, var(--border));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.providers-pref-nav-item {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--hp-radius-sm, var(--radius-sm));
+  color: var(--hp-label-secondary, var(--text-secondary));
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 9px;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.providers-pref-nav-item:hover {
+  background: var(--hp-bg-surface-2, var(--bg-tertiary));
+  color: var(--hp-label, var(--text-primary));
+}
+
+.providers-pref-content {
+  min-width: 0;
+}
+
 .settings-section {
   background: var(--hp-bg-surface, var(--bg-secondary));
   border: 1px solid var(--hp-divider, var(--border));
