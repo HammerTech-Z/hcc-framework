@@ -35,6 +35,8 @@ import {
   Timer,
   Download,
   Monitor,
+  ChevronDown,
+  X,
 } from "../../assets/icons";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
@@ -59,26 +61,59 @@ type View =
   | "settings"
   | "bailongma";
 
-const NAV_ITEMS: { view: View; icon: LucideIcon; labelKey: string }[] = [
-  { view: "chat", icon: ChatBubble, labelKey: "navigation.chat" },
-  { view: "sessions", icon: Clock, labelKey: "navigation.sessions" },
-  { view: "agents", icon: Users, labelKey: "navigation.agents" },
-  { view: "office", icon: Building, labelKey: "navigation.office" },
-  { view: "models", icon: Layers, labelKey: "navigation.models" },
-  { view: "providers", icon: KeyRound, labelKey: "navigation.providers" },
-  { view: "skills", icon: Puzzle, labelKey: "navigation.skills" },
-  { view: "soul", icon: Sparkles, labelKey: "navigation.soul" },
-  { view: "memory", icon: Brain, labelKey: "navigation.memory" },
-  { view: "tools", icon: Wrench, labelKey: "navigation.tools" },
-  { view: "schedules", icon: Timer, labelKey: "navigation.schedules" },
-  { view: "gateway", icon: Signal, labelKey: "navigation.gateway" },
-  { view: "monitor", icon: Monitor, labelKey: "navigation.monitor" },
-  { view: "playbooks", icon: Layers, labelKey: "navigation.playbooks" },
-  { view: "understand", icon: Sparkles, labelKey: "navigation.understand" },
-  { view: "bailongma", icon: Monitor, labelKey: "navigation.bailongma" },
-  { view: "hccCockpit", icon: Monitor, labelKey: "navigation.hccCockpit" },
-  { view: "settings", icon: SettingsIcon, labelKey: "navigation.settings" },
+interface NavItem {
+  view: View;
+  icon: LucideIcon;
+  labelKey: string;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Work",
+    items: [
+      { view: "chat", icon: ChatBubble, labelKey: "navigation.chat" },
+      { view: "sessions", icon: Clock, labelKey: "navigation.sessions" },
+      { view: "office", icon: Building, labelKey: "navigation.office" },
+      { view: "playbooks", icon: Layers, labelKey: "navigation.playbooks" },
+      { view: "understand", icon: Sparkles, labelKey: "navigation.understand" },
+    ],
+  },
+  {
+    label: "Knowledge",
+    items: [
+      { view: "skills", icon: Puzzle, labelKey: "navigation.skills" },
+      { view: "soul", icon: Sparkles, labelKey: "navigation.soul" },
+      { view: "memory", icon: Brain, labelKey: "navigation.memory" },
+    ],
+  },
+  {
+    label: "Agents",
+    items: [
+      { view: "agents", icon: Users, labelKey: "navigation.agents" },
+      { view: "bailongma", icon: Monitor, labelKey: "navigation.bailongma" },
+      { view: "hccCockpit", icon: Monitor, labelKey: "navigation.hccCockpit" },
+      { view: "monitor", icon: Monitor, labelKey: "navigation.monitor" },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { view: "models", icon: Layers, labelKey: "navigation.models" },
+      { view: "providers", icon: KeyRound, labelKey: "navigation.providers" },
+      { view: "tools", icon: Wrench, labelKey: "navigation.tools" },
+      { view: "schedules", icon: Timer, labelKey: "navigation.schedules" },
+      { view: "gateway", icon: Signal, labelKey: "navigation.gateway" },
+      { view: "settings", icon: SettingsIcon, labelKey: "navigation.settings" },
+    ],
+  },
 ];
+
+const NAV_ITEMS = NAV_GROUPS.flatMap((group) => group.items);
 
 function Layout(): React.JSX.Element {
   const { t } = useI18n();
@@ -86,6 +121,8 @@ function Layout(): React.JSX.Element {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [activeProfile, setActiveProfile] = useState("default");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   // Tabs lazy-mount on first visit, then stay mounted (display:none toggle).
   // Keeps IPC refetch / DOM rebuild off the tab-switch hot path.
   const [visitedViews, setVisitedViews] = useState<Set<View>>(
@@ -190,23 +227,44 @@ function Layout(): React.JSX.Element {
     [goTo],
   );
 
+  const activeItem = NAV_ITEMS.find((item) => item.view === view);
+  const activeLabel = activeItem ? t(activeItem.labelKey) : t("common.appName");
+
   return (
-    <div className="layout">
+    <div
+      className={`layout ${sidebarCollapsed ? "layout-sidebar-collapsed" : ""} ${
+        inspectorOpen ? "layout-inspector-open" : ""
+      }`}
+    >
       <aside className="sidebar">
         <div className="sidebar-brand">
           <img src={hermeslogo} height={30} alt="" />
+          <button
+            type="button"
+            className="sidebar-collapse-btn"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronDown size={14} />
+          </button>
         </div>
 
         <nav className="sidebar-nav overflow-y-auto custom-scrollbar">
-          {NAV_ITEMS.map(({ view: v, icon: Icon, labelKey }) => (
-            <button
-              key={v}
-              className={`sidebar-nav-item ${view === v ? "active" : ""}`}
-              onClick={() => goTo(v)}
-            >
-              <Icon size={16} />
-              {t(labelKey)}
-            </button>
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label} className="sidebar-nav-group">
+              <div className="sidebar-nav-group-label">{group.label}</div>
+              {group.items.map(({ view: v, icon: Icon, labelKey }) => (
+                <button
+                  key={v}
+                  className={`sidebar-nav-item ${view === v ? "active" : ""}`}
+                  onClick={() => goTo(v)}
+                  title={sidebarCollapsed ? t(labelKey) : undefined}
+                >
+                  <Icon size={16} />
+                  <span className="sidebar-nav-label">{t(labelKey)}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
 
@@ -235,30 +293,50 @@ function Layout(): React.JSX.Element {
         </div>
       </aside>
 
-      <main className="content">
-        <div style={paneStyle("chat")}>
-          <Chat
-            messages={messages}
-            setMessages={setMessages}
-            sessionId={currentSessionId}
-            profile={activeProfile}
-            onNewChat={handleNewChat}
-          />
-        </div>
-
-        {visitedViews.has("sessions") && (
-          <div style={paneStyle("sessions")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Sessions" />
-            ) : (
-              <Sessions
-                onResumeSession={handleResumeSession}
-                onNewChat={handleNewChat}
-                currentSessionId={currentSessionId}
-              />
-            )}
+      <div className="shell-main">
+        <header className="shell-topbar">
+          <div className="shell-topbar-title">
+            <span className="shell-topbar-kicker">Hermes Pro</span>
+            <span className="shell-topbar-view">{activeLabel}</span>
           </div>
-        )}
+          <div className="shell-status-strip" aria-label="System status">
+            <span className="shell-status-badge">read-only shell</span>
+            <span className="shell-status-badge">KEEP v0.15.1</span>
+            <span className="shell-status-badge">profile: {activeProfile}</span>
+            <button
+              type="button"
+              className={`shell-inspector-toggle ${inspectorOpen ? "active" : ""}`}
+              onClick={() => setInspectorOpen((value) => !value)}
+            >
+              Inspector
+            </button>
+          </div>
+        </header>
+
+        <main className="content">
+          <div style={paneStyle("chat")}>
+            <Chat
+              messages={messages}
+              setMessages={setMessages}
+              sessionId={currentSessionId}
+              profile={activeProfile}
+              onNewChat={handleNewChat}
+            />
+          </div>
+
+          {visitedViews.has("sessions") && (
+            <div style={paneStyle("sessions")}>
+              {remoteMode ? (
+                <RemoteNotice feature="Sessions" />
+              ) : (
+                <Sessions
+                  onResumeSession={handleResumeSession}
+                  onNewChat={handleNewChat}
+                  currentSessionId={currentSessionId}
+                />
+              )}
+            </div>
+          )}
 
         {visitedViews.has("agents") && (
           <div style={paneStyle("agents")}>
@@ -392,12 +470,41 @@ function Layout(): React.JSX.Element {
           </div>
         )}
 
-        {visitedViews.has("settings") && (
-          <div style={paneStyle("settings")}>
-            <Settings profile={activeProfile} />
+          {visitedViews.has("settings") && (
+            <div style={paneStyle("settings")}>
+              <Settings profile={activeProfile} />
+            </div>
+          )}
+        </main>
+      </div>
+
+      <aside className="shell-inspector" hidden={!inspectorOpen}>
+        <div className="shell-inspector-header">
+          <span>Inspector</span>
+          <button
+            type="button"
+            className="shell-inspector-close"
+            onClick={() => setInspectorOpen(false)}
+            aria-label="Close inspector"
+          >
+            <X size={13} />
+          </button>
+        </div>
+        <div className="shell-inspector-body">
+          <div className="shell-inspector-section">
+            <span className="shell-inspector-label">Current view</span>
+            <strong>{activeLabel}</strong>
           </div>
-        )}
-      </main>
+          <div className="shell-inspector-section">
+            <span className="shell-inspector-label">Boundary</span>
+            <span>Slice 2 shell only. No new IPC or runtime action.</span>
+          </div>
+          <div className="shell-inspector-section">
+            <span className="shell-inspector-label">Future use</span>
+            <span>References, provenance, run details, and safety context.</span>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
