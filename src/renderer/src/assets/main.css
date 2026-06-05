@@ -35,6 +35,23 @@
   --scrollbar-thumb: #424242;
   --scrollbar-hover: #555555;
   --selection: rgba(0, 63, 122, 0.4);
+
+  /* Hermes Pro Slice 1: additive macOS-inspired design tokens. */
+  --hp-bg-base: #1c1c1e;
+  --hp-bg-surface: #2c2c2e;
+  --hp-bg-surface-2: #3a3a3c;
+  --hp-bg-elevated: #48484a;
+  --hp-bg-vibrancy: rgba(28, 28, 30, 0.72);
+  --hp-label: #ffffff;
+  --hp-label-secondary: rgba(235, 235, 245, 0.6);
+  --hp-label-tertiary: rgba(235, 235, 245, 0.3);
+  --hp-label-quaternary: rgba(235, 235, 245, 0.18);
+  --hp-accent: #0a84ff;
+  --hp-success: #30d158;
+  --hp-warning: #ff9f0a;
+  --hp-danger: #ff453a;
+  --hp-divider: rgba(84, 84, 88, 0.65);
+  --hp-blur-vibrancy: blur(20px) saturate(180%);
 }
 
 /* ----- Light Theme ----- */
@@ -69,6 +86,23 @@
   --scrollbar-thumb: #d4d4d4;
   --scrollbar-hover: #bbbbbb;
   --selection: rgba(0, 63, 122, 0.2);
+
+  /* Hermes Pro Slice 1: additive macOS-inspired design tokens. */
+  --hp-bg-base: #fbfbfd;
+  --hp-bg-surface: #ffffff;
+  --hp-bg-surface-2: #f2f2f7;
+  --hp-bg-elevated: #ffffff;
+  --hp-bg-vibrancy: rgba(251, 251, 253, 0.72);
+  --hp-label: #000000;
+  --hp-label-secondary: rgba(60, 60, 67, 0.6);
+  --hp-label-tertiary: rgba(60, 60, 67, 0.3);
+  --hp-label-quaternary: rgba(60, 60, 67, 0.18);
+  --hp-accent: #007aff;
+  --hp-success: #34c759;
+  --hp-warning: #ff9500;
+  --hp-danger: #ff3b30;
+  --hp-divider: rgba(60, 60, 67, 0.29);
+  --hp-blur-vibrancy: blur(20px) saturate(180%);
 }
 
 /* ----- Google Sans ----- */
@@ -127,6 +161,20 @@
     sans-serif;
   --font-mono:
     "SF Mono", "Fira Code", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* Hermes Pro Slice 1: additive shared tokens for future UI slices. */
+  --hp-radius-sm: 6px;
+  --hp-radius-md: 8px;
+  --hp-radius-lg: 10px;
+  --hp-motion-fast: 120ms ease-in-out;
+  --hp-motion-base: 160ms ease-in-out;
+  --hp-motion-slow: 200ms ease-in-out;
+  --hp-font-ui:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui,
+    sans-serif;
+  --hp-font-mono: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
+  --hp-font-display:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
 }
 
 /* ----- Body ----- */
