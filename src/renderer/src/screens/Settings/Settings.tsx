@@ -453,9 +453,36 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
 
   return (
     <div className="settings-container">
-      <h1 className="settings-header">{t("settings.title")}</h1>
+      <div className="settings-pref-header">
+        <div>
+          <div className="settings-pref-kicker">Hermes Pro</div>
+          <h1 className="settings-header">{t("settings.title")}</h1>
+        </div>
+        <div className="settings-pref-boundary">
+          Preference pane · explicit actions only · secrets redacted
+        </div>
+      </div>
 
-      <div className="settings-section">
+      <div className="settings-pref-layout">
+        <aside className="settings-pref-nav" aria-label="Settings sections">
+          {[
+            ["settings-agent", t("settings.sections.hermesAgent")],
+            ["settings-connection", t("settings.connectionSection")],
+            ["settings-mcp", t("mcp.title")],
+            ["settings-appearance", t("settings.sections.appearance")],
+            ["settings-network", t("settings.networkSection")],
+            ["settings-data", t("settings.dataSection")],
+            ["settings-logs", t("settings.logsSection")],
+          ].map(([id, label]) => (
+            <a key={id} href={`#${id}`} className="settings-pref-nav-item">
+              {label}
+            </a>
+          ))}
+        </aside>
+
+        <div className="settings-pref-content">
+
+      <div className="settings-section" id="settings-agent">
         <div className="settings-section-title">
           {t("settings.sections.hermesAgent")}
         </div>
@@ -588,7 +615,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         </div>
       </div>
 
-      <div className="settings-section">
+      <div className="settings-section" id="settings-connection">
         <div className="settings-section-title">
           {t("settings.connectionSection")}
           {connStatus && (
@@ -818,7 +845,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       )}
 
       {/* MCP Servers */}
-      <div className="settings-section">
+      <div className="settings-section" id="settings-mcp">
         <div className="settings-section-title">
           {t("mcp.title")}
         </div>
@@ -962,7 +989,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         </div>
       </div>
 
-      <div className="settings-section">
+      <div className="settings-section" id="settings-appearance">
         <div className="settings-section-title">
           {t("settings.sections.appearance")}
         </div>
@@ -1010,7 +1037,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         </div>
       </div>
 
-      <div className="settings-section">
+      <div className="settings-section" id="settings-network">
         <div className="settings-section-title">
           {t("settings.networkSection")}
           {networkSaved && (
@@ -1075,7 +1102,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
       </div>
 
       {connMode === "remote" && (
-        <div className="settings-section">
+        <div className="settings-section" id="settings-server">
           <div className="settings-section-title">
             {t("settings.serverConfigTitle")}
           </div>
@@ -1086,7 +1113,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         </div>
       )}
 
-      <div className="settings-section">
+      <div className="settings-section" id="settings-data">
         <div className="settings-section-title">
           {t("settings.dataSection")}
         </div>
@@ -1131,7 +1158,7 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
         </div>
       </div>
 
-      <div className="settings-section">
+      <div className="settings-section" id="settings-logs">
         <div className="settings-section-title">
           <span
             style={{ cursor: "pointer" }}
@@ -1189,6 +1216,8 @@ function Settings({ profile }: { profile?: string }): React.JSX.Element {
             </pre>
           </div>
         )}
+      </div>
+        </div>
       </div>
     </div>
   );

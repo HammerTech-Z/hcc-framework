@@ -2319,33 +2319,105 @@ body {
    SETTINGS
    ======================================================================== */
 .settings-container {
-  padding: 24px 32px;
+  padding: 18px;
   overflow-y: auto;
   height: 100%;
+  background: var(--hp-bg-base, var(--bg-primary));
 }
 
 .settings-header {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 24px;
-  color: var(--text-primary);
+  margin: 3px 0 0;
+  color: var(--hp-label, var(--text-primary));
+}
+
+.settings-pref-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.settings-pref-kicker {
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.settings-pref-boundary {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid var(--hp-divider, var(--border));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  color: var(--hp-label-tertiary, var(--text-muted));
+  font-family: var(--hp-font-mono, var(--font-mono));
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.settings-pref-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.settings-pref-nav {
+  position: sticky;
+  top: 0;
+  border: 1px solid var(--hp-divider, var(--border));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-pref-nav-item {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--hp-radius-sm, var(--radius-sm));
+  color: var(--hp-label-secondary, var(--text-secondary));
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 9px;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-pref-nav-item:hover {
+  background: var(--hp-bg-surface-2, var(--bg-tertiary));
+  color: var(--hp-label, var(--text-primary));
+}
+
+.settings-pref-content {
+  min-width: 0;
 }
 
 .settings-section {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  margin-bottom: 16px;
+  background: var(--hp-bg-surface, var(--bg-secondary));
+  border: 1px solid var(--hp-divider, var(--border));
+  border-radius: var(--hp-radius-md, var(--radius-md));
+  padding: 16px;
+  margin-bottom: 12px;
+  scroll-margin-top: 16px;
 }
 
 .settings-section-title {
   font-size: 12px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--hp-label-tertiary, var(--text-muted));
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin-bottom: 16px;
+  letter-spacing: 0;
+  margin-bottom: 14px;
 }
 
 .settings-field {
