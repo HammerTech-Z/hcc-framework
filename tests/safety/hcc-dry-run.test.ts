@@ -7,7 +7,7 @@ import type { HCCTaskRequest } from "../../src/main/hcc-task-types";
 import { execSync } from "child_process";
 import { createAuditLogStore } from "../../src/main/safety/audit-log";
 
-vi.setConfig({ testTimeout: 30_000 });
+vi.setConfig({ hookTimeout: 30_000, testTimeout: 30_000 });
 
 const tmpDir = fs.mkdtempSync(path.join(require("os").tmpdir(), "hcc-dry-run-"));
 

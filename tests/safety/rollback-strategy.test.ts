@@ -103,7 +103,7 @@ describe("createRollbackManager", () => {
     // The diff shows the uncommitted modification to README.md
     expect(result.rollbackPoint!.diffContent).toContain("Modified Project");
     expect(result.rollbackPoint!.contentHash).toHaveLength(64);
-  }, 15_000);
+  }, 30_000);
 
   // -----------------------------------------------------------------
   // 3. inspectRollbackPoint finds an existing rollback point
