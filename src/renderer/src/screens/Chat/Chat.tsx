@@ -15,6 +15,14 @@ import {
   Bell,
   Slash,
   Zap,
+  Mic,
+  PanelRight,
+  Maximize2,
+  Minimize2,
+  Database,
+  Globe2,
+  ShieldCheck,
+  X,
 } from "lucide-react";
 
 // ── Slash Commands ──────────────────────────────────────
@@ -228,6 +236,8 @@ function Chat({
     cost?: number;
   } | null>(null);
   const [fastMode, setFastMode] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [referencesOpen, setReferencesOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -870,13 +880,16 @@ function Chat({
   );
 
   return (
-    <div className="chat-container">
+    <div className={`chat-container ${focusMode ? "chat-focus-mode" : ""}`}>
       <div className="chat-header">
         <div className="chat-header-left">
-          <div className="chat-header-title">
-            {sessionId
-              ? t("chat.sessionTitle", { id: sessionId.slice(-6) })
-              : t("chat.title")}
+          <div className="chat-header-title-block">
+            <div className="chat-header-kicker">BaiLongma Chat Home</div>
+            <div className="chat-header-title">
+              {sessionId
+                ? t("chat.sessionTitle", { id: sessionId.slice(-6) })
+                : t("chat.title")}
+            </div>
           </div>
           {usage && (
             <span
@@ -891,6 +904,22 @@ function Chat({
           )}
         </div>
         <div className="chat-header-actions">
+          <button
+            type="button"
+            className={`btn-ghost chat-clear-btn ${referencesOpen ? "chat-header-btn-active" : ""}`}
+            onClick={() => setReferencesOpen((value) => !value)}
+            title="Toggle references"
+          >
+            <PanelRight size={15} />
+          </button>
+          <button
+            type="button"
+            className={`btn-ghost chat-clear-btn ${focusMode ? "chat-header-btn-active" : ""}`}
+            onClick={() => setFocusMode((value) => !value)}
+            title={focusMode ? "Exit focus" : "Focus mode"}
+          >
+            {focusMode ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+          </button>
           <div className="chat-fast-wrapper">
             <button
               className={`btn-ghost chat-fast-btn ${fastMode ? "chat-fast-active" : ""}`}
@@ -936,116 +965,160 @@ function Chat({
         </div>
       </div>
 
-      <div className="chat-messages" ref={messagesContainerRef}>
-        {messages.length === 0 ? (
-          <div className="chat-empty">
-            <div className="chat-empty-icon">
-              <img src={icon} width={64} height={64} alt="" />
+      <div className="chat-workbench">
+        <div className="chat-messages" ref={messagesContainerRef}>
+          {messages.length === 0 ? (
+            <div className="chat-empty">
+              <div className="chat-empty-icon">
+                <img src={icon} width={64} height={64} alt="" />
+              </div>
+              <div className="chat-empty-text">{t("chat.emptyTitle")}</div>
+              <div className="chat-empty-hint">{t("chat.emptyHint")}</div>
+              <div className="chat-empty-suggestions">
+                <button
+                  className="chat-suggestion"
+                  onClick={() => {
+                    setInput("Search the web for today's top tech news");
+                    inputRef.current?.focus();
+                  }}
+                >
+                  <Search size={16} />
+                  {t("chat.suggestionSearch")}
+                </button>
+                <button
+                  className="chat-suggestion"
+                  onClick={() => {
+                    setInput("Set a reminder to check emails every day at 9 AM");
+                    inputRef.current?.focus();
+                  }}
+                >
+                  <Bell size={16} />
+                  {t("chat.suggestionReminder")}
+                </button>
+                <button
+                  className="chat-suggestion"
+                  onClick={() => {
+                    setInput("Read my latest emails and summarize them");
+                    inputRef.current?.focus();
+                  }}
+                >
+                  <Mail size={16} />
+                  {t("chat.suggestionEmail")}
+                </button>
+                <button
+                  className="chat-suggestion"
+                  onClick={() => {
+                    setInput(
+                      "Write a Python script to rename all files in a folder",
+                    );
+                    inputRef.current?.focus();
+                  }}
+                >
+                  <Code size={16} />
+                  {t("chat.suggestionScript")}
+                </button>
+                <button
+                  className="chat-suggestion"
+                  onClick={() => {
+                    setInput(
+                      "Schedule a cron job to back up my database every night",
+                    );
+                    inputRef.current?.focus();
+                  }}
+                >
+                  <Clock size={16} />
+                  {t("chat.suggestionSchedule")}
+                </button>
+                <button
+                  className="chat-suggestion"
+                  onClick={() => {
+                    setInput("Analyze this CSV file and show key insights");
+                    inputRef.current?.focus();
+                  }}
+                >
+                  <ChartLine size={16} />
+                  {t("chat.suggestionAnalyze")}
+                </button>
+              </div>
             </div>
-            <div className="chat-empty-text">{t("chat.emptyTitle")}</div>
-            <div className="chat-empty-hint">{t("chat.emptyHint")}</div>
-            <div className="chat-empty-suggestions">
+          ) : (
+            visibleMessages.map((msg, i) => (
+              <MessageRow
+                key={msg.id}
+                msg={msg}
+                isLast={i === visibleMessages.length - 1}
+                isLoading={isLoading}
+                onApprove={handleApprove}
+                onDeny={handleDeny}
+              />
+            ))
+          )}
+
+          {isLoading && !lastMessageIsAgent && (
+            <div className="chat-message chat-message-agent">
+              <HermesAvatar />
+              <div className="chat-bubble chat-bubble-agent">
+                {toolProgress ? (
+                  <div className="chat-tool-progress">{toolProgress}</div>
+                ) : (
+                  <div className="chat-typing">
+                    <span className="chat-typing-dot" />
+                    <span className="chat-typing-dot" />
+                    <span className="chat-typing-dot" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isLoading && toolProgress && lastMessageIsAgent && (
+            <div className="chat-tool-progress-inline">{toolProgress}</div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {referencesOpen && (
+          <aside className="chat-reference-panel">
+            <div className="chat-reference-header">
+              <span>References</span>
               <button
-                className="chat-suggestion"
-                onClick={() => {
-                  setInput("Search the web for today's top tech news");
-                  inputRef.current?.focus();
-                }}
+                type="button"
+                className="chat-reference-close"
+                onClick={() => setReferencesOpen(false)}
+                aria-label="Close references"
               >
-                <Search size={16} />
-                {t("chat.suggestionSearch")}
-              </button>
-              <button
-                className="chat-suggestion"
-                onClick={() => {
-                  setInput("Set a reminder to check emails every day at 9 AM");
-                  inputRef.current?.focus();
-                }}
-              >
-                <Bell size={16} />
-                {t("chat.suggestionReminder")}
-              </button>
-              <button
-                className="chat-suggestion"
-                onClick={() => {
-                  setInput("Read my latest emails and summarize them");
-                  inputRef.current?.focus();
-                }}
-              >
-                <Mail size={16} />
-                {t("chat.suggestionEmail")}
-              </button>
-              <button
-                className="chat-suggestion"
-                onClick={() => {
-                  setInput(
-                    "Write a Python script to rename all files in a folder",
-                  );
-                  inputRef.current?.focus();
-                }}
-              >
-                <Code size={16} />
-                {t("chat.suggestionScript")}
-              </button>
-              <button
-                className="chat-suggestion"
-                onClick={() => {
-                  setInput(
-                    "Schedule a cron job to back up my database every night",
-                  );
-                  inputRef.current?.focus();
-                }}
-              >
-                <Clock size={16} />
-                {t("chat.suggestionSchedule")}
-              </button>
-              <button
-                className="chat-suggestion"
-                onClick={() => {
-                  setInput("Analyze this CSV file and show key insights");
-                  inputRef.current?.focus();
-                }}
-              >
-                <ChartLine size={16} />
-                {t("chat.suggestionAnalyze")}
+                <X size={13} />
               </button>
             </div>
-          </div>
-        ) : (
-          visibleMessages.map((msg, i) => (
-            <MessageRow
-              key={msg.id}
-              msg={msg}
-              isLast={i === visibleMessages.length - 1}
-              isLoading={isLoading}
-              onApprove={handleApprove}
-              onDeny={handleDeny}
-            />
-          ))
-        )}
-
-        {isLoading && !lastMessageIsAgent && (
-          <div className="chat-message chat-message-agent">
-            <HermesAvatar />
-            <div className="chat-bubble chat-bubble-agent">
-              {toolProgress ? (
-                <div className="chat-tool-progress">{toolProgress}</div>
-              ) : (
-                <div className="chat-typing">
-                  <span className="chat-typing-dot" />
-                  <span className="chat-typing-dot" />
-                  <span className="chat-typing-dot" />
-                </div>
-              )}
+            <div className="chat-reference-card">
+              <div className="chat-reference-card-title">
+                <Database size={13} />
+                Local Knowledge
+              </div>
+              <div className="chat-reference-card-value">standby</div>
+              <p>No live flush</p>
             </div>
-          </div>
+            <div className="chat-reference-card">
+              <div className="chat-reference-card-title">
+                <Globe2 size={13} />
+                Web Sources
+              </div>
+              <div className="chat-reference-card-value">manual</div>
+              <p>Verify on request</p>
+            </div>
+            <div className="chat-reference-card">
+              <div className="chat-reference-card-title">
+                <ShieldCheck size={13} />
+                Agent Judgment
+              </div>
+              <div className="chat-reference-card-value">
+                {isLoading ? "running" : "idle"}
+              </div>
+              <p>Read-only UI state</p>
+            </div>
+          </aside>
         )}
-
-        {isLoading && toolProgress && lastMessageIsAgent && (
-          <div className="chat-tool-progress-inline">{toolProgress}</div>
-        )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       <div className="chat-input-area">
@@ -1053,7 +1126,7 @@ function Chat({
           <div className="slash-menu" ref={slashMenuRef}>
             <div className="slash-menu-header">
               <Slash size={12} />
-              {t("chat.commandsTitle")}
+              Command Palette
             </div>
             <div className="slash-menu-list">
               {filteredSlashCommands.map((cmd, i) => (
@@ -1067,105 +1140,124 @@ function Chat({
                   <span className="slash-menu-item-desc">
                     {cmd.description}
                   </span>
+                  <span className="slash-menu-item-meta">
+                    {cmd.local || cmd.category === "info" ? "local" : cmd.category}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
         )}
-        <div className="chat-input-wrapper">
-          <textarea
-            ref={inputRef}
-            className="chat-input"
-            placeholder={t("chat.typeMessage")}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            rows={1}
-            disabled={isLoading}
-            autoFocus
-          />
-          {isLoading ? (
+        <div className="chat-composer-shell">
+          <div className="chat-composer-meta">
+            <span>Chat Home</span>
+            <span>{displayModel}</span>
+            <span>{fastMode ? "fast" : "standard"}</span>
+          </div>
+          <div className="chat-input-wrapper">
+            <textarea
+              ref={inputRef}
+              className="chat-input"
+              placeholder={t("chat.typeMessage")}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              disabled={isLoading}
+              autoFocus
+            />
             <button
-              className="chat-send-btn chat-stop-btn"
-              onClick={handleAbort}
-              title={t("common.stop")}
+              type="button"
+              className="chat-voice-btn"
+              disabled
+              title="Voice entry is not enabled"
+              aria-label="Voice entry placeholder"
             >
-              <Stop size={14} />
+              <Mic size={15} />
             </button>
-          ) : (
-            <>
-              {input.trim() && hermesSessionId && (
-                <button
-                  className="chat-btw-btn"
-                  onClick={handleQuickAsk}
-                  title={t("chat.quickAskTitle")}
-                >
-                  💭
-                </button>
-              )}
+            {isLoading ? (
               <button
-                className="chat-send-btn"
-                onClick={handleSend}
-                disabled={!input.trim()}
-                title={t("chat.send")}
+                className="chat-send-btn chat-stop-btn"
+                onClick={handleAbort}
+                title={t("common.stop")}
               >
-                <Send size={16} />
+                <Stop size={14} />
               </button>
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                {input.trim() && hermesSessionId && (
+                  <button
+                    className="chat-btw-btn"
+                    onClick={handleQuickAsk}
+                    title={t("chat.quickAskTitle")}
+                  >
+                    btw
+                  </button>
+                )}
+                <button
+                  className="chat-send-btn"
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  title={t("chat.send")}
+                >
+                  <Send size={16} />
+                </button>
+              </>
+            )}
+          </div>
 
-        <div className="chat-model-bar" ref={pickerRef}>
-          <button
-            className="chat-model-trigger"
-            onClick={() => {
-              if (!showModelPicker) loadModelConfig();
-              setShowModelPicker(!showModelPicker);
-            }}
-          >
-            <span className="chat-model-name">{displayModel}</span>
-            <ChevronDown size={12} />
-          </button>
+          <div className="chat-model-bar" ref={pickerRef}>
+            <button
+              className="chat-model-trigger"
+              onClick={() => {
+                if (!showModelPicker) loadModelConfig();
+                setShowModelPicker(!showModelPicker);
+              }}
+            >
+              <span className="chat-model-name">{displayModel}</span>
+              <ChevronDown size={12} />
+            </button>
 
-          {showModelPicker && (
-            <div className="chat-model-dropdown">
-              {modelGroups.map((group) => (
-                <div key={group.provider} className="chat-model-group">
-                  <div className="chat-model-group-label">
-                    {t(group.providerLabel)}
+            {showModelPicker && (
+              <div className="chat-model-dropdown">
+                {modelGroups.map((group) => (
+                  <div key={group.provider} className="chat-model-group">
+                    <div className="chat-model-group-label">
+                      {t(group.providerLabel)}
+                    </div>
+                    {group.models.map((m) => (
+                      <button
+                        key={`${m.provider}:${m.model}`}
+                        className={`chat-model-option ${currentModel === m.model && currentProvider === m.provider ? "active" : ""}`}
+                        onClick={() =>
+                          selectModel(m.provider, m.model, m.baseUrl)
+                        }
+                      >
+                        <span className="chat-model-option-label">{m.label}</span>
+                        <span className="chat-model-option-id">{m.model}</span>
+                      </button>
+                    ))}
                   </div>
-                  {group.models.map((m) => (
-                    <button
-                      key={`${m.provider}:${m.model}`}
-                      className={`chat-model-option ${currentModel === m.model && currentProvider === m.provider ? "active" : ""}`}
-                      onClick={() =>
-                        selectModel(m.provider, m.model, m.baseUrl)
-                      }
-                    >
-                      <span className="chat-model-option-label">{m.label}</span>
-                      <span className="chat-model-option-id">{m.model}</span>
-                    </button>
-                  ))}
-                </div>
-              ))}
+                ))}
 
-              <div className="chat-model-group">
-                <div className="chat-model-group-label">{t("chat.custom")}</div>
-                <div className="chat-model-custom">
-                  <input
-                    className="chat-model-custom-input"
-                    type="text"
-                    value={customModelInput}
-                    onChange={(e) => setCustomModelInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleCustomModelSubmit();
-                    }}
-                    placeholder={t("chat.typeModelName")}
-                  />
+                <div className="chat-model-group">
+                  <div className="chat-model-group-label">{t("chat.custom")}</div>
+                  <div className="chat-model-custom">
+                    <input
+                      className="chat-model-custom-input"
+                      type="text"
+                      value={customModelInput}
+                      onChange={(e) => setCustomModelInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleCustomModelSubmit();
+                      }}
+                      placeholder={t("chat.typeModelName")}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
