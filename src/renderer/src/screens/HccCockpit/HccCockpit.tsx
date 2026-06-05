@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { ModelStrategyDryRunPanel } from "./ModelStrategyDryRunPanel";
+
 type HermesApi = Window["hermesAPI"];
 type PipelineRun = Awaited<ReturnType<HermesApi["listPipelineRuns"]>>[number];
 type Playbook = Awaited<ReturnType<HermesApi["listPlaybooks"]>>[number];
@@ -269,6 +271,10 @@ function HccCockpit(): React.JSX.Element {
     <div className="hcc-cockpit-container">
       <div className="hcc-cockpit-readonly-badge">
         HCC 自动执行驾驶舱 · Read-only POC · No new IPC · No writes · No model/tool execution
+      </div>
+
+      <div className="hcc-cockpit-model-strategy-slot">
+        <ModelStrategyDryRunPanel />
       </div>
 
       <div className="hcc-cockpit-grid">

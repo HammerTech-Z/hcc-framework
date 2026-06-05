@@ -113,7 +113,8 @@ export function ModelStrategyDryRunPanel(): React.JSX.Element {
         className={`${PANEL_CLASS}__footer`}
         data-testid="model-strategy-dry-run-footer"
       >
-        snapshot version 1.0.0 · {statuses.length} lanes · read-only
+        snapshot version 1.0.0 · {statuses.length} lanes · read-only · static
+        snapshot · does not refresh with cockpit polling
       </footer>
     </section>
   );
