@@ -1,24 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
-import Chat, { ChatMessage } from "../Chat/Chat";
-import Sessions from "../Sessions/Sessions";
-import Agents from "../Agents/Agents";
-import Settings from "../Settings/Settings";
-import Skills from "../Skills/Skills";
-import Soul from "../Soul/Soul";
-import Memory from "../Memory/Memory";
-import Knowledge from "../Knowledge";
-import KnowledgeControl from "../KnowledgeControl";
-import Tools from "../Tools/Tools";
-import Gateway from "../Gateway/Gateway";
-import AgentMonitor from "../AgentMonitor";
-import Office from "../Office/Office";
-import Playbooks from "../Playbooks/Playbooks";
-import Understand from "../Understand/Understand";
-import Models from "../Models/Models";
-import Providers from "../Providers/Providers";
-import Schedules from "../Schedules/Schedules";
-import Mission from "../Mission";
-import RemoteNotice from "../../components/RemoteNotice";
+import { type ChatMessage } from "../Chat/Chat";
+import { LAYOUT_ROUTES } from "./layout-routes";
 import hermeslogo from "../../assets/hermes.png";
 import {
   ChatBubble,
@@ -343,193 +325,34 @@ function Layout(): React.JSX.Element {
         </header>
 
         <main className="content" aria-label={activeLabel}>
-          <div style={paneStyle("chat")}>
-            <Chat
-              messages={messages}
-              setMessages={setMessages}
-              sessionId={currentSessionId}
-              profile={activeProfile}
-              onNewChat={handleNewChat}
-            />
-          </div>
-
-          {visitedViews.has("sessions") && (
-            <div style={paneStyle("sessions")}>
-              {remoteMode ? (
-                <RemoteNotice feature="Sessions" />
-              ) : (
-                <Sessions
-                  onResumeSession={handleResumeSession}
-                  onNewChat={handleNewChat}
-                  currentSessionId={currentSessionId}
-                />
-              )}
-            </div>
-          )}
-
-        {visitedViews.has("agents") && (
-          <div style={paneStyle("agents")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Profiles" />
-            ) : (
-              <Agents
-                activeProfile={activeProfile}
-                onSelectProfile={handleSelectProfile}
-                onChatWith={(name: string) => {
-                  handleSelectProfile(name);
-                  goTo("chat");
-                }}
-              />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("office") && (
-          <div style={paneStyle("office")}>
-            <Office visible={view === "office"} />
-          </div>
-        )}
-
-        {visitedViews.has("models") && (
-          <div style={paneStyle("models")}>
-            <Models />
-          </div>
-        )}
-
-        {visitedViews.has("providers") && (
-          <div style={paneStyle("providers")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Providers" />
-            ) : (
-              <Providers
-                profile={activeProfile}
-                visible={view === "providers"}
-              />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("skills") && (
-          <div style={paneStyle("skills")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Skills" />
-            ) : (
-              <Skills profile={activeProfile} />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("soul") && (
-          <div style={paneStyle("soul")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Persona" />
-            ) : (
-              <Soul profile={activeProfile} />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("memory") && (
-          <div style={paneStyle("memory")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Memory" />
-            ) : (
-              <Memory profile={activeProfile} />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("knowledgeControl") && (
-          <div style={paneStyle("knowledgeControl")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Knowledge Control" />
-            ) : (
-              <KnowledgeControl />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("knowledge") && (
-          <div style={paneStyle("knowledge")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Knowledge" />
-            ) : (
-              <Knowledge />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("tools") && (
-          <div style={paneStyle("tools")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Tools" />
-            ) : (
-              <Tools profile={activeProfile} />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("schedules") && (
-          <div style={paneStyle("schedules")}>
-            <Schedules profile={activeProfile} />
-          </div>
-        )}
-
-        {visitedViews.has("gateway") && (
-          <div style={paneStyle("gateway")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Gateway" />
-            ) : (
-              <Gateway profile={activeProfile} />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("monitor") && (
-          <div style={paneStyle("monitor")}>
-            {remoteMode ? (
-              <RemoteNotice feature="Monitor" />
-            ) : (
-              <AgentMonitor />
-            )}
-          </div>
-        )}
-
-        {visitedViews.has("playbooks") && (
-          <div style={paneStyle("playbooks")}>
-            <Playbooks />
-          </div>
-        )}
-
-        {visitedViews.has("understand") && (
-          <div style={paneStyle("understand")}>
-            <Understand />
-          </div>
-        )}
-
-        {visitedViews.has("mission") && (
-          <div style={paneStyle("mission")}>
-            <Mission profile={activeProfile} />
-          </div>
-        )}
-
-        {visitedViews.has("bailongma") && (
-          <div style={paneStyle("bailongma")}>
-            <Mission profile={activeProfile} legacySource="bailongma" />
-          </div>
-        )}
-
-        {visitedViews.has("hccCockpit") && (
-          <div style={paneStyle("hccCockpit")}>
-            <Mission profile={activeProfile} legacySource="hcc" />
-          </div>
-        )}
-
-          {visitedViews.has("settings") && (
-            <div style={paneStyle("settings")}>
-              <Settings profile={activeProfile} />
-            </div>
-          )}
+          {LAYOUT_ROUTES.map((route) => {
+            const mounted = !route.lazy || visitedViews.has(route.view);
+            if (!mounted) return null;
+            return (
+              <div
+                key={route.view}
+                style={paneStyle(route.view)}
+                data-view={route.view}
+              >
+                {route.render({
+                  view: route.view,
+                  activeView: view,
+                  activeProfile,
+                  remoteMode,
+                  messages,
+                  setMessages,
+                  currentSessionId,
+                  onNewChat: handleNewChat,
+                  onResumeSession: handleResumeSession,
+                  onSelectProfile: handleSelectProfile,
+                  onChatWith: (name: string) => {
+                    handleSelectProfile(name);
+                    goTo("chat");
+                  },
+                })}
+              </div>
+            );
+          })}
         </main>
       </div>
 

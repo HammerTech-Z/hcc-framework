@@ -11,6 +11,10 @@ const layoutSrc = readFileSync(
   join(ROOT, "src/renderer/src/screens/Layout/Layout.tsx"),
   "utf-8",
 );
+const layoutRoutesSrc = readFileSync(
+  join(ROOT, "src/renderer/src/screens/Layout/layout-routes.tsx"),
+  "utf-8",
+);
 
 describe("Mission Control read-only boundary", () => {
   const allowedReadApis = [
@@ -68,8 +72,10 @@ describe("Mission Control read-only boundary", () => {
   });
 
   it("keeps BaiLongma and HCC Cockpit as one-release aliases", () => {
+    // UI Slice 2: aliases now live in LAYOUT_ROUTES with distinct legacy_source.
     expect(layoutSrc).toContain('view: "mission"');
-    expect(layoutSrc).toContain('legacySource="bailongma"');
-    expect(layoutSrc).toContain('legacySource="hcc"');
+    expect(layoutRoutesSrc).toContain('view: "mission"');
+    expect(layoutRoutesSrc).toContain('legacySource="bailongma"');
+    expect(layoutRoutesSrc).toContain('legacySource="hcc"');
   });
 });

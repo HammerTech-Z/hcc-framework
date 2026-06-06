@@ -92,10 +92,19 @@ describe("UI Slice 1 screen boundary contract schema", () => {
     ]);
   });
 
-  it("each contract view appears in Layout paneStyle rendering", () => {
+  it("each contract view appears in Layout route table rendering", () => {
+    // UI Slice 2 supersedes the literal paneStyle("view") check: panes are
+    // now driven by LAYOUT_ROUTES from layout-routes.tsx. Contract: every
+    // contract view is present in the route table, and Layout.tsx uses the
+    // generic paneStyle(route.view) helper.
+    const layoutRoutesSrc = readFileSync(
+      join(ROOT, "src/renderer/src/screens/Layout/layout-routes.tsx"),
+      "utf-8",
+    );
     for (const view of CANONICAL_LAYOUT_ORDER) {
-      expect(layoutSrc).toContain(`paneStyle("${view}")`);
+      expect(layoutRoutesSrc).toContain(`view: "${view}"`);
     }
+    expect(layoutSrc).toContain("paneStyle(route.view)");
   });
 
   it("preserves the four sidebar group counts from Layout", () => {

@@ -20,6 +20,10 @@ const layoutSrc = readFileSync(
   join(ROOT, "src/renderer/src/screens/Layout/Layout.tsx"),
   "utf-8",
 );
+const layoutRoutesSrc = readFileSync(
+  join(ROOT, "src/renderer/src/screens/Layout/layout-routes.tsx"),
+  "utf-8",
+);
 
 describe("Knowledge Control read-only boundary", () => {
   const allowedReadApis = [
@@ -64,10 +68,14 @@ describe("Knowledge Control read-only boundary", () => {
   });
 
   it("keeps Knowledge Control separate from the existing Knowledge screen", () => {
+    // UI Slice 2: panes driven by LAYOUT_ROUTES. Verify the route table
+    // preserves the Knowledge Control vs Knowledge separation.
     expect(layoutSrc).toContain('view: "knowledgeControl"');
-    expect(layoutSrc).toContain("<KnowledgeControl />");
+    expect(layoutRoutesSrc).toContain('view: "knowledgeControl"');
+    expect(layoutRoutesSrc).toContain("<KnowledgeControl />");
     expect(layoutSrc).toContain('view: "knowledge"');
-    expect(layoutSrc).toContain("<Knowledge />");
+    expect(layoutRoutesSrc).toContain('view: "knowledge"');
+    expect(layoutRoutesSrc).toContain("<Knowledge />");
   });
 
   it("derives lifecycle columns deterministically", () => {
