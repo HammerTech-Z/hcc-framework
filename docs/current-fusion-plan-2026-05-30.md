@@ -493,6 +493,7 @@ domain_profile:
 - OpenHuman：Memory Tree / TokenJuice / auto-fetch。
 - Ruflo：worker taxonomy / trajectory learning。
 - MiroFish：未来风险推演/仿真试点。**仅借鉴思路**（执行前风险推演、GraphRAG、ReportAgent），不可引用代码（专属许可证）。不设独立 Phase，不设时间线。当 HCC Auto Executor 需要 plan risk simulator 时，以此为参考做最小原型验证。
+- EchoBird：模型中心 / 本地模型兜底 / 安装修复 / AI 应用管理的产品参考。**仅做产品模式审计与 Hermes 本地设计**，不复制 BUSL 代码、不采用私有 core、不接 runtime、不改模型 live config。优先落到 `MODEL-STRATEGY-005` 与未来 install/recovery 文档 slice。
 - DataLogicEngine：Trace Viewer / audit / explainable reasoning。
 - 全部必须 ADR + 用户确认后才能进入锁定主线。
 

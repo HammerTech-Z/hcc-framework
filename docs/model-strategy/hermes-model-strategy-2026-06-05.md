@@ -219,7 +219,13 @@ Status: future, requires approval
 
 Add the Model Strategy UI section without changing live runtime behavior.
 
-### MODEL-STRATEGY-005: Live config adapter
+### MODEL-STRATEGY-005: EchoBird Model Nexus comparison
+
+Status: future, design/reference only
+
+Use EchoBird as a product reference for a central model hub, provider directory, endpoint testing, latency visibility, and local model fallback UX. This slice must stay Hermes-native and must not copy EchoBird code, UI composition, install scripts, or runtime behavior. Detailed plan: `docs/research/echobird-hermes-optimization-plan-2026-06-06.md`.
+
+### MODEL-STRATEGY-006: Live config adapter
 
 Status: future, requires explicit approval
 
