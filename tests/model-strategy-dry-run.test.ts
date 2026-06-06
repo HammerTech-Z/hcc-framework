@@ -190,7 +190,10 @@ describe("MODEL-STRATEGY-001 source and doc guardrails", () => {
   });
 
   it("plan doc stays dry-run and names the exact non-go boundaries", () => {
-    expect(docSrc).toContain("Status: planned, dry-run only");
+    expect(docSrc).toContain(
+      "Status: implemented through MODEL-STRATEGY-006A, dry-run / design-only only",
+    );
+    expect(docSrc).toContain("006B+ remains future and requires explicit approval");
     expect(docSrc).toContain("Do not change `~/.hermes/config.yaml`");
     expect(docSrc).toContain("Do not enable automatic runtime routing");
     expect(docSrc).toContain("Do not enable HCC Auto Executor");
