@@ -1,6 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
 import { type ChatMessage } from "../Chat/Chat";
 import { LAYOUT_ROUTES } from "./layout-routes";
+import {
+  buildBoundaryBadgeDescriptor,
+  buildBoundaryBadgeTitle,
+} from "./boundary-badge";
+import { getScreenBoundaryContract } from "../../../../shared/lib/screen-boundary-contract";
 import hermeslogo from "../../assets/hermes.png";
 import {
   ChatBubble,
@@ -235,6 +240,10 @@ function Layout(): React.JSX.Element {
 
   const activeItem = NAV_ITEMS.find((item) => item.view === view);
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("common.appName");
+  const boundaryBadge = buildBoundaryBadgeDescriptor(
+    getScreenBoundaryContract(view),
+  );
+  const boundaryBadgeTitle = buildBoundaryBadgeTitle(boundaryBadge);
 
   return (
     <div
@@ -308,7 +317,18 @@ function Layout(): React.JSX.Element {
             <span className="shell-topbar-view">{activeLabel}</span>
           </div>
           <div className="shell-status-strip" aria-label="System status">
-            <span className="shell-status-badge">read-only shell</span>
+            <span
+              className={`shell-status-badge ${boundaryBadge.class_modifier}`}
+              data-view={boundaryBadge.view}
+              data-kind={boundaryBadge.kind_token}
+              data-risk={boundaryBadge.risk_level}
+              data-direct-gateway-risk={
+                boundaryBadge.direct_gateway_risk ? "true" : "false"
+              }
+              title={boundaryBadgeTitle}
+            >
+              {boundaryBadge.label}
+            </span>
             <span className="shell-status-badge">KEEP v0.15.1</span>
             <span className="shell-status-badge">profile: {activeProfile}</span>
             <button
