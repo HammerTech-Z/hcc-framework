@@ -1,7 +1,7 @@
 # Hermes Pro Model Strategy Plan
 
 Date: 2026-06-05
-Status: planned, dry-run only
+Status: implemented through MODEL-STRATEGY-006A, dry-run / design-only only
 Owner: unassigned
 
 ## 1. Purpose
@@ -19,7 +19,9 @@ Target outcome:
 
 - Preserve the current MiniMax + DeepSeek working path until every new lane passes verification.
 - Add explicit model lanes for daily, local fallback, lightweight tasks, complex code, task fallback, and god-mode reasoning.
-- Make the strategy visible and switchable in Hermes Pro UI.
+- Make the strategy visible in Hermes Pro UI while keeping every action disabled until later approval.
+- Require user-provided provider credentials / API keys for cloud lanes; descriptors and fixtures must never echo secrets.
+- Treat EchoBird-style model center / local model download / install-recovery UX as product reference only.
 - Do not write `~/.hermes/config.yaml` until a later approved implementation slice.
 
 ## 2. Non-goals
@@ -31,6 +33,8 @@ Target outcome:
 - Do not enable P3 real execution.
 - Do not change `docs/roadmap-locked-2026-05-28.md`.
 - Do not copy Phoenix runtime code directly.
+- Do not copy EchoBird code, UI composition, install scripts, private core behavior, or protected product surface.
+- Do not activate local runtimes, local model downloads, credential pools, or keychain integration.
 
 ## 3. Design Source
 
@@ -55,7 +59,7 @@ Phoenix concepts not to copy directly:
 | Lane | Purpose | Target provider | Target model policy | Enablement |
 | --- | --- | --- | --- | --- |
 | `daily` | Normal chat and day-to-day work | MiniMax | target candidate `MiniMax 3.0`; exact API model id must be resolved by provider catalog | default after smoke pass |
-| `daily_fallback` | Local rescue path when daily cloud fails | local OpenAI-compatible endpoint | Gemma 4 12B multimodal candidate | only after local health check |
+| `daily_fallback` | Local rescue path when daily cloud fails | user-supplied local OpenAI-compatible endpoint | Gemma 4 12B multimodal candidate; EchoBird-style local model acquisition remains a future design reference only | only after local health check and explicit user setup |
 | `light_task` | Small summaries, simple edits, low-risk planning | MiniMax | target candidate `MiniMax 3.0` unless a cheaper MiniMax lane is verified | manual/profile routing first |
 | `complex_code` | Hard coding tasks and large patch planning | OpenAI | target candidate `gpt-5.5`; provider-current code-capable equivalent allowed only after verification | explicit user action |
 | `task_fallback` | General task fallback if premium/code lane fails | DeepSeek | latest DeepSeek API; current candidate `deepseek-v4-pro`, cost fallback `deepseek-v4-flash` | fallback only |
@@ -64,6 +68,8 @@ Phoenix concepts not to copy directly:
 Implementation must treat "latest" and display names as provider-catalog resolution policies, not as hardcoded promises. Each lane stores both the chosen concrete model id and the resolution metadata used at the time of verification.
 
 MiniMax note: `MiniMax 3.0` is the user-selected daily target. Hermes Pro must not write `provider: minimax` with an empty `base_url` until MODEL-STRATEGY-002 resolves the exact MiniMax API model id and canonical endpoint.
+
+Credential note: all cloud lanes are user-configured. MODEL-STRATEGY-006A records `credential_source: user_provided`, keeps every lane `enabled: false`, and strips or rejects secret-like values from design descriptors.
 
 ## 5. Gemma Decision
 
@@ -149,6 +155,8 @@ Required UI behavior:
 
 The UI must not expose raw API keys. Secrets remain in the existing provider/credential surfaces.
 
+Current UI state: MODEL-STRATEGY-003A added a read-only HccCockpit panel integration and scoped CSS/a11y polish; MODEL-STRATEGY-004C added helper-only rollout status projection. The UI still has no live action button, no new IPC, no runtime activation, and `enabled` remains hard false in strategy status helpers.
+
 ## 8. Verification Plan
 
 Each lane needs an explicit smoke test.
@@ -186,7 +194,7 @@ Phase 1 is manual and profile-based.
 
 ### MODEL-STRATEGY-001: Dry-run design and fixture
 
-Status: planned
+Status: landed, dry-run only (`e4602b3`)
 
 Deliverables:
 
@@ -197,7 +205,7 @@ Deliverables:
 
 ### MODEL-STRATEGY-002: Provider catalog resolution
 
-Status: future
+Status: landed as 002A/002B/002C, dry-run only (`24e70d3`, `4dae1fa`, `4749744`)
 
 Resolve display-name and policy lanes into concrete model IDs. Resolution must be inspectable and cached with timestamps.
 
@@ -209,19 +217,19 @@ Initial required resolutions:
 
 ### MODEL-STRATEGY-003: UI readiness plan
 
-Status: future
+Status: landed as 003A-0 through 003A-3, read-only UI only (`b91d466`, `45f0eb6`, `91e26d6`, `9bda187`)
 
 Define the UI component contract and acceptance fixtures before implementation.
 
 ### MODEL-STRATEGY-004: UI implementation
 
-Status: future, requires approval
+Status: landed as 004A/004B/004C helper stack, dry-run only (`e1642cd`, `4817109`, `3841ddd`)
 
 Add the Model Strategy UI section without changing live runtime behavior.
 
 ### MODEL-STRATEGY-005: EchoBird Model Nexus comparison
 
-Status: future, design/reference only
+Status: landed as plan + 005A/005B/005C, design/reference only (`5c42038`, `f86fe30`, `c6c8f02`, `563026c`)
 
 Use EchoBird as a product reference for a central model hub, provider directory, endpoint testing, latency visibility, and local model fallback UX. This slice must stay Hermes-native and must not copy EchoBird code, UI composition, install scripts, or runtime behavior. Detailed plan: `docs/research/echobird-hermes-optimization-plan-2026-06-06.md`.
 
@@ -229,7 +237,34 @@ Use EchoBird as a product reference for a central model hub, provider directory,
 
 Status: future, requires explicit approval
 
-Only after all previous slices pass, implement controlled writes to Hermes config with backup and rollback.
+006A status: landed, design-only user-configured provider requirements descriptor (`c68f20c`). It documents lane/provider requirements, user-provided credential source, local fallback endpoint requirements, secret redaction/detection, and future credential-pool/keychain/local-runtime gates. It does not implement live config writes.
+
+006B+ remains future and requires explicit approval. Only after a separate approval may Hermes implement controlled writes to Hermes config with backup and rollback.
+
+## 11.1 Current Local Implementation Snapshot
+
+As of 2026-06-06, `origin/hermes-pro-main` HEAD is `c68f20c30dbf1895001684305df3f944bfb5f9a8`. The MODEL-STRATEGY chain landed as:
+
+| Slice | Commit | Status |
+| --- | --- | --- |
+| 001 | `e4602b3` | dry-run fixture + helper |
+| 002A | `24e70d3` | provider catalog resolution |
+| 002B | `4dae1fa` | smoke-test matrix |
+| 002C | `4749744` | disabled UI status descriptor |
+| 003A-0 | `b91d466` | canonical shared snapshots |
+| 003A-1 | `45f0eb6` | isolated read-only panel |
+| 003A-2 | `91e26d6` | HccCockpit read-only integration |
+| 003A-3 | `9bda187` | scoped CSS + a11y polish |
+| 004A | `e1642cd` | profile rollout simulation |
+| 004B | `4817109` | rollback preview helper |
+| 004C | `3841ddd` | UI rollout status projection |
+| 005 plan | `5c42038` | EchoBird reference registration |
+| 005A | `f86fe30` | EchoBird pattern taxonomy |
+| 005B | `c6c8f02` | Hermes-native model-nexus design descriptor |
+| 005C | `563026c` | install/recovery read-only diagnostics descriptor |
+| 006A | `c68f20c` | lane/provider requirements design descriptor |
+
+Latest verified local baseline at 006A preflight: `npm run typecheck` passed; `npx vitest run` passed 102 files / 3248 tests. Working tree and origin were synchronized at `c68f20c`. Real `~/.hermes/config.yaml`, `~/.hermes/handoff/packs`, and `~/.hermes/audit` were not touched during the MODEL-STRATEGY dry-run/design-only chain.
 
 ## 12. Acceptance Criteria
 
@@ -239,9 +274,10 @@ Only after all previous slices pass, implement controlled writes to Hermes confi
 - No locked roadmap file is changed.
 - No runtime code is added in the planning slice.
 - Current MiniMax + DeepSeek setup remains documented as rollback baseline.
+- MODEL-STRATEGY 001 through 006A remain dry-run / read-only / design-only; all live config writes remain future and require explicit approval.
 
 ## 13. Current Decision
 
-Adopt the model-lane strategy as a planned Hermes Pro direction.
+Adopt the model-lane strategy as an implemented dry-run / design-only Hermes Pro direction through MODEL-STRATEGY-006A.
 
 Do not activate it yet.

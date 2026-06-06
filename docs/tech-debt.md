@@ -91,13 +91,13 @@ Last Updated: 2026-05-28
 
 ### TD-MODEL-001: Gemma 4 E4B 未拉取 vs model-strategy
 - **Title**: Gemma 4 E4B 未拉取 vs model-strategy 规划冲突
-- **Status**: planned
+- **Status**: backlog
 - **Owner**: unassigned
 - **Estimate**: M
 - **Risk**: High
-- **Dependency**: None
+- **Dependency**: MODEL-STRATEGY-006B+ explicit approval for any live config adapter, credential pool, keychain, or local runtime activation
 - **Priority**: P2
-- **Notes**: Sprint 2 采用 dry-run 计划先行：参考 Phoenix 分档思想，但不复制 Phoenix runtime；当前 MiniMax + DeepSeek 作为 rollback baseline；本地兜底优先评估 Gemma 4 12B，多模态/语言/代码综合能力不足或本机不可用时再降级到 Gemma 4 E4B。计划见 `docs/model-strategy/hermes-model-strategy-2026-06-05.md`。本阶段不改 `~/.hermes/config.yaml`。
+- **Notes**: MODEL-STRATEGY 001-006A 已落地为 dry-run / read-only / design-only helper and descriptor chain（latest `c68f20c`；typecheck PASS；102 files / 3248 tests PASS）。当前 MiniMax + DeepSeek 仍是 rollback baseline；本地兜底优先以用户自配 local OpenAI-compatible endpoint 评估 Gemma 4 12B，多模态/语言/代码综合能力不足或本机不可用时再降级到 Gemma 4 E4B。EchoBird-style local model download / install-recovery UX 只作为产品参考；不会内置下载器、不会启动 llama.cpp / local runtime、不会写 API key。云端大模型均要求用户自行配置 API key / endpoint；docs/fixtures/descriptors 不回显 secret-like values。计划见 `docs/model-strategy/hermes-model-strategy-2026-06-05.md`。本阶段不改 `~/.hermes/config.yaml`。
 
 ---
 

@@ -1,6 +1,6 @@
 # Hermes Pro — 迭代计划兼容索引
 
-> 更新日期：2026-06-04（最终计划同步：P7 WeChat/iLink 4 个低优先级 cron job deliver=local 已完成；BaiLongma Read-only Cockpit Final Polish PASS；**P3.5 soft switch KEEP v0.15.1（ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）**；**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469）、closeout base HEAD == d5a6469efd84ba98730c2fa3924e769019756077 == origin/hermes-pro-main；当时工作区 clean；全量基线 81 files / 2931 tests PASS**；V5 保持 MVP_PARTIAL，C4/C5 因生图/视频外部 API 不可控 + 成本不可控暂缓；HCC Auto Executor 未批准、未启动、未接线；P3 真实执行仍暂停；hard cutover 仍未批准；L6 live knowledge flush 未批准；BaiLongma/HCC Productionization NOT APPROVED；Round 2 C 仍冻结；Chain 当前只到 L5 dry-run / prompt-builder，不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用）
+> 更新日期：2026-06-06（最终计划同步：P7 WeChat/iLink 4 个低优先级 cron job deliver=local 已完成；BaiLongma Read-only Cockpit Final Polish PASS；**P3.5 soft switch KEEP v0.15.1（ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）**；**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469）、closeout base HEAD == d5a6469efd84ba98730c2fa3924e769019756077 == origin/hermes-pro-main；当时工作区 clean；当时全量基线 81 files / 2931 tests PASS**；**MODEL-STRATEGY 001-006A 已完成并推送，最新 HEAD == origin/hermes-pro-main == c68f20c30dbf1895001684305df3f944bfb5f9a8；006A preflight typecheck PASS + 102 files / 3248 tests PASS；全链路 dry-run / read-only / design-only / no-live-config**；V5 保持 MVP_PARTIAL，C4/C5 因生图/视频外部 API 不可控 + 成本不可控暂缓；HCC Auto Executor 未批准、未启动、未接线；P3 真实执行仍暂停；hard cutover 仍未批准；L6 live knowledge flush 未批准；BaiLongma/HCC Productionization NOT APPROVED；Round 2 C 仍冻结；Chain 当前只到 L5 dry-run / prompt-builder，不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用）
 > 状态：兼容索引，不是唯一计划入口
 > 唯一锁定计划入口：[roadmap-locked-2026-05-28.md](./roadmap-locked-2026-05-28.md)
 > 当前融合执行参考：[current-fusion-plan-2026-05-30.md](./current-fusion-plan-2026-05-30.md)
@@ -49,7 +49,8 @@
 | GBrain typed links | ✅ P1 MVP PASS；dream cycle 仍需产品设计 |
 | Hermes Handoff Pack | ✅ P0.5 MVP PASS；P3 dry-run 006/008 已接 HCC handoff payload 与 tmpDir fixture |
 | P2.5 Safety Foundation | ✅ PASS；权限/状态机/回滚/pre-flight/Action Gate/审计日志已补齐 |
-| P3 HCC real execution | ⏸️ dry-run baseline 001-006 + 008 + 009 + harness 8 artifact + P3.5 soft switch PASS；**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成（6 commits，全量基线 81 files / 2931 tests PASS）**；HCC Auto Executor 未批准、未启动 |
+| P3 HCC real execution | ⏸️ dry-run baseline 001-006 + 008 + 009 + harness 8 artifact + P3.5 soft switch PASS；**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成（6 commits，当时全量基线 81 files / 2931 tests PASS）**；HCC Auto Executor 未批准、未启动 |
+| MODEL-STRATEGY 001-006A | ✅ PASS；dry-run / read-only / design-only | 001-004C dry-run lane/profile/UI-status helper stack；005A-005C EchoBird-inspired but Hermes-native design descriptors；006A user-configured lane/provider requirements descriptor。最新 HEAD `c68f20c`；typecheck PASS；102 files / 3248 tests PASS；不写 live config、不回显 API key/secret、不接 credential pool/keychain/local runtime |
 | BaiLongma/HCC Productionization | 未批准（仅允许只读增强；Final Polish 已 PASS）|
 | WeChat/iLink delivery | low_priority_jobs_local_delivery_applied（4 个低优先级 cron job 已切 `deliver=local`；高优先级投递策略仍待独立决策）|
 
@@ -65,7 +66,7 @@
 | Mano-P visual E2E | 待定项目，不推进 |
 | MiroFish simulation | 暂缓 |
 | ECC harness-native skills/rules/checklists | HCC v2 Auto 后续候选；仅做只读审计与 Hermes 本地重写，不接 runtime；方案见 [ecc-hcc-v2-auto-non-destructive-adoption-plan-2026-06-05.md](./research/ecc-hcc-v2-auto-non-destructive-adoption-plan-2026-06-05.md) |
-| EchoBird Model Nexus / Install Repair | 模型中心与安装修复参考；仅做产品模式审计与 Hermes 本地设计，不复制代码、不接 runtime；方案见 [echobird-hermes-optimization-plan-2026-06-06.md](./research/echobird-hermes-optimization-plan-2026-06-06.md) |
+| EchoBird Model Nexus / Install Repair | PARTIAL GO：模型中心、本地兜底 UX、安装修复、用户自配 provider requirements 已落到 MODEL-STRATEGY 005A/005B/005C/006A；仅 Hermes-native design descriptors，不复制代码、不接 runtime、不写 live config；方案见 [echobird-hermes-optimization-plan-2026-06-06.md](./research/echobird-hermes-optimization-plan-2026-06-06.md) |
 
 ---
 
