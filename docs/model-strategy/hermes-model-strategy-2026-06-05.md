@@ -1,7 +1,7 @@
 # Hermes Pro Model Strategy Plan
 
 Date: 2026-06-05
-Status: implemented through MODEL-STRATEGY-006A, dry-run / design-only only
+Status: implemented through MODEL-STRATEGY-006B, dry-run / design-only only
 Owner: unassigned
 
 ## 1. Purpose
@@ -239,11 +239,13 @@ Status: future, requires explicit approval
 
 006A status: landed, design-only user-configured provider requirements descriptor (`c68f20c`). It documents lane/provider requirements, user-provided credential source, local fallback endpoint requirements, secret redaction/detection, and future credential-pool/keychain/local-runtime gates. It does not implement live config writes.
 
-006B+ remains future and requires explicit approval. Only after a separate approval may Hermes implement controlled writes to Hermes config with backup and rollback.
+006B status: landed, design-only live config adapter approval contract (`071b033`). It defines the future approval phrase, backup / rollback text spec, write-field policy, and validation checks without performing any write.
+
+006C+ remains future and requires explicit approval. Only after a separate approval may Hermes implement controlled writes to Hermes config with backup and rollback.
 
 ## 11.1 Current Local Implementation Snapshot
 
-As of 2026-06-06, `origin/hermes-pro-main` HEAD is `c68f20c30dbf1895001684305df3f944bfb5f9a8`. The MODEL-STRATEGY chain landed as:
+As of 2026-06-06, the latest MODEL-STRATEGY implementation commit is `071b033596bfe07541b48c2aee86188d379d0475`. The MODEL-STRATEGY chain landed as:
 
 | Slice | Commit | Status |
 | --- | --- | --- |
@@ -263,8 +265,9 @@ As of 2026-06-06, `origin/hermes-pro-main` HEAD is `c68f20c30dbf1895001684305df3
 | 005B | `c6c8f02` | Hermes-native model-nexus design descriptor |
 | 005C | `563026c` | install/recovery read-only diagnostics descriptor |
 | 006A | `c68f20c` | lane/provider requirements design descriptor |
+| 006B | `071b033` | live config adapter approval contract, design-only |
 
-Latest verified local baseline at 006A preflight: `npm run typecheck` passed; `npx vitest run` passed 102 files / 3248 tests. Working tree and origin were synchronized at `c68f20c`. Real `~/.hermes/config.yaml`, `~/.hermes/handoff/packs`, and `~/.hermes/audit` were not touched during the MODEL-STRATEGY dry-run/design-only chain.
+Latest verified local baseline at 006B closeout: `npm run typecheck` passed; `npx vitest run` passed 103 files / 3267 tests. The implementation commit was synchronized to origin as `071b033`. Real `~/.hermes/config.yaml`, `~/.hermes/handoff/packs`, and `~/.hermes/audit` were not touched during the MODEL-STRATEGY dry-run/design-only chain.
 
 ## 12. Acceptance Criteria
 
@@ -274,10 +277,10 @@ Latest verified local baseline at 006A preflight: `npm run typecheck` passed; `n
 - No locked roadmap file is changed.
 - No runtime code is added in the planning slice.
 - Current MiniMax + DeepSeek setup remains documented as rollback baseline.
-- MODEL-STRATEGY 001 through 006A remain dry-run / read-only / design-only; all live config writes remain future and require explicit approval.
+- MODEL-STRATEGY 001 through 006B remain dry-run / read-only / design-only; all live config writes remain future and require explicit approval.
 
 ## 13. Current Decision
 
-Adopt the model-lane strategy as an implemented dry-run / design-only Hermes Pro direction through MODEL-STRATEGY-006A.
+Adopt the model-lane strategy as an implemented dry-run / design-only Hermes Pro direction through MODEL-STRATEGY-006B.
 
 Do not activate it yet.
