@@ -9,6 +9,7 @@ import {
   BoundaryInspectorPanel,
   buildBoundaryInspectorDescriptor,
 } from "./boundary-inspector";
+import { getWriteActionDisplayState } from "./write-action-display-state";
 import { getScreenBoundaryContract } from "../../../../shared/lib/screen-boundary-contract";
 import hermeslogo from "../../assets/hermes.png";
 import {
@@ -247,7 +248,15 @@ function Layout(): React.JSX.Element {
   const boundaryContract = getScreenBoundaryContract(view);
   const boundaryBadge = buildBoundaryBadgeDescriptor(boundaryContract);
   const boundaryBadgeTitle = buildBoundaryBadgeTitle(boundaryBadge);
-  const boundaryInspector = buildBoundaryInspectorDescriptor(boundaryContract);
+  // UI Slice 5 helper; Slice 6 consumes it for the Inspector write-action
+  // section. getWriteActionDisplayState is total (returns a state per view),
+  // so a fallback is unnecessary, but we guard the contract lookup to keep
+  // the inspector descriptor shape stable.
+  const boundaryInspector = buildBoundaryInspectorDescriptor(
+    boundaryContract,
+    getWriteActionDisplayState(view) ??
+      getWriteActionDisplayState("chat")!,
+  );
 
   return (
     <div

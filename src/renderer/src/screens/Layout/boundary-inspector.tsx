@@ -8,6 +8,7 @@ import type {
   ScreenBoundaryContract,
   ScreenViewId,
 } from "../../../../shared/lib/screen-boundary-contract";
+import type { WriteActionDisplayState } from "./write-action-display-state";
 
 export interface BoundaryInspectorDescriptor {
   view: ScreenViewId;
@@ -23,10 +24,13 @@ export interface BoundaryInspectorDescriptor {
   model_strategy_relevant: boolean;
   notes: readonly string[];
   safety_invariants: ScreenBoundaryContract["safety_invariants"];
+  // UI Slice 6: write-action visual gating descriptor, computed upstream.
+  write_action: WriteActionDisplayState;
 }
 
 export function buildBoundaryInspectorDescriptor(
   contract: ScreenBoundaryContract | undefined,
+  writeAction: WriteActionDisplayState,
 ): BoundaryInspectorDescriptor {
   if (!contract) {
     return {
@@ -49,6 +53,7 @@ export function buildBoundaryInspectorDescriptor(
         hcc_auto_executor_allowed: false,
         direct_gateway_fix_applied: false,
       },
+      write_action: writeAction,
     };
   }
   return {
@@ -66,6 +71,7 @@ export function buildBoundaryInspectorDescriptor(
     model_strategy_relevant: contract.model_strategy_relevant,
     notes: contract.notes,
     safety_invariants: contract.safety_invariants,
+    write_action: writeAction,
   };
 }
 
@@ -218,6 +224,79 @@ export function BoundaryInspectorPanel({
             {String(descriptor.safety_invariants.direct_gateway_fix_applied)}
           </li>
         </ul>,
+      )}
+      {section(
+        "Write action state",
+        <div data-testid="inspector-write-action-state">
+          <div
+            className="shell-inspector-row"
+            data-testid="inspector-write-action-summary"
+            data-tone={descriptor.write_action.badge_tone}
+            data-has-write-action={
+              descriptor.write_action.has_write_action ? "true" : "false"
+            }
+          >
+            <span data-testid="inspector-write-action-label">
+              {descriptor.write_action.display_label}
+            </span>
+            <span data-testid="inspector-write-action-copy">
+              {descriptor.write_action.short_copy}
+            </span>
+          </div>
+          <ul
+            className="shell-inspector-list"
+            data-testid="inspector-write-action-fields"
+          >
+            <li>
+              has_write_action:{" "}
+              {String(descriptor.write_action.has_write_action)}
+            </li>
+            <li>
+              write_action_kind: {descriptor.write_action.write_action_kind}
+            </li>
+            <li>
+              explicit_user_action_required:{" "}
+              {String(descriptor.write_action.explicit_user_action_required)}
+            </li>
+            <li>
+              future_gating_required:{" "}
+              {String(descriptor.write_action.needs_future_gating)}
+            </li>
+            <li>display_tone: {descriptor.write_action.badge_tone}</li>
+          </ul>
+          {descriptor.write_action.write_surfaces.length > 0 ? (
+            <ul
+              className="shell-inspector-list"
+              data-testid="inspector-write-action-surfaces"
+            >
+              {descriptor.write_action.write_surfaces.map((surface) => (
+                <li key={`${descriptor.view}-wa-${surface}`}>{surface}</li>
+              ))}
+            </ul>
+          ) : (
+            <span
+              data-testid="inspector-write-action-no-surfaces"
+              data-read-only="true"
+            >
+              No write surfaces registered
+            </span>
+          )}
+          {descriptor.write_action.direct_gateway_risk && (
+            <div
+              className="shell-inspector-section"
+              data-testid="inspector-write-action-direct-gateway"
+              data-risk="P0"
+            >
+              <span className="shell-inspector-label">
+                Write-action direct gateway risk
+              </span>
+              <strong>
+                direct gateway:{" "}
+                {descriptor.write_action.direct_gateway_methods.join(", ")}
+              </strong>
+            </div>
+          )}
+        </div>,
       )}
       {isReadOnly && (
         <div
