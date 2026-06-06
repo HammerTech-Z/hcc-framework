@@ -154,16 +154,26 @@ export function BoundaryInspectorPanel({
       {hasDirectGateway && (
         <div
           className="shell-inspector-section"
-          data-testid="inspector-direct-gateway-risk"
+          data-testid="inspector-direct-gateway-callout"
           data-risk="P0"
+          data-callout="direct-gateway"
         >
           <span className="shell-inspector-label">
             Direct gateway risk
           </span>
-          <strong>
-            direct gateway:{" "}
+          <div data-testid="inspector-direct-gateway-type">
+            <strong>risk type: direct gateway</strong>
+          </div>
+          <div data-testid="inspector-direct-gateway-methods">
+            <strong>methods: </strong>
             {descriptor.direct_gateway_methods.join(", ")}
-          </strong>
+          </div>
+          <div data-testid="inspector-direct-gateway-meaning">
+            meaning: bypasses main-process IPC boundary
+          </div>
+          <div data-testid="inspector-direct-gateway-status">
+            status: display-only, not fixed by this slice
+          </div>
         </div>
       )}
       {section(

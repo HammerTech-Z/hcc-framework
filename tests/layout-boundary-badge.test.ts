@@ -131,9 +131,12 @@ describe("UI Slice 3 boundary badge per-view classification", () => {
       ]),
     );
     const title = buildBoundaryBadgeTitle(descriptor);
-    expect(title).toContain("direct_gateway=");
+    // UI Slice 7: title carries the "Direct gateway methods:" sentence and
+    // the "Status: display-only; IPC migration not applied" status line.
+    expect(title).toContain("Direct gateway methods:");
     expect(title).toContain("knowledgeSearch");
     expect(title).toContain("knowledgeIngest");
+    expect(title).toContain("IPC migration not applied");
   });
 
   it("knowledgeControl shows external-action · P0 with direct_gateway risk", () => {

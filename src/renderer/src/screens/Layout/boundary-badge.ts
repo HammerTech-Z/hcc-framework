@@ -77,5 +77,11 @@ export function buildBoundaryBadgeTitle(
   if (!descriptor.direct_gateway_risk) {
     return `view=${descriptor.view} · kind=${descriptor.kind_token} · risk=${descriptor.risk_level} · writes=${descriptor.write_surface_count}`;
   }
-  return `view=${descriptor.view} · kind=${descriptor.kind_token} · risk=${descriptor.risk_level} · direct_gateway=${descriptor.risk_methods.join(",")}`;
+  return [
+    `view=${descriptor.view}`,
+    `kind=${descriptor.kind_token}`,
+    `risk=${descriptor.risk_level}`,
+    `Direct gateway methods: ${descriptor.risk_methods.join(", ")}`,
+    "Status: display-only; IPC migration not applied",
+  ].join(" · ");
 }
