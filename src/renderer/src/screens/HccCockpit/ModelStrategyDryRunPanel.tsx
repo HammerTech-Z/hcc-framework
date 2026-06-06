@@ -77,6 +77,7 @@ export function ModelStrategyDryRunPanel(): React.JSX.Element {
                 data-testid={`model-strategy-enabled-${status.lane}`}
                 data-enabled="false"
                 data-disabled="true"
+                aria-label={`lane ${status.lane} disabled in dry-run`}
               >
                 disabled
               </span>

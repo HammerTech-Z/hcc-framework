@@ -137,6 +137,54 @@ describe("MODEL-STRATEGY-003A-1 ModelStrategyDryRunPanel", () => {
     );
     expect(taskReason.textContent).toMatch(/rollback_guard_present/);
   });
+
+  it("every disabled pill carries a descriptive aria-label", () => {
+    render(<ModelStrategyDryRunPanel />);
+
+    for (const laneId of [
+      "daily",
+      "daily_fallback",
+      "light_task",
+      "complex_code",
+      "task_fallback",
+      "god",
+    ]) {
+      const pill = screen.getByTestId(`model-strategy-enabled-${laneId}`);
+      expect(pill).toHaveAttribute(
+        "aria-label",
+        `lane ${laneId} disabled in dry-run`,
+      );
+    }
+  });
+});
+
+describe("MODEL-STRATEGY-003A-3 CSS guardrails", () => {
+  it("main.css ships the required scoped panel selectors", () => {
+    const { readFileSync } = require("fs") as typeof import("fs");
+    const { resolve } = require("path") as typeof import("path");
+    const css = readFileSync(
+      resolve(HERE, "..", "..", "..", "..", "..", "src/renderer/src/assets/main.css"),
+      "utf-8",
+    );
+
+    expect(css).toContain(".model-strategy-dry-run-panel");
+    expect(css).toContain(".model-strategy-dry-run-panel__banner");
+    expect(css).toContain(".model-strategy-dry-run-panel__pill--disabled");
+    expect(css).toContain("@media (max-width: 960px)");
+    expect(css).toContain("overflow-wrap");
+    expect(css).toContain("min-width: 0");
+  });
+
+  it("main.css scoped panel block avoids fractional or negative letter-spacing", () => {
+    const { readFileSync } = require("fs") as typeof import("fs");
+    const { resolve } = require("path") as typeof import("path");
+    const css = readFileSync(
+      resolve(HERE, "..", "..", "..", "..", "..", "src/renderer/src/assets/main.css"),
+      "utf-8",
+    );
+    const block = css.slice(css.indexOf("MODEL-STRATEGY-003A-3"));
+    expect(block).not.toMatch(/letter-spacing:\s*-?\d+(\.\d+)?px/);
+  });
 });
 
 describe("MODEL-STRATEGY-003A-1 source guardrails", () => {
