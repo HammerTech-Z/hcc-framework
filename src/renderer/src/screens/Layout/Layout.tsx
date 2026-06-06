@@ -5,6 +5,10 @@ import {
   buildBoundaryBadgeDescriptor,
   buildBoundaryBadgeTitle,
 } from "./boundary-badge";
+import {
+  BoundaryInspectorPanel,
+  buildBoundaryInspectorDescriptor,
+} from "./boundary-inspector";
 import { getScreenBoundaryContract } from "../../../../shared/lib/screen-boundary-contract";
 import hermeslogo from "../../assets/hermes.png";
 import {
@@ -240,10 +244,10 @@ function Layout(): React.JSX.Element {
 
   const activeItem = NAV_ITEMS.find((item) => item.view === view);
   const activeLabel = activeItem ? t(activeItem.labelKey) : t("common.appName");
-  const boundaryBadge = buildBoundaryBadgeDescriptor(
-    getScreenBoundaryContract(view),
-  );
+  const boundaryContract = getScreenBoundaryContract(view);
+  const boundaryBadge = buildBoundaryBadgeDescriptor(boundaryContract);
   const boundaryBadgeTitle = buildBoundaryBadgeTitle(boundaryBadge);
+  const boundaryInspector = buildBoundaryInspectorDescriptor(boundaryContract);
 
   return (
     <div
@@ -389,18 +393,7 @@ function Layout(): React.JSX.Element {
           </button>
         </div>
         <div className="shell-inspector-body">
-          <div className="shell-inspector-section">
-            <span className="shell-inspector-label">Current view</span>
-            <strong>{activeLabel}</strong>
-          </div>
-          <div className="shell-inspector-section">
-            <span className="shell-inspector-label">Boundary</span>
-            <span>UI slice guardrails. No new IPC or runtime action.</span>
-          </div>
-          <div className="shell-inspector-section">
-            <span className="shell-inspector-label">Future use</span>
-            <span>References, provenance, run details, and safety context.</span>
-          </div>
+          <BoundaryInspectorPanel descriptor={boundaryInspector} />
         </div>
       </aside>
     </div>
