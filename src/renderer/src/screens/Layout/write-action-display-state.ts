@@ -34,6 +34,10 @@ export interface WriteActionDisplayState {
   // P0 + direct_gateway_methods.length > 0.
   direct_gateway_risk: boolean;
   direct_gateway_methods: readonly string[];
+  // Knowledge IPC Migration closeout: methods that were previously
+  // direct-gateway and are now routed through the main-process IPC
+  // bridge. Empty for views that never had a direct-gateway path.
+  migrated_ipc_methods: readonly string[];
   write_surfaces: readonly string[];
   display_label: string;
   badge_tone: WriteActionTone;
@@ -109,6 +113,7 @@ export function buildWriteActionDisplayState(
     needs_future_gating: hasWriteAction,
     direct_gateway_risk: directGatewayRisk,
     direct_gateway_methods: contract.direct_gateway_methods,
+    migrated_ipc_methods: contract.migrated_ipc_methods,
     write_surfaces: contract.write_surfaces,
     display_label: buildDisplayLabel(contract, kind),
     badge_tone: TONE_BY_KIND[kind],

@@ -117,13 +117,14 @@ describe("UI Slice 3 boundary badge per-view classification", () => {
     expect(descriptor.label).toBe("mixed · P1");
   });
 
-  it("knowledge shows mixed · P0 and exposes direct_gateway risk", () => {
+  it("knowledge shows mixed · P2 and no direct_gateway risk after IPC migration closeout", () => {
     const descriptor = descriptorFor("knowledge");
     expect(descriptor.kind_token).toBe("mixed");
-    expect(descriptor.risk_level).toBe("P0");
-    expect(descriptor.label).toBe("mixed · P0");
-    expect(descriptor.direct_gateway_risk).toBe(true);
-    expect(descriptor.risk_methods).toEqual(
+    expect(descriptor.risk_level).not.toBe("P0");
+    expect(descriptor.label).toBe("mixed · P2");
+    expect(descriptor.direct_gateway_risk).toBe(false);
+    expect(descriptor.risk_methods).toEqual([]);
+    expect(descriptor.migrated_ipc_methods).toEqual(
       expect.arrayContaining([
         "knowledgeSearch",
         "knowledgeIngest",
@@ -131,20 +132,19 @@ describe("UI Slice 3 boundary badge per-view classification", () => {
       ]),
     );
     const title = buildBoundaryBadgeTitle(descriptor);
-    // UI Slice 7: title carries the "Direct gateway methods:" sentence and
-    // the "Status: display-only; IPC migration not applied" status line.
-    expect(title).toContain("Direct gateway methods:");
-    expect(title).toContain("knowledgeSearch");
-    expect(title).toContain("knowledgeIngest");
-    expect(title).toContain("IPC migration not applied");
+    expect(title).not.toContain("Direct gateway methods:");
+    expect(title).toContain("IPC bridge active");
   });
 
-  it("knowledgeControl shows external-action · P0 with direct_gateway risk", () => {
+  it("knowledgeControl shows read-only · P2 with no direct_gateway risk after IPC migration closeout", () => {
     const descriptor = descriptorFor("knowledgeControl");
-    expect(descriptor.kind_token).toBe("external_action");
-    expect(descriptor.risk_level).toBe("P0");
-    expect(descriptor.direct_gateway_risk).toBe(true);
-    expect(descriptor.risk_methods).toContain("knowledgeSearch");
+    expect(descriptor.kind_token).toBe("read_only");
+    expect(descriptor.risk_level).not.toBe("P0");
+    expect(descriptor.direct_gateway_risk).toBe(false);
+    expect(descriptor.risk_methods).toEqual([]);
+    expect(descriptor.migrated_ipc_methods).toEqual(
+      expect.arrayContaining(["knowledgeSearch", "getGbrainStats"]),
+    );
   });
 
   it("playbooks / understand / schedules show runtime-write", () => {

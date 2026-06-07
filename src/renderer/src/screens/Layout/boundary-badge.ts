@@ -20,6 +20,9 @@ export interface BoundaryBadgeDescriptor {
   direct_gateway_risk: boolean;
   // Methods list used to populate title for P0 / direct_gateway views.
   risk_methods: readonly string[];
+  // Knowledge IPC Migration closeout: methods previously direct-gateway
+  // now routed through the main-process IPC bridge.
+  migrated_ipc_methods: readonly string[];
   // Write surface count for context. 0 for read-only views.
   write_surface_count: number;
   // CSS class modifier hook: shell-status-badge--<kind_token>--<risk>.
@@ -50,6 +53,7 @@ export function buildBoundaryBadgeDescriptor(
       kind_token: "unknown",
       direct_gateway_risk: false,
       risk_methods: [],
+      migrated_ipc_methods: [],
       write_surface_count: 0,
       class_modifier: "shell-status-badge--unknown--P3",
     };
@@ -66,6 +70,7 @@ export function buildBoundaryBadgeDescriptor(
     kind_token: contract.boundary_kind,
     direct_gateway_risk: directGatewayRisk,
     risk_methods: contract.direct_gateway_methods,
+    migrated_ipc_methods: contract.migrated_ipc_methods,
     write_surface_count: contract.write_surfaces.length,
     class_modifier,
   };
@@ -75,7 +80,18 @@ export function buildBoundaryBadgeTitle(
   descriptor: BoundaryBadgeDescriptor,
 ): string {
   if (!descriptor.direct_gateway_risk) {
-    return `view=${descriptor.view} · kind=${descriptor.kind_token} · risk=${descriptor.risk_level} · writes=${descriptor.write_surface_count}`;
+    const lines: string[] = [
+      `view=${descriptor.view}`,
+      `kind=${descriptor.kind_token}`,
+      `risk=${descriptor.risk_level}`,
+      `writes=${descriptor.write_surface_count}`,
+    ];
+    if (descriptor.migrated_ipc_methods.length > 0) {
+      lines.push(
+        `IPC bridge active: ${descriptor.migrated_ipc_methods.join(", ")}`,
+      );
+    }
+    return lines.join(" · ");
   }
   return [
     `view=${descriptor.view}`,

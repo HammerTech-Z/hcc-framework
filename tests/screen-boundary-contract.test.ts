@@ -148,7 +148,7 @@ describe("UI Slice 1 read-only and write-capable classifications", () => {
       playbooks: "read_write_runtime",
       understand: "read_write_runtime",
       skills: "read_write_config",
-      knowledgeControl: "external_action",
+      knowledgeControl: "read_only",
       knowledge: "mixed",
       soul: "read_write_config",
       memory: "mixed",
@@ -197,27 +197,29 @@ describe("UI Slice 1 read-only and write-capable classifications", () => {
 });
 
 describe("UI Slice 1 direct gateway risk registration", () => {
-  it("registers knowledgeSearch and knowledgeIngest direct gateway methods as P0", () => {
+  it("knowledge and knowledgeControl have no active direct_gateway_methods after IPC migration closeout", () => {
     const knowledge = byView("knowledge");
-    expect(knowledge.risk_level).toBe("P0");
-    expect(knowledge.direct_gateway_methods).toEqual(
-      expect.arrayContaining(["knowledgeSearch", "knowledgeIngest"]),
+    expect(knowledge.risk_level).not.toBe("P0");
+    expect(knowledge.direct_gateway_methods).toEqual([]);
+    expect(knowledge.migrated_ipc_methods).toEqual(
+      expect.arrayContaining([
+        "knowledgeSearch",
+        "knowledgeIngest",
+        "getGbrainStats",
+      ]),
     );
     expect(
       knowledge.api_methods.filter((method) => method.direct_gateway).map(
         (method) => method.name,
       ),
-    ).toEqual(
-      expect.arrayContaining([
-        "getGbrainStats",
-        "knowledgeSearch",
-        "knowledgeIngest",
-      ]),
-    );
+    ).toEqual([]);
 
     const knowledgeControl = byView("knowledgeControl");
-    expect(knowledgeControl.risk_level).toBe("P0");
-    expect(knowledgeControl.direct_gateway_methods).toEqual(["knowledgeSearch"]);
+    expect(knowledgeControl.risk_level).not.toBe("P0");
+    expect(knowledgeControl.direct_gateway_methods).toEqual([]);
+    expect(knowledgeControl.migrated_ipc_methods).toEqual(
+      expect.arrayContaining(["knowledgeSearch", "getGbrainStats"]),
+    );
   });
 
   it("does not claim the direct gateway issue is fixed", () => {

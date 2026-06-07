@@ -110,22 +110,23 @@ const NON_DIRECT_GATEWAY_VIEWS = [
   "settings",
 ] as const;
 
-describe("UI Slice 7 badge title polish for direct gateway views", () => {
-  it("knowledge badge title includes knowledgeSearch / knowledgeIngest / getGbrainStats", () => {
+describe("UI Slice 7 badge title polish after IPC migration closeout", () => {
+  it("knowledge badge title surfaces IPC bridge active and no direct-gateway sentence", () => {
     const badge = badgeFor("knowledge");
     const title = buildBoundaryBadgeTitle(badge);
-    expect(title).toContain("Direct gateway methods:");
+    expect(title).not.toContain("Direct gateway methods:");
+    expect(title).toContain("IPC bridge active");
     expect(title).toContain("knowledgeSearch");
     expect(title).toContain("knowledgeIngest");
     expect(title).toContain("getGbrainStats");
   });
 
-  it("knowledgeControl badge title includes knowledgeSearch and the display-only status sentence", () => {
+  it("knowledgeControl badge title surfaces IPC bridge active for the migrated methods", () => {
     const badge = badgeFor("knowledgeControl");
     const title = buildBoundaryBadgeTitle(badge);
-    expect(title).toContain("Direct gateway methods:");
+    expect(title).not.toContain("Direct gateway methods:");
+    expect(title).toContain("IPC bridge active");
     expect(title).toContain("knowledgeSearch");
-    expect(title).toContain("Status: display-only; IPC migration not applied");
   });
 
   it("non-direct-gateway views do not include the direct gateway sentence in the badge title", () => {
@@ -138,22 +139,26 @@ describe("UI Slice 7 badge title polish for direct gateway views", () => {
 });
 
 describe("UI Slice 7 inspector callout polish for direct gateway views", () => {
-  it("knowledge inspector descriptor carries direct_gateway_methods matching the contract", () => {
+  it("knowledge inspector descriptor carries no direct_gateway_methods after migration", () => {
     const descriptor = inspectorFor("knowledge");
-    expect(descriptor.direct_gateway_methods).toEqual(
+    expect(descriptor.direct_gateway_methods).toEqual([]);
+    expect(descriptor.risk_level).not.toBe("P0");
+    expect(descriptor.migrated_ipc_methods).toEqual(
       expect.arrayContaining([
         "knowledgeSearch",
         "knowledgeIngest",
         "getGbrainStats",
       ]),
     );
-    expect(descriptor.risk_level).toBe("P0");
   });
 
-  it("knowledgeControl inspector descriptor carries knowledgeSearch direct gateway", () => {
+  it("knowledgeControl inspector descriptor carries no direct_gateway_methods after migration", () => {
     const descriptor = inspectorFor("knowledgeControl");
-    expect(descriptor.direct_gateway_methods).toContain("knowledgeSearch");
-    expect(descriptor.risk_level).toBe("P0");
+    expect(descriptor.direct_gateway_methods).toEqual([]);
+    expect(descriptor.risk_level).not.toBe("P0");
+    expect(descriptor.migrated_ipc_methods).toEqual(
+      expect.arrayContaining(["knowledgeSearch", "getGbrainStats"]),
+    );
   });
 
   it("inspector source carries the P0 callout block with stable testids and required copy", () => {

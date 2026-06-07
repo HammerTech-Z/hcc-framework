@@ -132,19 +132,26 @@ describe("UI Slice 4 inspector per-view classification", () => {
     expect(d.mutating_methods_count).toBeGreaterThan(0);
   });
 
-  it("knowledge shows P0 + direct_gateway_methods include knowledgeSearch / knowledgeIngest", () => {
+  it("knowledge shows no P0 / no direct_gateway_methods after IPC migration closeout", () => {
     const d = descriptorFor("knowledge");
-    expect(d.risk_level).toBe("P0");
-    expect(d.direct_gateway_methods).toEqual(
-      expect.arrayContaining(["knowledgeSearch", "knowledgeIngest"]),
+    expect(d.risk_level).not.toBe("P0");
+    expect(d.direct_gateway_methods).toEqual([]);
+    expect(d.migrated_ipc_methods).toEqual(
+      expect.arrayContaining([
+        "knowledgeSearch",
+        "knowledgeIngest",
+        "getGbrainStats",
+      ]),
     );
-    // Banner text path covered by component source check below.
   });
 
-  it("knowledgeControl shows P0 + direct_gateway_methods include knowledgeSearch", () => {
+  it("knowledgeControl shows no P0 / no direct_gateway_methods after IPC migration closeout", () => {
     const d = descriptorFor("knowledgeControl");
-    expect(d.risk_level).toBe("P0");
-    expect(d.direct_gateway_methods).toContain("knowledgeSearch");
+    expect(d.risk_level).not.toBe("P0");
+    expect(d.direct_gateway_methods).toEqual([]);
+    expect(d.migrated_ipc_methods).toEqual(
+      expect.arrayContaining(["knowledgeSearch", "getGbrainStats"]),
+    );
   });
 
   it("read_only views also carry a notes / safety invariant block", () => {

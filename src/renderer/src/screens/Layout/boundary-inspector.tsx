@@ -20,6 +20,7 @@ export interface BoundaryInspectorDescriptor {
   mutating_methods_count: number;
   write_surfaces: readonly string[];
   direct_gateway_methods: readonly string[];
+  migrated_ipc_methods: readonly string[];
   remote_mode_restricted: boolean;
   model_strategy_relevant: boolean;
   notes: readonly string[];
@@ -43,6 +44,7 @@ export function buildBoundaryInspectorDescriptor(
       mutating_methods_count: 0,
       write_surfaces: [],
       direct_gateway_methods: [],
+      migrated_ipc_methods: [],
       remote_mode_restricted: false,
       model_strategy_relevant: false,
       notes: ["contract lookup missed; showing safe fallback"],
@@ -67,6 +69,7 @@ export function buildBoundaryInspectorDescriptor(
       .length,
     write_surfaces: contract.write_surfaces,
     direct_gateway_methods: contract.direct_gateway_methods,
+    migrated_ipc_methods: contract.migrated_ipc_methods,
     remote_mode_restricted: contract.remote_mode_restricted,
     model_strategy_relevant: contract.model_strategy_relevant,
     notes: contract.notes,

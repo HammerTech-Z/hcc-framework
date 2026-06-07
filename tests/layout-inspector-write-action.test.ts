@@ -138,21 +138,29 @@ describe("UI Slice 6 inspector write-action per-view classification", () => {
     );
   });
 
-  it("knowledge inspector write action shows P0 direct gateway risk + knowledgeSearch + knowledgeIngest", () => {
+  it("knowledge inspector write action shows no P0 / no direct_gateway risk after IPC migration closeout", () => {
     const wa = inspector("knowledge").write_action;
-    expect(wa.risk_level).toBe("P0");
-    expect(wa.direct_gateway_risk).toBe(true);
-    expect(wa.direct_gateway_methods).toEqual(
-      expect.arrayContaining(["knowledgeSearch", "knowledgeIngest"]),
+    expect(wa.risk_level).not.toBe("P0");
+    expect(wa.direct_gateway_risk).toBe(false);
+    expect(wa.direct_gateway_methods).toEqual([]);
+    expect(wa.migrated_ipc_methods).toEqual(
+      expect.arrayContaining([
+        "knowledgeSearch",
+        "knowledgeIngest",
+        "getGbrainStats",
+      ]),
     );
   });
 
-  it("knowledgeControl inspector write action shows P0 direct gateway risk + knowledgeSearch", () => {
+  it("knowledgeControl inspector write action shows no P0 / no direct_gateway risk after IPC migration closeout", () => {
     const wa = inspector("knowledgeControl").write_action;
-    expect(wa.risk_level).toBe("P0");
-    expect(wa.write_action_kind).toBe("external");
-    expect(wa.direct_gateway_risk).toBe(true);
-    expect(wa.direct_gateway_methods).toContain("knowledgeSearch");
+    expect(wa.risk_level).not.toBe("P0");
+    expect(wa.write_action_kind).toBe("none");
+    expect(wa.direct_gateway_risk).toBe(false);
+    expect(wa.direct_gateway_methods).toEqual([]);
+    expect(wa.migrated_ipc_methods).toEqual(
+      expect.arrayContaining(["knowledgeSearch", "getGbrainStats"]),
+    );
   });
 });
 

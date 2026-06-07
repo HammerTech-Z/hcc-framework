@@ -156,23 +156,31 @@ describe("UI Slice 5 write-capable view classification", () => {
 });
 
 describe("UI Slice 5 P0 + direct_gateway risk surfacing", () => {
-  it("knowledge is mixed / P0 / direct_gateway_risk with knowledgeSearch + knowledgeIngest", () => {
+  it("knowledge is mixed / no direct_gateway_risk after IPC migration closeout", () => {
     const state = stateFor("knowledge");
     expect(state.boundary_kind).toBe("mixed");
-    expect(state.risk_level).toBe("P0");
-    expect(state.direct_gateway_risk).toBe(true);
-    expect(state.direct_gateway_methods).toEqual(
-      expect.arrayContaining(["knowledgeSearch", "knowledgeIngest"]),
+    expect(state.risk_level).not.toBe("P0");
+    expect(state.direct_gateway_risk).toBe(false);
+    expect(state.direct_gateway_methods).toEqual([]);
+    expect(state.migrated_ipc_methods).toEqual(
+      expect.arrayContaining([
+        "knowledgeSearch",
+        "knowledgeIngest",
+        "getGbrainStats",
+      ]),
     );
   });
 
-  it("knowledgeControl is external_action / P0 / direct_gateway_risk with knowledgeSearch", () => {
+  it("knowledgeControl is read_only / no direct_gateway_risk after IPC migration closeout", () => {
     const state = stateFor("knowledgeControl");
-    expect(state.boundary_kind).toBe("external_action");
-    expect(state.risk_level).toBe("P0");
-    expect(state.write_action_kind).toBe("external");
-    expect(state.direct_gateway_risk).toBe(true);
-    expect(state.direct_gateway_methods).toContain("knowledgeSearch");
+    expect(state.boundary_kind).toBe("read_only");
+    expect(state.risk_level).not.toBe("P0");
+    expect(state.write_action_kind).toBe("none");
+    expect(state.direct_gateway_risk).toBe(false);
+    expect(state.direct_gateway_methods).toEqual([]);
+    expect(state.migrated_ipc_methods).toEqual(
+      expect.arrayContaining(["knowledgeSearch", "getGbrainStats"]),
+    );
   });
 
   it("non-P0 screens have direct_gateway_risk false", () => {

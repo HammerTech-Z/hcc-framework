@@ -68,6 +68,12 @@ export interface ScreenBoundaryContract {
   api_methods: ScreenApiMethod[];
   write_surfaces: string[];
   direct_gateway_methods: string[];
+  // Methods that have been migrated from preload direct gateway
+  // access to the main-process IPC bridge. Empty for views that never
+  // had a direct-gateway path. The Knowledge IPC Migration closeout
+  // (Slice 8B) populates this for the knowledge / knowledgeControl
+  // views.
+  migrated_ipc_methods: string[];
   remote_mode_restricted: boolean;
   model_strategy_relevant: boolean;
   notes: string[];
@@ -136,10 +142,6 @@ function write(name: string): ScreenApiMethod {
   return api(name, "ipc_bridge", true);
 }
 
-function gateway(name: string, mutates = false): ScreenApiMethod {
-  return api(name, "preload_direct_gateway", mutates, true);
-}
-
 function contract(
   input: Omit<ScreenBoundaryContract, "safety_invariants">,
 ): ScreenBoundaryContract {
@@ -179,6 +181,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["llm_inference", "chat_abort", "chat_runtime_config"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: [
@@ -200,6 +203,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["session_cache_refresh"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Session browser is mostly read path, with cache sync side effect."],
@@ -224,6 +228,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["claw3d_lifecycle", "claw3d_settings", "external_open"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: false,
     notes: ["Can start or stop local office/Claw3D services and open URLs."],
@@ -247,6 +252,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: [],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Display cockpit surface; no write method is part of this view contract."],
@@ -267,6 +273,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["hcc_pipeline_run"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Current component can run a playbook when a playbook is selected."],
@@ -286,6 +293,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["llm_understanding", "playbook_dispatch"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: false,
     notes: ["Can trigger understanding work and optionally dispatch a playbook."],
@@ -306,6 +314,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["skill_installation"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Mutates local skill installation state."],
@@ -315,21 +324,23 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     sidebar_group: "Knowledge",
     display_label: "Knowledge Control",
     component_surface: "KnowledgeControl",
-    boundary_kind: "external_action",
-    risk_level: "P0",
+    boundary_kind: "read_only",
+    risk_level: "P2",
     api_methods: [
       read("getGbrainStats"),
       read("getVaultStats"),
-      gateway("knowledgeSearch"),
+      read("knowledgeSearch"),
       read("listVaultFiles"),
       read("readVaultFile"),
     ],
     write_surfaces: [],
-    direct_gateway_methods: ["knowledgeSearch"],
+    direct_gateway_methods: [],
+    migrated_ipc_methods: ["knowledgeSearch", "getGbrainStats"],
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: [
-      "UI is read-only, but knowledgeSearch is implemented by preload as direct local gateway access.",
+      "knowledgeSearch and getGbrainStats are routed through the main-process IPC bridge; preload raw gateway access has been removed.",
+      "IPC bridge active; no direct-gateway methods remain in this view.",
     ],
   }),
   contract({
@@ -338,21 +349,28 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     display_label: "Knowledge",
     component_surface: "Knowledge",
     boundary_kind: "mixed",
-    risk_level: "P0",
+    risk_level: "P2",
     api_methods: [
-      gateway("getGbrainStats"),
+      read("getGbrainStats"),
       read("getVaultStats"),
-      gateway("knowledgeIngest", true),
-      gateway("knowledgeSearch"),
+      write("knowledgeIngest"),
+      read("knowledgeSearch"),
       read("listVaultFiles"),
       read("readVaultFile"),
     ],
-    write_surfaces: ["knowledge_ingest_direct_gateway"],
-    direct_gateway_methods: ["getGbrainStats", "knowledgeIngest", "knowledgeSearch"],
+    write_surfaces: ["knowledge_ingest_explicit_user_action"],
+    direct_gateway_methods: [],
+    migrated_ipc_methods: [
+      "knowledgeSearch",
+      "knowledgeIngest",
+      "getGbrainStats",
+    ],
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: [
-      "knowledgeSearch and knowledgeIngest bypass main-process IPC through preload local gateway calls.",
+      "All three knowledge gateway methods are now routed through the main-process IPC bridge; preload raw gateway access has been removed.",
+      "knowledgeIngest remains a write path and must only be triggered by explicit user action.",
+      "IPC bridge active; no direct-gateway methods remain in this view.",
     ],
   }),
   contract({
@@ -365,6 +383,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     api_methods: [read("readSoul"), write("resetSoul"), write("writeSoul")],
     write_surfaces: ["persona_config"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Reads and writes persona state."],
@@ -391,6 +410,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["memory_store", "user_profile", "memory_provider_config"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Combines memory edits, profile writes, config writes, and external links."],
@@ -410,6 +430,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["profile_management"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Profile lifecycle and active-profile mutation."],
@@ -430,6 +451,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: [],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Read-only cockpit route used as a legacy mission source."],
@@ -451,6 +473,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: [],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: [
@@ -479,6 +502,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: [],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: true,
     notes: ["Read-only monitoring plus renderer event subscriptions."],
@@ -499,6 +523,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["model_catalog", "model_env"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Mutates saved model catalog and related environment configuration."],
@@ -521,6 +546,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["credential_pool", "provider_config", "model_config"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: true,
     notes: [
@@ -541,6 +567,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["toolset_toggle"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Toolset enablement toggle is a low-blast-radius config write."],
@@ -562,6 +589,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["cron_management", "manual_cron_trigger"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: false,
     notes: ["Can create, remove, pause, resume, and trigger jobs."],
@@ -584,6 +612,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     ],
     write_surfaces: ["gateway_lifecycle", "gateway_env", "platform_toggle"],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Daemon lifecycle and platform enablement controls."],
@@ -633,6 +662,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
       "diagnostic_command",
     ],
     direct_gateway_methods: [],
+    migrated_ipc_methods: [],
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Broad system settings surface with config, MCP, backup, and update actions."],
