@@ -801,9 +801,10 @@ const hermesAPI = {
   knowledgeSearch: (query: string, limit = 10): Promise<{ status: string; results: Array<{ file: string; score: number; preview: string }> }> =>
     ipcRenderer.invoke("knowledge-search", { query, limit }),
 
-  // Knowledge ingest (direct POST to gateway; pending Slice 8B).
+  // Knowledge ingest (Slice 8B: switched to IPC bridge; main handler
+  // dispatches to the Slice 7 gateway transport).
   knowledgeIngest: (title: string, content: string): Promise<{ status: string; path?: string; message?: string }> =>
-    fetch("http://127.0.0.1:8643/knowledge/ingest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, content }) }).then(r => r.json()),
+    ipcRenderer.invoke("knowledge-ingest", { title, content }),
 
   // GBrain stats (Slice 8A: switched to IPC bridge; main handler
   // dispatches to the Slice 7 gateway transport).

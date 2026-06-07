@@ -52,10 +52,12 @@ describe("Knowledge IPC Migration Slice 8A preload read-only bridge", () => {
     expect(body).toContain("{}");
   });
 
-  it("knowledgeIngest still uses raw fetch on /knowledge/ingest", () => {
+  it("knowledgeIngest now uses ipcRenderer.invoke('knowledge-ingest', ...)", () => {
+    // Slice 8B completes the preload bridge switch. knowledgeIngest
+    // is no longer raw fetch.
     const body = extractMethodBody(preloadSrc, "knowledgeIngest");
-    expect(body).toContain("http://127.0.0.1:8643/knowledge/ingest");
-    expect(body).toContain('method: "POST"');
+    expect(body).toContain('ipcRenderer.invoke("knowledge-ingest"');
+    expect(body).toContain("{ title, content }");
   });
 
   it("preload no longer contains a raw fetch for /knowledge/search", () => {
@@ -71,12 +73,19 @@ describe("Knowledge IPC Migration Slice 8A preload read-only bridge", () => {
     );
   });
 
-  it("preload still contains exactly one knowledge raw fetch (ingest only)", () => {
-    const fetchMatches = preloadSrc.match(
-      /http:\/\/127\.0\.0\.1:8643\/knowledge\/ingest/g,
+  it("preload no longer contains a raw fetch for /knowledge/ingest", () => {
+    expect(preloadSrc.includes("http://127.0.0.1:8643/knowledge/ingest")).toBe(
+      false,
     );
-    expect(fetchMatches).not.toBeNull();
-    expect(fetchMatches!.length).toBe(1);
+  });
+
+  it("preload contains no knowledge gateway raw fetch URLs at all", () => {
+    // Slice 8B completes the bridge switch; the preload surface
+    // should not contain any /knowledge raw URL.
+    const matches = preloadSrc.match(
+      /http:\/\/127\.0\.0\.1:8643\/knowledge\//g,
+    );
+    expect(matches).toBeNull();
   });
 
   it("preload exposes the same three method names to the renderer", () => {

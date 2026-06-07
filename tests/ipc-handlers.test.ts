@@ -67,14 +67,9 @@ describe("IPC Handler ↔ Preload Consistency", () => {
   });
 
   it("every main handler has a matching preload invoke", () => {
-    // Slice 8A leaves knowledge-ingest registered on main but still
-    // using raw fetch from preload; the preload bridge switch for
-    // ingest is deferred to Slice 8B. The remaining channels must
-    // be reachable from preload.
-    const EXPECTED_REMAINING_RAW_FETCH = ["knowledge-ingest"];
-    const missing = mainChannels
-      .filter((ch) => !EXPECTED_REMAINING_RAW_FETCH.includes(ch))
-      .filter((ch) => !preloadChannels.includes(ch));
+    // Slice 8B completes the preload bridge switch: all 3 knowledge
+    // channels now have matching preload invokes. No exceptions.
+    const missing = mainChannels.filter((ch) => !preloadChannels.includes(ch));
     expect(missing).toEqual([]);
   });
 });
