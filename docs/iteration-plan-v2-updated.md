@@ -60,6 +60,7 @@
 | P2.5 Safety Foundation | ✅ PASS；权限/状态机/回滚/pre-flight/Action Gate/审计日志已补齐 |
 | P3 HCC real execution | ⏸️ dry-run baseline 001-006 + 008 + 009 + harness 8 artifact + P3.5 soft switch PASS；**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成（6 commits，当时全量基线 81 files / 2931 tests PASS）**；HCC Auto Executor 未批准、未启动 |
 | MODEL-STRATEGY 001-006B | ✅ PASS；dry-run / read-only / design-only | 001-004C dry-run lane/profile/UI-status helper stack；005A-005C EchoBird-inspired but Hermes-native design descriptors；006A user-configured lane/provider requirements descriptor；006B live config adapter approval contract。Implementation commit `071b033`；typecheck PASS；103 files / 3267 tests PASS；不写 live config、不回显 API key/secret、不接 credential pool/keychain/local runtime |
+| Post-task Learning Loop | ⏳ planned / no runtime | 补齐任务结束后 summary → good/bad pattern → skill candidate / dead_end / model feedback → knowledge ingest draft → GBrain / local LLM wiki / next task context 的闭环；计划见 [hermes-post-task-learning-loop-plan-2026-06-07.md](./learning-loop/hermes-post-task-learning-loop-plan-2026-06-07.md) |
 | BaiLongma/HCC Productionization | 未批准（仅允许只读增强；Final Polish 已 PASS）|
 | WeChat/iLink delivery | low_priority_jobs_local_delivery_applied（4 个低优先级 cron job 已切 `deliver=local`；高优先级投递策略仍待独立决策）|
 

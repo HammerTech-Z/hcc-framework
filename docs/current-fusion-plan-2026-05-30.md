@@ -48,6 +48,7 @@ Hermes Pro 的核心需求是：
 | GBrain typed links | `src/shared/lib/typed-links.ts` + `tests/typed-links.test.ts` | ✅ P1 PASS：只读 typed links、evidence/provenance/trust_level 已实现，25/25 tests PASS |
 | Handoff / handoff-agent | `~/.hermes/handoff/packs/HANDOFF-P0.5-20260531-001.json` + verifier report | ✅ P0.5 PASS：Handoff Pack 已生成，脱敏扫描 0 发现，Verifier 7/7 通过 |
 | Usage Feedback | `src/shared/lib/usage-feedback.ts` + `tests/usage-feedback.test.ts` | ✅ P1.5 PASS：append-only in-memory ledger 已实现，15/15 tests PASS，不改变检索排序 |
+| Post-task Learning Loop | `docs/learning-loop/hermes-post-task-learning-loop-plan-2026-06-07.md` | ⏳ 规划补齐：任务结束后 summary → good/bad pattern → skill candidate / dead_end / model feedback → knowledge ingest draft → GBrain / local LLM wiki / next task context；当前 no runtime |
 | Domain Profile | 领域化 Quality Loop 接口 | ⏳ P3 接口先定，代码 profile 先实现，AI 漫剧 P5 插件化接入 |
 | P2.5 安全基座 | `docs/security/p2-5-safety-foundation-2026-05-30.md` | ✅ PASS：12/12 硬限制全满足；278/278 tests PASS；EXIT CODE 0 |
 | WeChat/iLink | schedule staggering verified; low-priority 4 jobs `deliver=local` applied | ✅ **P7 local delivery applied**（4 个低优先级 cron job：`db41a513ebfd` / `21129f505fb4` / `28f0bff3083d` / `skill-cleanup-weekly`；schedule / prompt / skill set / enable state / state 全部不变；仅 `deliver: weixin → local`；高优先级投递策略仍待决策）。报告：`~/.hermes/pipeline-runs/HCC-20260602-P7-WECHAT-ILINK-LOCAL-DELIVERY/01-report.md` |
@@ -367,6 +368,26 @@ usage_event:
   task_id: string
   retrieved:
     - knowledge_id
+
+### P1.6：Post-task Learning Loop
+
+目标：补齐任务结束后的学习闭环，把每次任务的结果沉淀为可复用知识、skill 草稿、失败经验、模型反馈和下一次任务上下文。
+
+范围：
+- 每次重要任务结束后生成 `PostTaskReflection`。
+- 从任务结果提取 `good_patterns`、`bad_patterns`、`dead_ends`、`model_feedback`、`skill_candidates`。
+- 好模式进入 pending skill candidate，不自动安装。
+- 坏模式进入 dead_end / anti-pattern ingest draft，不自动删除或降权既有知识。
+- 模型表现写入本地 LLM wiki draft，供 Model Strategy 后续判断 lane / fallback。
+- helped / misled 进入 Usage Feedback Ledger，未来用于 retrieval ranking simulation。
+- 详细计划见 `docs/learning-loop/hermes-post-task-learning-loop-plan-2026-06-07.md`。
+
+边界：
+- no runtime write。
+- no live knowledge flush。
+- no skill auto-install。
+- no model runtime startup。
+- no HCC Auto Executor change。
   used:
     - knowledge_id
   outcome: PASS | FAIL | rolled_back
