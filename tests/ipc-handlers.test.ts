@@ -5,13 +5,30 @@ import { join } from "path";
 const ROOT = join(__dirname, "..");
 const indexSrc = readFileSync(join(ROOT, "src/main/index.ts"), "utf-8");
 const preloadSrc = readFileSync(join(ROOT, "src/preload/index.ts"), "utf-8");
+// Slice 6 wires the 3 knowledge channels via the helper
+// registerKnowledgeIpcHandlers which calls ipcLike.handle. Scan every
+// main-side module that registers channels so this consistency check
+// covers Slice 6 / 8A additions.
+const knowledgeIpcHandlersSrc = readFileSync(
+  join(ROOT, "src/main/knowledge-ipc-handlers.ts"),
+  "utf-8",
+);
+const knowledgeIpcStartupSrc = readFileSync(
+  join(ROOT, "src/main/knowledge-ipc-startup.ts"),
+  "utf-8",
+);
+
+const mainSideSrc =
+  indexSrc + "\n" + knowledgeIpcHandlersSrc + "\n" + knowledgeIpcStartupSrc;
 
 /**
- * Extract all IPC channel names registered in main/index.ts.
+ * Extract all IPC channel names registered in main-side modules.
  */
 function extractIpcHandleChannels(src: string): string[] {
   const channels: string[] = [];
-  const re = /ipcMain\.handle\(\s*["']([^"']+)["']/g;
+  // Match both `ipcMain.handle("..."` and `ipcLike.handle("..."`
+  // (Slice 6 helpers use the latter form).
+  const re = /(?:ipcMain|ipcLike)\.handle\(\s*["']([^"']+)["']/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(src)) !== null) {
     channels.push(m[1]);
@@ -32,7 +49,7 @@ function extractPreloadInvokeChannels(src: string): string[] {
   return [...new Set(channels)];
 }
 
-const mainChannels = extractIpcHandleChannels(indexSrc);
+const mainChannels = extractIpcHandleChannels(mainSideSrc);
 const preloadChannels = extractPreloadInvokeChannels(preloadSrc);
 
 describe("IPC Handler ↔ Preload Consistency", () => {
@@ -50,7 +67,14 @@ describe("IPC Handler ↔ Preload Consistency", () => {
   });
 
   it("every main handler has a matching preload invoke", () => {
-    const missing = mainChannels.filter((ch) => !preloadChannels.includes(ch));
+    // Slice 8A leaves knowledge-ingest registered on main but still
+    // using raw fetch from preload; the preload bridge switch for
+    // ingest is deferred to Slice 8B. The remaining channels must
+    // be reachable from preload.
+    const EXPECTED_REMAINING_RAW_FETCH = ["knowledge-ingest"];
+    const missing = mainChannels
+      .filter((ch) => !EXPECTED_REMAINING_RAW_FETCH.includes(ch))
+      .filter((ch) => !preloadChannels.includes(ch));
     expect(missing).toEqual([]);
   });
 });

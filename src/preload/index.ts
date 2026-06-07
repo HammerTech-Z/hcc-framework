@@ -796,15 +796,17 @@ const hermesAPI = {
   }[]> =>
     ipcRenderer.invoke("list-pipeline-runs", limit),
 
-  // Knowledge search (direct fetch to gateway)
+  // Knowledge search (Slice 8A: switched to IPC bridge; main handler
+  // dispatches to the Slice 7 gateway transport).
   knowledgeSearch: (query: string, limit = 10): Promise<{ status: string; results: Array<{ file: string; score: number; preview: string }> }> =>
-    fetch(`http://127.0.0.1:8643/knowledge/search?q=${encodeURIComponent(query)}&limit=${limit}`).then(r => r.json()),
+    ipcRenderer.invoke("knowledge-search", { query, limit }),
 
-  // Knowledge ingest (direct POST to gateway)
+  // Knowledge ingest (direct POST to gateway; pending Slice 8B).
   knowledgeIngest: (title: string, content: string): Promise<{ status: string; path?: string; message?: string }> =>
     fetch("http://127.0.0.1:8643/knowledge/ingest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, content }) }).then(r => r.json()),
 
-  // GBrain stats (direct GET to gateway)
+  // GBrain stats (Slice 8A: switched to IPC bridge; main handler
+  // dispatches to the Slice 7 gateway transport).
   getGbrainStats: (): Promise<{
     total_pages: number;
     total_chunks: number;
@@ -813,7 +815,7 @@ const hermesAPI = {
     source: string;
     generated_at: string;
   }> =>
-    fetch("http://127.0.0.1:8643/knowledge/stats").then(r => r.json()),
+    ipcRenderer.invoke("knowledge-stats", {}),
 
   // Playbook Runner
   listPlaybooks: (): Promise<Array<{ id: string; name: string; description: string; version: number; steps: Array<{ id: string; label: string; hccStage: string }> }>> =>

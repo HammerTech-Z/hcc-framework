@@ -247,11 +247,13 @@ describe("Knowledge IPC Migration Slice 6 main startup wiring", () => {
     }
   });
 
-  it("src/preload/index.ts remains unchanged (no knowledgeSearch/Ingest/getGbrainStats removal)", () => {
-    // The 3 raw fetch calls must still be present and unaltered.
-    expect(preloadSrc).toContain("http://127.0.0.1:8643/knowledge/search");
+  it("src/preload/index.ts keeps knowledgeIngest on raw fetch and the 3 method names", () => {
+    // Slice 6 wrote this assertion assuming the preload would remain
+    // untouched. Slice 8A intentionally switched the read-only
+    // methods (knowledgeSearch, getGbrainStats) to ipcRenderer.invoke
+    // while keeping knowledgeIngest on raw fetch. This test now
+    // encodes the Slice 8A partial-migration state.
     expect(preloadSrc).toContain("http://127.0.0.1:8643/knowledge/ingest");
-    expect(preloadSrc).toContain("http://127.0.0.1:8643/knowledge/stats");
     expect(preloadSrc).toContain("knowledgeSearch:");
     expect(preloadSrc).toContain("knowledgeIngest:");
     expect(preloadSrc).toContain("getGbrainStats:");
