@@ -53,7 +53,7 @@ export function buildBoundaryInspectorDescriptor(
         runtime_activation_allowed: false,
         config_writes_allowed_by_contract: false,
         hcc_auto_executor_allowed: false,
-        direct_gateway_fix_applied: false,
+        direct_gateway_fix_applied: true,
       },
       write_action: writeAction,
     };

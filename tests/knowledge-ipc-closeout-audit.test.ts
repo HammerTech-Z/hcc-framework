@@ -127,17 +127,29 @@ describe("Knowledge IPC Migration Closeout Audit", () => {
     );
   });
 
-  it("SCREEN_BOUNDARY_CONTRACT_RESULT safety_invariants unchanged", () => {
-    // The descriptor refresh is a display-only change. The global
-    // safety invariants remain locked to their original UI Slice 1
-    // values.
+  it("SCREEN_BOUNDARY_CONTRACT_SAFETY_LITERALS declares direct gateway fix applied", () => {
+    // Knowledge IPC Migration Closeout flipped the global
+    // direct_gateway_fix_applied from false to true. All other safety
+    // invariants remain locked to their original UI Slice 1 values.
     expect(SCREEN_BOUNDARY_CONTRACT_SAFETY_LITERALS).toEqual({
       no_renderer_wiring: true,
       new_ipc_allowed: false,
       runtime_activation_allowed: false,
       config_writes_allowed_by_contract: false,
       hcc_auto_executor_allowed: false,
-      direct_gateway_fix_applied: false,
+      direct_gateway_fix_applied: true,
     });
+  });
+
+  it("buildScreenBoundaryContract result safety_invariants.direct_gateway_fix_applied is true", () => {
+    const built = buildScreenBoundaryContract();
+    expect(built.safety_invariants.direct_gateway_fix_applied).toBe(true);
+  });
+
+  it("every contract safety_invariants.direct_gateway_fix_applied is true", () => {
+    const built = buildScreenBoundaryContract();
+    for (const entry of built.contracts) {
+      expect(entry.safety_invariants.direct_gateway_fix_applied).toBe(true);
+    }
   });
 });

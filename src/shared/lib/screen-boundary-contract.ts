@@ -8,7 +8,7 @@ export const SCREEN_BOUNDARY_CONTRACT_NEW_IPC_ALLOWED = false as const;
 export const SCREEN_BOUNDARY_CONTRACT_RUNTIME_ACTIVATION_ALLOWED = false as const;
 export const SCREEN_BOUNDARY_CONTRACT_CONFIG_WRITES_ALLOWED = false as const;
 export const SCREEN_BOUNDARY_CONTRACT_HCC_AUTO_EXECUTOR_ALLOWED = false as const;
-export const SCREEN_BOUNDARY_CONTRACT_DIRECT_GATEWAY_FIX_APPLIED = false as const;
+export const SCREEN_BOUNDARY_CONTRACT_DIRECT_GATEWAY_FIX_APPLIED = true as const;
 
 export type ScreenSidebarGroup = "Work" | "Knowledge" | "Agents" | "System";
 
@@ -82,7 +82,7 @@ export interface ScreenBoundaryContract {
     runtime_activation_allowed: false;
     config_writes_allowed_by_contract: false;
     hcc_auto_executor_allowed: false;
-    direct_gateway_fix_applied: false;
+    direct_gateway_fix_applied: true;
   };
 }
 
@@ -97,7 +97,7 @@ export interface ScreenBoundaryContractResult {
     runtime_activation_allowed: false;
     config_writes_allowed_by_contract: false;
     hcc_auto_executor_allowed: false;
-    direct_gateway_fix_applied: false;
+    direct_gateway_fix_applied: true;
   };
 }
 

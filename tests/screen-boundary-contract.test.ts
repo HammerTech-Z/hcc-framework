@@ -222,10 +222,13 @@ describe("UI Slice 1 direct gateway risk registration", () => {
     );
   });
 
-  it("does not claim the direct gateway issue is fixed", () => {
+  it("declares the direct gateway fix applied after the Knowledge IPC migration closeout", () => {
     expect(SCREEN_BOUNDARY_CONTRACT_SAFETY_LITERALS.direct_gateway_fix_applied)
-      .toBe(false);
-    expect(result().safety_invariants.direct_gateway_fix_applied).toBe(false);
+      .toBe(true);
+    expect(result().safety_invariants.direct_gateway_fix_applied).toBe(true);
+    for (const entry of result().contracts) {
+      expect(entry.safety_invariants.direct_gateway_fix_applied).toBe(true);
+    }
   });
 });
 
@@ -265,14 +268,14 @@ describe("UI Slice 1 MODEL-STRATEGY cross-slice guardrails", () => {
 });
 
 describe("UI Slice 1 purity and safety literals", () => {
-  it("all safety invariants remain hard false except no_renderer_wiring", () => {
+  it("all safety invariants remain hard false except no_renderer_wiring and direct_gateway_fix_applied", () => {
     expect(SCREEN_BOUNDARY_CONTRACT_SAFETY_LITERALS).toEqual({
       no_renderer_wiring: true,
       new_ipc_allowed: false,
       runtime_activation_allowed: false,
       config_writes_allowed_by_contract: false,
       hcc_auto_executor_allowed: false,
-      direct_gateway_fix_applied: false,
+      direct_gateway_fix_applied: true,
     });
 
     const built = result();
@@ -285,7 +288,7 @@ describe("UI Slice 1 purity and safety literals", () => {
         runtime_activation_allowed: false,
         config_writes_allowed_by_contract: false,
         hcc_auto_executor_allowed: false,
-        direct_gateway_fix_applied: false,
+        direct_gateway_fix_applied: true,
       });
     }
   });
