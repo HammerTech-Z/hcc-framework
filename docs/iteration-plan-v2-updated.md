@@ -1,5 +1,14 @@
 # Hermes Pro — 迭代计划兼容索引
 
+> **Closeout Addendum — 2026-06-07**
+> UI Slice 1–7 已完成并推送（`faf56f2` / `e0333ee` / `08db860` / `3e21df4` / `3dd12dd` / `de35e6f` / `b612d1a`）。
+> Knowledge IPC Migration Slice 0–8B + Closeout + Fix-Applied Declaration 已完成并推送（12 commits: `86b4a8f` / `9c0c808` / `1b87fb4` / `3136ddd` / `cc44a6f` / `eeb4069` / `3842d7e` / `66d0440` / `2229c9a` / `d641370` / `5a27d20` / `600a7fb`）。
+> Final verified state: `HEAD == origin/hermes-pro-main == 600a7fb7be3e70127377db8fb8ab52fe1f35fed5`；working tree clean；121 files / 3505 tests PASS。
+> `src/preload/index.ts` 不含 `http://127.0.0.1:8643/knowledge*` raw fetch；`knowledgeSearch` / `knowledgeIngest` / `getGbrainStats` 已全部走 main-process IPC bridge；renderer API method names 与 response shapes 保持兼容；Knowledge / KnowledgeControl screen 行为不变。
+> `SCREEN_BOUNDARY_CONTRACT_DIRECT_GATEWAY_FIX_APPLIED = true`。
+> `~/.hermes/config.yaml` / `handoff/packs` / `audit` mtime 全程未变；`docs/roadmap-locked-2026-05-28.md` 未触碰。
+> 仍需保留的安全护栏：`knowledgeIngest` 仍为 write path，必须由 explicit user action 触发；不得声明 L6 live knowledge flush / HCC Auto Executor / hard cutover / P3 真实执行 已启用。
+
 > 更新日期：2026-06-06（最终计划同步：P7 WeChat/iLink 4 个低优先级 cron job deliver=local 已完成；BaiLongma Read-only Cockpit Final Polish PASS；**P3.5 soft switch KEEP v0.15.1（ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）**；**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469）、closeout base HEAD == d5a6469efd84ba98730c2fa3924e769019756077 == origin/hermes-pro-main；当时工作区 clean；当时全量基线 81 files / 2931 tests PASS**；**MODEL-STRATEGY 001-006B 已完成并推送，006B implementation commit `071b033596bfe07541b48c2aee86188d379d0475`；006B closeout typecheck PASS + 103 files / 3267 tests PASS；全链路 dry-run / read-only / design-only / no-live-config**；V5 保持 MVP_PARTIAL，C4/C5 因生图/视频外部 API 不可控 + 成本不可控暂缓；HCC Auto Executor 未批准、未启动、未接线；P3 真实执行仍暂停；hard cutover 仍未批准；L6 live knowledge flush 未批准；BaiLongma/HCC Productionization NOT APPROVED；Round 2 C 仍冻结；Chain 当前只到 L5 dry-run / prompt-builder，不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用）
 > 状态：兼容索引，不是唯一计划入口
 > 唯一锁定计划入口：[roadmap-locked-2026-05-28.md](./roadmap-locked-2026-05-28.md)

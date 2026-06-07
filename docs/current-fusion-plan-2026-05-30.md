@@ -4,6 +4,15 @@
 > 最高约束：`~/.hermes/HERMES-SOUL.md` v5.3。
 > 锁定路线图：`docs/roadmap-locked-2026-05-28.md`。
 > 本文用途：把最新确认的架构、现状、下一步计划合并到一个不会漏模块的入口。
+> **Closeout Addendum — 2026-06-07**
+> UI Slice 1–7 已完成并推送（`faf56f2` / `e0333ee` / `08db860` / `3e21df4` / `3dd12dd` / `de35e6f` / `b612d1a`）。
+> Knowledge IPC Migration Slice 0–8B + Closeout + Fix-Applied Declaration 已完成并推送（12 commits: `86b4a8f` / `9c0c808` / `1b87fb4` / `3136ddd` / `cc44a6f` / `eeb4069` / `3842d7e` / `66d0440` / `2229c9a` / `d641370` / `5a27d20` / `600a7fb`）。
+> Final verified state: `HEAD == origin/hermes-pro-main == 600a7fb7be3e70127377db8fb8ab52fe1f35fed5`；working tree clean；121 files / 3505 tests PASS。
+> `src/preload/index.ts` 不含 `http://127.0.0.1:8643/knowledge*` raw fetch；`knowledgeSearch` / `knowledgeIngest` / `getGbrainStats` 已全部走 main-process IPC bridge；renderer API method names 与 response shapes 保持兼容；Knowledge / KnowledgeControl screen 行为不变。
+> `SCREEN_BOUNDARY_CONTRACT_DIRECT_GATEWAY_FIX_APPLIED = true`。
+> `~/.hermes/config.yaml` / `handoff/packs` / `audit` mtime 全程未变；`docs/roadmap-locked-2026-05-28.md` 未触碰。
+> 仍需保留的安全护栏：`knowledgeIngest` 仍为 write path，必须由 explicit user action 触发；不得声明 L6 live knowledge flush / HCC Auto Executor / hard cutover / P3 真实执行 已启用。
+
 > 当前执行阶段：P3 dry-run baseline 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换均已通过（2026-06-02）；**P3.5 soft switch 1-2 天观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）、`hermes` 入口保持指向 candidate v0.15.1、rollback 备份仍可回滚**；**Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成、6 commits 推送（2f79c75 / 2a8dc08 / cdeea86 / 7c3e89b / d997914 / d5a6469）、closeout base HEAD == origin/hermes-pro-main == d5a6469efd84ba98730c2fa3924e769019756077；当时工作区 clean；当时全量基线 81 files / 2931 tests PASS（npm run typecheck EXIT 0）**。**MODEL-STRATEGY 001-006B 已完成并推送至 origin（006B implementation commit `071b033596bfe07541b48c2aee86188d379d0475`；006B closeout：typecheck PASS，103 files / 3267 tests PASS；全链路 dry-run / read-only / design-only / no-live-config；真实 `~/.hermes/config.yaml`、handoff、audit 未触碰）**。P7 WeChat/iLink 4 个低优先级 cron job 已切 `deliver=local` 完成（2026-06-02）；BaiLongma Read-only Cockpit Final Polish 已 PASS（2026-06-02；typecheck + 46 files / 995 tests PASS — 该数字为 Final Polish 收口时点的局部事实源）。V5 保持 `MVP_PARTIAL`：C1/C2/C3 PASS，C4/C5 因生图/视频外部 API 不可控 + 成本不可控暂缓（非技术失败）。HCC Auto Executor 仍不可用、未启动、未接线；P3 真实执行仍暂停由 Hermes 直接执行，后续代码/项目任务由 Claude Code 按 dry-run 契约执行。Round 2 C 仍冻结；hard cutover 仍未批准；L6 live knowledge flush 未批准；BaiLongma/HCC Productionization NOT APPROVED。**Knowledge Reuse Chain 当前只到 L5 dry-run / prompt-builder，不代表 live knowledgeIngest / live knowledgeSearch / default system prompt injection / Agent subprocess / L6 live flush 已启用。**P0/P0.5/P1/P1.5/P2/P2.5/P3 dry-run 001-006 + 008 + 009 已通过，不应重复执行。P3 dry-run 基线事实源：`docs/p3-dry-run-baseline-2026-06-01.md`。
 
 ---
