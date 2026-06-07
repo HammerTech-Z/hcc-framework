@@ -85,10 +85,28 @@ async function dispatch(
       built.reason ?? "descriptor build failed",
     );
   }
-  // Step 2: execute via the injected gateway client.
+  // Step 2: execute via the injected gateway client. The Slice 4
+  // createKnowledgeGatewayClient returns a tagged result; unwrap here
+  // so step 3 validates the raw gateway payload shape.
   let raw: unknown;
   try {
-    raw = await gatewayClient.execute(built.descriptor);
+    const outcome = await gatewayClient.execute(built.descriptor);
+    if (outcome && typeof outcome === "object" && "ok" in outcome) {
+      if (outcome.ok === true) {
+        raw = (outcome as { ok: true; data: unknown }).data;
+      } else {
+        // Slice 4 surfaced a transport error code already mapped.
+        const errorOutcome = outcome as {
+          ok: false;
+          code: KnowledgeIpcErrorCode;
+          reason: string;
+        };
+        return errorResult(errorOutcome.code, errorOutcome.reason);
+      }
+    } else {
+      // Backwards-compatible: caller supplied a raw-returning client.
+      raw = outcome;
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     // Map known transport-error substrings to Slice 1 codes; default to

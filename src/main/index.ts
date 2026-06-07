@@ -80,6 +80,7 @@ import {
   updateSessionTitle,
 } from "./session-cache";
 import { listModels, addModel, removeModel, updateModel } from "./models";
+import { registerKnowledgeIpcStartupHandlers } from "./knowledge-ipc-startup";
 import {
   listProfiles,
   createProfile,
@@ -1098,6 +1099,11 @@ function setupIPC(): void {
       return [];
     }
   });
+
+  // Knowledge IPC Migration Slice 6: wire guarded knowledge IPC handlers
+  // into main startup. Preload still uses raw fetch; renderer behavior is
+  // unchanged. Transport is the default no-network stub; no real network.
+  registerKnowledgeIpcStartupHandlers(ipcMain);
 }
 
 function buildMenu(): void {
