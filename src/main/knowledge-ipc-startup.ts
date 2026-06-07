@@ -31,6 +31,7 @@ import {
   registerKnowledgeIpcHandlers,
   type KnowledgeIpcLike,
 } from "./knowledge-ipc-handlers";
+import { createKnowledgeGatewayTransport } from "./knowledge-ipc-transport";
 import type { KnowledgeIpcChannel } from "../shared/lib/knowledge-ipc-shape-contract";
 
 export const KNOWLEDGE_IPC_STARTUP_MODE = "main_startup_wiring_applied" as const;
@@ -43,9 +44,10 @@ export const KNOWLEDGE_IPC_STARTUP_WIRED_CHANNELS: readonly KnowledgeIpcChannel[
   "knowledge-stats",
 ];
 
-// Pure URL builder used by the default transport. Exported so the test
-// can assert the descriptor-driven URL shape without invoking a real
-// fetch. No network IO performed.
+// Pure URL builder kept for backwards compatibility with the Slice 6
+// tests; new code should use the Slice 7 transport helper which owns
+// the canonical URL builder. Exported only so the existing Slice 6
+// wiring test can still exercise the descriptor-driven URL shape.
 export function buildLocalKnowledgeGatewayUrl(
   request: KnowledgeGatewayTransportRequest,
 ): string {
@@ -61,12 +63,12 @@ export function buildLocalKnowledgeGatewayUrl(
   return queryString.length > 0 ? `${base}?${queryString}` : base;
 }
 
-// Default transport stub. Returns a Slice 1-shape-compliant stub
-// response without performing any real network IO. Slice 6 explicitly
-// avoids any real network primitive so the source remains
-// string-forbidden-clean and no network is touched at startup. The
-// Slice 3 dispatcher still validates the response shape; this stub
-// passes those validators.
+// Slice 7 default transport. Returns a Slice 1-shape-compliant stub
+// response without performing any real network IO. The Slice 3
+// dispatcher still validates the response shape; this stub passes those
+// validators. The real Slice 7 transport is wired via
+// createKnowledgeGatewayTransport() when createKnowledgeIpcStartup is
+// called with useRealTransport: true (used by main/index.ts).
 function defaultKnowledgeTransport(
   request: KnowledgeGatewayTransportRequest,
 ): Promise<KnowledgeGatewayTransportResult> {
@@ -91,7 +93,8 @@ export interface KnowledgeIpcStartupOptions {
 export interface KnowledgeIpcStartupResult {
   wired_channels: readonly KnowledgeIpcChannel[];
   // True iff the caller injected a custom transport. The startup file
-  // itself never sets up a real network call, so production is always false.
+  // itself never sets up a real network call, so production is always
+  // false.
   used_custom_transport: boolean;
 }
 
@@ -107,6 +110,21 @@ export function registerKnowledgeIpcStartupHandlers(
     wired_channels: channels,
     used_custom_transport: options.transport !== undefined,
   };
+}
+
+// Slice 7: production-grade startup that wires the real main-side
+// gateway transport. The transport is a closure that performs no
+// network IO at registration time; the HTTP request is only issued
+// when an IPC handler is actually invoked. This is the function that
+// src/main/index.ts uses in production.
+export function createKnowledgeIpcStartup(
+  ipcLike: KnowledgeIpcLike,
+  transportOptions: { baseUrl?: string; fetchLike?: unknown } = {},
+): KnowledgeIpcStartupResult {
+  const transport = createKnowledgeGatewayTransport(
+    transportOptions as Parameters<typeof createKnowledgeGatewayTransport>[0],
+  );
+  return registerKnowledgeIpcStartupHandlers(ipcLike, { transport });
 }
 
 export const KNOWLEDGE_IPC_STARTUP_SAFETY = {

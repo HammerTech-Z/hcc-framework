@@ -222,17 +222,17 @@ describe("Knowledge IPC Migration Slice 6 main startup wiring", () => {
 
   it("src/main/index.ts calls the startup helper exactly once", () => {
     const callMatches = mainIndexSrc.match(
-      /registerKnowledgeIpcStartupHandlers\s*\(/g,
+      /createKnowledgeIpcStartup\s*\(/g,
     );
     expect(callMatches).not.toBeNull();
     expect(callMatches!.length).toBe(1);
   });
 
   it("src/main/index.ts does not call forbidden startup primitives directly", () => {
-    // Slice 6 only adds the knowledge wiring; it must not introduce new
-    // direct calls to startGateway / setEnv / setModelConfig / etc. in
-    // the wiring path. Existing call sites elsewhere in main/index.ts
-    // are out of scope (see forbidden-claims test below).
+    // Slice 6/7 only adds the knowledge wiring; it must not introduce
+    // new direct calls to startGateway / setEnv / setModelConfig / etc.
+    // in the wiring path. Existing call sites elsewhere in main/index.ts
+    // are out of scope.
     const wiringSnippet = extractStartupWiringSnippet(mainIndexSrc);
     for (const pattern of [
       "startGateway(",
@@ -265,7 +265,7 @@ function extractStartupWiringSnippet(source: string): string {
   const importIdx = source.indexOf('from "./knowledge-ipc-startup"');
   if (importIdx === -1) return "";
   // Find the FIRST invocation of the helper after the import.
-  const callIdx = source.indexOf("registerKnowledgeIpcStartupHandlers(", importIdx);
+  const callIdx = source.indexOf("createKnowledgeIpcStartup(", importIdx);
   if (callIdx === -1) return "";
   // Walk to the matching closing paren.
   let depth = 0;
