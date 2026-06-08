@@ -318,7 +318,9 @@ No drift between LOOP-009 source and prior slice sources. All imports are `impor
 
 ---
 
-## 8. Post-commit Status Update (2026-06-08)
+## 8. Post-commit Status Update (2026-06-08, HISTORICAL — pre-group-8)
+
+> **Historical marker (2026-06-08 post-§8 edit)**: This §8 described the local-reality snapshot immediately after the 7 group-1..7 commits landed. The §8 table is preserved as a historical record; the **current** post-push state is in §9 below.
 
 The §1.1 / §2 / §3 above described the local-reality snapshot at audit verification time (`HEAD 464d8de7d81d`, working tree uncommitted, 60 status lines). After the audit, the user authorized 7 atomic commits to land the audit deliverables:
 
@@ -332,20 +334,51 @@ The §1.1 / §2 / §3 above described the local-reality snapshot at audit verifi
 | 6 | `fa632fee560c` | `test(learning-loop): cover post-task reflection dry-run chain` | 10 | 4913 ins |
 | 7 | `6c5a37d2e2df` | `feat(learning-loop): harden post-task reflection contract` | 2 | 1227 ins / 28 del |
 
-**Total: 60 file changes, 7 atomic commits, 0 amend, 0 squash.**
-
-Post-commit local reality (2026-06-08):
-
-- `HEAD = 6c5a37d2e2df` (group 7, final)
-- `git status --short` = **empty** (working tree clean)
-- `git diff --check` = empty
-- `git diff -- docs/roadmap-locked-2026-05-28.md` = empty
-- `npm run typecheck` = PASS
-- `npx vitest run` (full) = **Test Files 132 passed (132) · Tests 3754 passed (3754)**
-- `~/.hermes/config.yaml / handoff/packs / audit` mtime = **unchanged** (`1780225681 / 1780195726 / 1780230084`)
-- No push performed. Working tree awaits explicit push authorization.
+**Total: 60 file changes, 7 atomic commits, 0 amend, 0 squash.** This table is the historical pre-group-8 state.
 
 The §1.1 verbatim status block above is preserved as the audit-time snapshot (it is factually correct as of 2026-06-07 evening when the audit ran). This §8 documents the post-audit commit progression that consumed all 60 status lines into 7 atomic commits.
+
+## 9. Post-push Baseline Snapshot (2026-06-08, HISTORICAL — before POST-PUSH-FACT-SYNC correction)
+
+After §8 was committed (`ab0cdb269078` was the 8th commit that sync'd the 3 plan docs to the 7-group state), the user authorized non-force push of all 8 atomic commits to `origin/hermes-pro-main`.
+
+| # | Commit | Subject | Files | Status |
+|---|--------|---------|-------|--------|
+| 1 | `bbd2eed24622` | `docs(governance): add Hermes soul implementation matrix` | 1 | ✓ pushed |
+| 2 | `fa004f3da7ba` | `docs(closeout): add Hermes Pro local reality audit` | 1 | ✓ pushed |
+| 3 | `8e4e539354e8` | `docs(learning-loop): sync LOOP-009 closeout status` | 3 | ✓ pushed |
+| 4 | `d4f06ff90470` | `feat(learning-loop): add post-task reflection design helpers` | 10 | ✓ pushed |
+| 5 | `8485e3680657` | `test(learning-loop): add post-task reflection fixtures` | 33 | ✓ pushed |
+| 6 | `fa632fee560c` | `test(learning-loop): cover post-task reflection dry-run chain` | 10 | ✓ pushed |
+| 7 | `6c5a37d2e2df` | `feat(learning-loop): harden post-task reflection contract` | 2 | ✓ pushed (historical, last commit of group 1-7) |
+| 8 | `ab0cdb269078` | `docs(plan): sync 2026-06-08 pre-push baseline` | 3 | ✓ pushed (last pushed learning-loop baseline before POST-PUSH-FACT-SYNC correction) |
+
+**Total: 63 file changes, 8 atomic commits, 0 amend, 0 squash, 0 rebase, 0 force push.**
+
+**Post-push baseline captured before the local correction commit (ab0cdb269078):**
+
+- `HEAD == origin/hermes-pro-main == ab0cdb269078` (pre-correction baseline; last pushed learning-loop commit before POST-PUSH-FACT-SYNC-001)
+- `git status --short -uall` = **empty** (working tree clean at the time of push)
+- `git rev-list --count origin/hermes-pro-main..HEAD` = **0** (ahead at the time of push; after correction, ahead count will differ — verify with git)
+- `git rev-list --count HEAD..origin/hermes-pro-main` = **0** (behind)
+- `git diff --check` = empty
+- `git diff -- docs/roadmap-locked-2026-05-28.md` = empty
+- `npm run typecheck` = PASS (before correction, no code changes in this slice)
+- `npx vitest run` (full) = **Test Files 132 passed (132) · Tests 3754 passed (3754)** (before correction; not re-run for POST-PUSH-FACT-SYNC-001 because no code/fixture/test changes)
+- `~/.hermes/config.yaml / handoff/packs / audit` mtime = **unchanged** (`1780225681 / 1780195726 / 1780230084`)
+- Non-force push to `origin/hermes-pro-main` completed on ab0cdb269078.
+- `ab0cdb269078` is the **last pushed learning-loop baseline**; POST-PUSH-FACT-SYNC correction commits may exist locally after this point. Always verify current HEAD and origin with `git rev-parse` / `git rev-list`. Do NOT rely on a static HEAD copy in this document.
+
+**LOOP-001.1 → LOOP-009 state (post-push, frozen):** All 9 slices are design-only / dry-run / pure projection. Apply paths for LOOP-007 / LOOP-008 / LOOP-009 are hard-wired closed (`isRetrievalDeltaApplyEligible` / `isReflectionEvaluatorPromotionEligible` / `isQuarantinePromotionApplyEligible` all return `false`). Live apply / live flush / knowledgeIngest / knowledgeSearch / Next Task Context write / live ranking mutation / skill install / model runtime / HCC Auto Executor all **NOT-GO**. LOOP-010 (Live Apply ADR) is the next logical slice but has not been started; its design is in the prior session report (out of scope for this fact-sync).
+
+**Commit attribution correction (2026-06-08):**
+
+- `464d8de7d81d` = `feat(learning-loop): add post-task reflection contract` (the initial LOOP-001.1 contract — **not** "contract hardening")
+- `6c5a37d2e2df` = `feat(learning-loop): harden post-task reflection contract` (LOOP-001.1 contract hardening core — the GO/NO-GO gate)
+- `8e4e539354e8` = `docs(learning-loop): sync LOOP-009 closeout status` (NOT `docs(plan)`)
+- `bbd2eed24622` = `docs(governance): add Hermes soul implementation matrix`
+
+The local `.claude/projects/-Users-midoudou/memory/hermes-pro-model-strategy.md` is a **repo-external** local memory file and is **not** in any of the 8 commits. Its stale current-state wording was repaired locally in POST-PUSH-FACT-SYNC-001A; this repo-external file is not part of this commit.
 
 ## 7. Sign-off
 
