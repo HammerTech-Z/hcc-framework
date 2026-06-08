@@ -1,0 +1,313 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "knowledge-ingest-bridge-draft",
+  "purpose": "LOOP-006 FAIL bridge drafts derived from ll002-hcc-fail-dry-run.json. design-only / draft-only. All drafts quarantine=true. Includes anti_pattern (bad_pattern) + dead_end + model_wiki (model_feedback + local_llm_wiki) + usage_feedback drafts.",
+  "created_at": "2026-06-07T17:01:00.000Z",
+  "drafts": [
+    {
+      "schema_version": "1.0.0",
+      "draft_id": "ki-bridge-draft-hcc-dry-run://learning-loop/002/fail-001-bad_pattern-bad-assumed-config-path",
+      "fingerprint": "ki-bridge-draft:hcc-dry-run://learning-loop/002/fail-001|bad_pattern|bad-assumed-config-path",
+      "source_kind": "bad_pattern",
+      "source_fingerprint": "bad-assumed-config-path",
+      "target_bucket": "anti_pattern",
+      "draft_kind": "anti_pattern",
+      "title": "Anti-pattern: Assumed config path without reading.",
+      "body": "Do not trust remembered config paths before reading the workspace.\nTrigger: config lookup before implementation",
+      "source_task": "hcc-dry-run://learning-loop/002/fail-001",
+      "source_ref": "hcc://learning-loop/002/fail-001",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/fail-001/bad/bad-assumed-config-path",
+          "content_hash": "sha256-ll002-fail-bad-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "provenance": {
+        "generated_by": "hermes",
+        "submitted_by": "hermes_main",
+        "generation_model": "hcc-dry-run-projection",
+        "dual_reviewed": false,
+        "human_reviewed": false,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "trust_level": "single_run",
+        "human_approval_ref": null
+      },
+      "human_approval_ref": null,
+      "quarantine": true,
+      "approval_gate": {
+        "gate_version": "1.0.0",
+        "status": "closed",
+        "approved": false,
+        "explicit_user_approval_required": true,
+        "allowed_action": "none",
+        "safety": {
+          "knowledge_flush_allowed": false,
+          "skill_install_allowed": false,
+          "config_write_allowed": false,
+          "hcc_execute_allowed": false,
+          "model_runtime_start_allowed": false
+        }
+      },
+      "draft_kind_ref": "anti_pattern",
+      "dry_run_only": true,
+      "runtime_flush_allowed": false,
+      "knowledge_ingest_call_allowed": false,
+      "knowledge_search_call_allowed": false,
+      "persistence_allowed": false,
+      "audit_write_allowed": false,
+      "config_write_allowed": false,
+      "live_ranking_mutation_allowed": false,
+      "skill_install_allowed": false,
+      "model_runtime_start_allowed": false
+    },
+    {
+      "schema_version": "1.0.0",
+      "draft_id": "ki-bridge-draft-hcc-dry-run://learning-loop/002/fail-001-dead_end-dead-hardcoded-config-path",
+      "fingerprint": "ki-bridge-draft:hcc-dry-run://learning-loop/002/fail-001|dead_end|dead-hardcoded-config-path",
+      "source_kind": "dead_end",
+      "source_fingerprint": "dead-hardcoded-config-path",
+      "target_bucket": "dead_end",
+      "draft_kind": "anti_pattern",
+      "title": "Dead-end (environmental): Hardcoded config path failed.",
+      "body": "The path was an environmental assumption, not verified evidence.\nWhy failed: The config file lives at a different path on this profile.\nProposed action: warn_only",
+      "source_task": "hcc-dry-run://learning-loop/002/fail-001",
+      "source_ref": "hcc://learning-loop/002/fail-001",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/fail-001/dead/dead-hardcoded-config-path",
+          "content_hash": "sha256-ll002-fail-dead-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "provenance": {
+        "generated_by": "hermes",
+        "submitted_by": "hermes_main",
+        "generation_model": "hcc-dry-run-projection",
+        "dual_reviewed": false,
+        "human_reviewed": false,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "trust_level": "single_run",
+        "human_approval_ref": null
+      },
+      "human_approval_ref": null,
+      "quarantine": true,
+      "approval_gate": {
+        "gate_version": "1.0.0",
+        "status": "closed",
+        "approved": false,
+        "explicit_user_approval_required": true,
+        "allowed_action": "none",
+        "safety": {
+          "knowledge_flush_allowed": false,
+          "skill_install_allowed": false,
+          "config_write_allowed": false,
+          "hcc_execute_allowed": false,
+          "model_runtime_start_allowed": false
+        }
+      },
+      "draft_kind_ref": "anti_pattern",
+      "dry_run_only": true,
+      "runtime_flush_allowed": false,
+      "knowledge_ingest_call_allowed": false,
+      "knowledge_search_call_allowed": false,
+      "persistence_allowed": false,
+      "audit_write_allowed": false,
+      "config_write_allowed": false,
+      "live_ranking_mutation_allowed": false,
+      "skill_install_allowed": false,
+      "model_runtime_start_allowed": false
+    },
+    {
+      "schema_version": "1.0.0",
+      "draft_id": "ki-bridge-draft-hcc-dry-run://learning-loop/002/fail-001-model_feedback-config-discovery-local-e4b-fallback",
+      "fingerprint": "ki-bridge-draft:hcc-dry-run://learning-loop/002/fail-001|model_feedback|config-discovery-local-e4b-fallback",
+      "source_kind": "model_feedback",
+      "source_fingerprint": "config-discovery-local-e4b-fallback",
+      "target_bucket": "model_wiki",
+      "draft_kind": "judgement",
+      "title": "Model feedback (config-discovery / local-e4b-fallback / partial)",
+      "body": "Outcome: partial\nObserved: Missed the need to read the current profile path.\nFallback: tool-read-before-plan",
+      "source_task": "hcc-dry-run://learning-loop/002/fail-001",
+      "source_ref": "hcc://learning-loop/002/fail-001",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/fail-001/model/config-discovery-local-e4b-fallback",
+          "content_hash": "sha256-ll002-fail-model-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "provenance": {
+        "generated_by": "hermes",
+        "submitted_by": "hermes_main",
+        "generation_model": "hcc-dry-run-projection",
+        "dual_reviewed": false,
+        "human_reviewed": false,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "trust_level": "single_run",
+        "human_approval_ref": null
+      },
+      "human_approval_ref": null,
+      "quarantine": true,
+      "approval_gate": {
+        "gate_version": "1.0.0",
+        "status": "closed",
+        "approved": false,
+        "explicit_user_approval_required": true,
+        "allowed_action": "none",
+        "safety": {
+          "knowledge_flush_allowed": false,
+          "skill_install_allowed": false,
+          "config_write_allowed": false,
+          "hcc_execute_allowed": false,
+          "model_runtime_start_allowed": false
+        }
+      },
+      "draft_kind_ref": "judgement",
+      "dry_run_only": true,
+      "runtime_flush_allowed": false,
+      "knowledge_ingest_call_allowed": false,
+      "knowledge_search_call_allowed": false,
+      "persistence_allowed": false,
+      "audit_write_allowed": false,
+      "config_write_allowed": false,
+      "live_ranking_mutation_allowed": false,
+      "skill_install_allowed": false,
+      "model_runtime_start_allowed": false
+    },
+    {
+      "schema_version": "1.0.0",
+      "draft_id": "ki-bridge-draft-hcc-dry-run://learning-loop/002/fail-001-local_llm_wiki-local-llm-wiki-draft:hcc-dry-run://learning-loop/002/fail-001|local-e4b-fallback|config-discovery|partial",
+      "fingerprint": "ki-bridge-draft:hcc-dry-run://learning-loop/002/fail-001|local_llm_wiki|local-llm-wiki-draft:hcc-dry-run://learning-loop/002/fail-001|local-e4b-fallback|config-discovery|partial",
+      "source_kind": "local_llm_wiki",
+      "source_fingerprint": "local-llm-wiki-draft:hcc-dry-run://learning-loop/002/fail-001|local-e4b-fallback|config-discovery|partial",
+      "target_bucket": "model_wiki",
+      "draft_kind": "judgement",
+      "title": "Model wiki (daily_fallback): local-e4b-fallback",
+      "body": "Suitability: config-discovery on lane=daily_fallback: outcome=partial, suitability=needs_review (LOOP-005 design-only, not promoted)\nFailure modes: Missed the need to read the current profile path.; Outcome reported as partial\nFallback decisions: tool-read-before-plan\nBenchmark notes: needs_benchmark — local on lane=daily_fallback: not yet smoke-tested; do not promote to live lane in LOOP-005",
+      "source_task": "hcc-dry-run://learning-loop/002/fail-001",
+      "source_ref": "hcc://learning-loop/002/fail-001",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/fail-001/wiki/config-discovery-local-e4b-fallback",
+          "content_hash": "sha256-ll002-fail-model-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "provenance": {
+        "generated_by": "hermes",
+        "submitted_by": "hermes_main",
+        "generation_model": "hcc-dry-run-projection",
+        "dual_reviewed": false,
+        "human_reviewed": false,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "trust_level": "single_run",
+        "human_approval_ref": null
+      },
+      "human_approval_ref": null,
+      "quarantine": true,
+      "approval_gate": {
+        "gate_version": "1.0.0",
+        "status": "closed",
+        "approved": false,
+        "explicit_user_approval_required": true,
+        "allowed_action": "none",
+        "safety": {
+          "knowledge_flush_allowed": false,
+          "skill_install_allowed": false,
+          "config_write_allowed": false,
+          "hcc_execute_allowed": false,
+          "model_runtime_start_allowed": false
+        }
+      },
+      "draft_kind_ref": "judgement",
+      "dry_run_only": true,
+      "runtime_flush_allowed": false,
+      "knowledge_ingest_call_allowed": false,
+      "knowledge_search_call_allowed": false,
+      "persistence_allowed": false,
+      "audit_write_allowed": false,
+      "config_write_allowed": false,
+      "live_ranking_mutation_allowed": false,
+      "skill_install_allowed": false,
+      "model_runtime_start_allowed": false
+    },
+    {
+      "schema_version": "1.0.0",
+      "draft_id": "ki-bridge-draft-hcc-dry-run://learning-loop/002/fail-001-usage_feedback-kb-config-001-misled-2026-06-07T12:01:00.000Z",
+      "fingerprint": "ki-bridge-draft:hcc-dry-run://learning-loop/002/fail-001|usage_feedback|kb-config-001-misled-2026-06-07T12:01:00.000Z",
+      "source_kind": "usage_feedback",
+      "source_fingerprint": "kb-config-001-misled-2026-06-07T12:01:00.000Z",
+      "target_bucket": "usage_feedback",
+      "draft_kind": "judgement",
+      "title": "Usage feedback: misled on kb-config-001",
+      "body": "Weight: 1\nSource task: hcc-dry-run://learning-loop/002/fail-001\nArtifact: hcc://learning-loop/002/fail-001",
+      "source_task": "hcc-dry-run://learning-loop/002/fail-001",
+      "source_ref": "hcc://learning-loop/002/fail-001",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/fail-001/usage/kb-config-001",
+          "content_hash": "sha256-ll002-fail-usage-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "provenance": {
+        "generated_by": "hermes",
+        "submitted_by": "hermes_main",
+        "generation_model": "hcc-dry-run-projection",
+        "dual_reviewed": false,
+        "human_reviewed": false,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "trust_level": "single_run",
+        "human_approval_ref": null
+      },
+      "human_approval_ref": null,
+      "quarantine": true,
+      "approval_gate": {
+        "gate_version": "1.0.0",
+        "status": "closed",
+        "approved": false,
+        "explicit_user_approval_required": true,
+        "allowed_action": "none",
+        "safety": {
+          "knowledge_flush_allowed": false,
+          "skill_install_allowed": false,
+          "config_write_allowed": false,
+          "hcc_execute_allowed": false,
+          "model_runtime_start_allowed": false
+        }
+      },
+      "draft_kind_ref": "judgement",
+      "dry_run_only": true,
+      "runtime_flush_allowed": false,
+      "knowledge_ingest_call_allowed": false,
+      "knowledge_search_call_allowed": false,
+      "persistence_allowed": false,
+      "audit_write_allowed": false,
+      "config_write_allowed": false,
+      "live_ranking_mutation_allowed": false,
+      "skill_install_allowed": false,
+      "model_runtime_start_allowed": false
+    }
+  ],
+  "dry_run_only": true,
+  "runtime_flush_allowed": false,
+  "knowledge_ingest_call_allowed": false,
+  "knowledge_search_call_allowed": false,
+  "persistence_allowed": false,
+  "audit_write_allowed": false,
+  "config_write_allowed": false,
+  "live_ranking_mutation_allowed": false,
+  "skill_install_allowed": false,
+  "model_runtime_start_allowed": false
+}

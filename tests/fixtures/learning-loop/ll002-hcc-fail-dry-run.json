@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "hcc-dry-run-reflection-input",
+  "purpose": "LOOP-002 FAIL/dead-end fixture: project a verifier-failed HCC dry-run into a LOOP-001.1 PostTaskReflection draft. Draft-only, no runtime write, no live knowledge flush.",
+  "created_at": "2026-06-07T12:01:00.000Z",
+  "mode": "dry_run",
+  "runtime_flush_allowed": false,
+  "verification_result": "fail",
+  "task_id": "hcc-dry-run://learning-loop/002/fail-001",
+  "artifact_ref": "hcc://learning-loop/002/fail-001",
+  "artifact_hash": "sha256-ll002-fail-001",
+  "task_summary": "Config discovery failed: hardcoded config path did not match the current profile.",
+  "submitted_by": "hermes_main",
+  "bad_patterns": [
+    {
+      "fingerprint": "bad-assumed-config-path",
+      "summary": "Assumed config path without reading.",
+      "human_readable_summary": "Do not trust remembered config paths before reading the workspace.",
+      "trigger_context": "config lookup before implementation",
+      "risks": ["A stale local path can make the plan look valid but fail."],
+      "evidence_content_hash": "sha256-ll002-fail-bad-001"
+    }
+  ],
+  "dead_ends": [
+    {
+      "fingerprint": "dead-hardcoded-config-path",
+      "summary": "Hardcoded config path failed.",
+      "human_readable_summary": "The path was an environmental assumption, not verified evidence.",
+      "failure_class": "environmental",
+      "recurrence_count": 1,
+      "trigger_context": "tried to read a config file via a hardcoded path",
+      "why_failed": "The config file lives at a different path on this profile.",
+      "proposed_action": "warn_only",
+      "evidence_content_hash": "sha256-ll002-fail-dead-001"
+    }
+  ],
+  "model_feedback": [
+    {
+      "task_class": "config-discovery",
+      "model_id": "local-e4b-fallback",
+      "lane": "fallback",
+      "outcome": "partial",
+      "observed_limitation": "Missed the need to read the current profile path.",
+      "fallback_used": "tool-read-before-plan",
+      "evidence_content_hash": "sha256-ll002-fail-model-001"
+    }
+  ],
+  "knowledge_ingest_draft": [
+    {
+      "draft_kind": "anti_pattern",
+      "body": "Do not promote remembered config paths without fresh evidence.",
+      "links_back_to_task": "hcc-dry-run://learning-loop/002/fail-001",
+      "evidence_content_hash": "sha256-ll002-fail-know-001"
+    }
+  ],
+  "next_task_recommendations": [
+    "Always read the config path with a tool before reading the file"
+  ],
+  "usage_feedback_signals": [
+    {
+      "knowledge_id": "kb-config-001",
+      "kind": "misled",
+      "weight": 1,
+      "recorded_at": "2026-06-07T12:01:00.000Z",
+      "source_task_id": "hcc-dry-run://learning-loop/002/fail-001",
+      "artifact_ref": "hcc://learning-loop/002/fail-001",
+      "evidence_content_hash": "sha256-ll002-fail-usage-001"
+    }
+  ]
+}

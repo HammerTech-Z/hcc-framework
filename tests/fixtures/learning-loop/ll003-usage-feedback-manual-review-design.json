@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "usage-feedback-design-event",
+  "purpose": "LOOP-003 manual_review event derived from the ll002 manual_review dry-run reflection. design-only. persistence_allowed=false. ranking_mutation_allowed=false. eligibility=context_eligible (human_approval_ref present, but ranking_eligible requires ALL knowledge_ingest_draft entries to be non-quarantined — preserved as context_eligible so the future adapter does not promote the signal to ranking without further review).",
+  "created_at": "2026-06-07T13:02:00.000Z",
+  "mode": "design_only",
+  "dry_run_only": true,
+  "persistence_allowed": false,
+  "ranking_mutation_allowed": false,
+  "event_id": "evt-2026-06-07T13:02:00.000Z-kb-boundary-contract-001",
+  "fingerprint": "usage-feedback:hcc-dry-run://learning-loop/002/manual-review-001|kb-boundary-contract-001|helped|hcc://learning-loop/002/manual-review-001",
+  "task_id": "hcc-dry-run://learning-loop/002/manual-review-001",
+  "reflection_task_id": "hcc-dry-run://learning-loop/002/manual-review-001",
+  "knowledge_id": "kb-boundary-contract-001",
+  "kind": "helped",
+  "weight": 1,
+  "recorded_at": "2026-06-07T13:02:00.000Z",
+  "artifact_ref": "hcc://learning-loop/002/manual-review-001",
+  "source_ref": "hcc://learning-loop/002/manual-review-001",
+  "evidence": [
+    {
+      "kind": "artifact",
+      "ref": "hcc://learning-loop/002/manual-review-001/usage/kb-boundary-contract-001",
+      "content_hash": "sha256-ll003-review-usage-001",
+      "excerpt": "redacted dry-run excerpt"
+    }
+  ],
+  "provenance": {
+    "generated_by": "human",
+    "submitted_by": "human",
+    "generation_model": "hcc-dry-run-projection",
+    "dual_reviewed": true,
+    "human_reviewed": true,
+    "reviewed_by": "human",
+    "reviewed_at": "2026-06-07T12:00:00.000Z",
+    "trust_level": "human_confirmed",
+    "human_approval_ref": {
+      "ref": "anchor://learning-loop/002/manual-review-001",
+      "content_hash": "sha256-anchor-ll002-review-001",
+      "approval_kind": "manual_review",
+      "verified": false
+    }
+  },
+  "eligibility": "context_eligible",
+  "human_approval_ref": {
+    "ref": "anchor://learning-loop/002/manual-review-001",
+    "content_hash": "sha256-anchor-ll002-review-001",
+    "approval_kind": "manual_review",
+    "verified": false
+  }
+}

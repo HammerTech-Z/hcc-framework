@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "quarantine-promotion-decision",
+  "purpose": "LOOP-009 manual_review promotion decisions derived from ll006 manual_review bridge drafts + ll008 manual_review evaluator verdicts. human_approval_ref present + verified=false + draft.quarantine=false + evaluator trust_band=human_reviewed_candidate ⇒ promotion_candidate. apply eligible MUST stay false. human_approval_ref.verified stays false. no live flush. no live ranking mutation. no Next Task Context write.",
+  "created_at": "2026-06-07T21:02:00.000Z",
+  "decisions": [
+    {
+      "schema_version": "1.0.0",
+      "decision_id": "quarantine-promotion-decision:hcc-dry-run://learning-loop/002/manual-review-001|ki-bridge-draft:hcc-dry-run://learning-loop/002/manual-review-001|bad_pattern|bad-ambiguous-service-scope",
+      "source_kind": "knowledge_ingest_draft",
+      "source_task": "hcc-dry-run://learning-loop/002/manual-review-001",
+      "source_ref": "hcc://learning-loop/002/manual-review-001",
+      "draft_fingerprint": "ki-bridge-draft:hcc-dry-run://learning-loop/002/manual-review-001|bad_pattern|bad-ambiguous-service-scope",
+      "evaluator_verdict_id": "reflection-evaluator-verdict:knowledge_ingest_draft|hcc-dry-run://learning-loop/002/manual-review-001|ki-bridge-draft:hcc-dry-run://learning-loop/002/manual-review-001|bad_pattern|bad-ambiguous-service-scope",
+      "current_quarantine": false,
+      "proposed_state": "promotion_candidate",
+      "reason": "evaluator verdict trust_band=human_reviewed_candidate + human_approval_ref present + draft.quarantine=false ⇒ promotion_candidate (apply path closed in LOOP-009)",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/manual-review-001/bad/bad-ambiguous-service-scope",
+          "content_hash": "sha256-ll002-review-bad-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "human_approval_ref": {
+        "ref": "anchor://learning-loop/002/manual-review-001",
+        "content_hash": "sha256-anchor-ll002-review-001",
+        "approval_kind": "manual_review",
+        "verified": false
+      },
+      "evaluator_trust_band": "human_reviewed_candidate",
+      "evaluator_trust_score": 1,
+      "dry_run_only": true,
+      "live_flush_allowed": false,
+      "knowledge_ingest_call_allowed": false,
+      "knowledge_search_call_allowed": false,
+      "audit_write_allowed": false,
+      "persistence_allowed": false,
+      "next_task_context_write_allowed": false,
+      "live_ranking_mutation_allowed": false,
+      "config_write_allowed": false
+    },
+    {
+      "schema_version": "1.0.0",
+      "decision_id": "quarantine-promotion-decision:hcc-dry-run://learning-loop/002/manual-review-001|ki-bridge-draft:hcc-dry-run://learning-loop/002/manual-review-001|dead_end|dead-cross-service-without-contract",
+      "source_kind": "knowledge_ingest_draft",
+      "source_task": "hcc-dry-run://learning-loop/002/manual-review-001",
+      "source_ref": "hcc://learning-loop/002/manual-review-001",
+      "draft_fingerprint": "ki-bridge-draft:hcc-dry-run://learning-loop/002/manual-review-001|dead_end|dead-cross-service-without-contract",
+      "evaluator_verdict_id": "reflection-evaluator-verdict:knowledge_ingest_draft|hcc-dry-run://learning-loop/002/manual-review-001|ki-bridge-draft:hcc-dry-run://learning-loop/002/manual-review-001|dead_end|dead-cross-service-without-contract",
+      "current_quarantine": false,
+      "proposed_state": "promotion_candidate",
+      "reason": "evaluator verdict trust_band=human_reviewed_candidate + human_approval_ref present + draft.quarantine=false ⇒ promotion_candidate (apply path closed in LOOP-009)",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/manual-review-001/dead/dead-cross-service-without-contract",
+          "content_hash": "sha256-ll002-review-dead-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "human_approval_ref": {
+        "ref": "anchor://learning-loop/002/manual-review-001",
+        "content_hash": "sha256-anchor-ll002-review-001",
+        "approval_kind": "manual_review",
+        "verified": false
+      },
+      "evaluator_trust_band": "human_reviewed_candidate",
+      "evaluator_trust_score": 1,
+      "dry_run_only": true,
+      "live_flush_allowed": false,
+      "knowledge_ingest_call_allowed": false,
+      "knowledge_search_call_allowed": false,
+      "audit_write_allowed": false,
+      "persistence_allowed": false,
+      "next_task_context_write_allowed": false,
+      "live_ranking_mutation_allowed": false,
+      "config_write_allowed": false
+    }
+  ],
+  "dry_run_only": true,
+  "live_flush_allowed": false,
+  "knowledge_ingest_call_allowed": false,
+  "knowledge_search_call_allowed": false,
+  "audit_write_allowed": false,
+  "persistence_allowed": false,
+  "next_task_context_write_allowed": false,
+  "live_ranking_mutation_allowed": false,
+  "config_write_allowed": false,
+  "approval_anchor_verification_allowed": false,
+  "human_approval_ref_required": true,
+  "evaluator_verdict_required": true
+}

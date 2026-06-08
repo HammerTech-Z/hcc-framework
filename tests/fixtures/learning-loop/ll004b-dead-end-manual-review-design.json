@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "dead-end-design-draft",
+  "purpose": "LOOP-004b manual_review dead-end drafts derived from ll002-hcc-manual-review-dry-run.json. design-only. ranking_penalty_allowed=false, knowledge_demotion_allowed=false, knowledge_delete_allowed=false, runtime_write_allowed=false. recurrence_count=1 ⇒ proposed_action=warn_only. human_approval_ref present (verified=false). No live ranking mutation, no knowledge demotion, no knowledge delete.",
+  "created_at": "2026-06-07T15:01:00.000Z",
+  "mode": "design_only",
+  "dry_run_only": true,
+  "ranking_penalty_allowed": false,
+  "knowledge_demotion_allowed": false,
+  "knowledge_delete_allowed": false,
+  "runtime_write_allowed": false,
+  "drafts": [
+    {
+      "schema_version": "1.0.0",
+      "source_kind": "bad_pattern",
+      "fingerprint": "dead-end-draft:hcc-dry-run://learning-loop/002/manual-review-001|bad_pattern|bad-ambiguous-service-scope",
+      "draft_id": "dead-end-draft-hcc-dry-run://learning-loop/002/manual-review-001-bad-bad-ambiguous-service-scope",
+      "summary": "Ambiguous scope across services.",
+      "human_readable_summary": "Do not ship across service boundaries without a boundary contract.",
+      "failure_class": "unknown",
+      "recurrence_count": 1,
+      "trigger_context": "cross-service refactor planning",
+      "why_failed": "Bad pattern observed: Ambiguous scope across services.",
+      "proposed_action": "warn_only",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/manual-review-001/bad/bad-ambiguous-service-scope",
+          "content_hash": "sha256-ll002-review-bad-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "provenance": {
+        "generated_by": "human",
+        "submitted_by": "human",
+        "generation_model": "hcc-dry-run-projection",
+        "dual_reviewed": true,
+        "human_reviewed": true,
+        "reviewed_by": "human",
+        "reviewed_at": "2026-06-07T12:00:00.000Z",
+        "trust_level": "human_confirmed",
+        "human_approval_ref": {
+          "ref": "anchor://learning-loop/002/manual-review-001",
+          "content_hash": "sha256-anchor-ll002-review-001",
+          "approval_kind": "manual_review",
+          "verified": false
+        }
+      },
+      "source_task": "hcc-dry-run://learning-loop/002/manual-review-001",
+      "source_ref": "hcc://learning-loop/002/manual-review-001",
+      "source_fingerprint": "bad-ambiguous-service-scope",
+      "dry_run_only": true,
+      "ranking_penalty_allowed": false,
+      "knowledge_demotion_allowed": false,
+      "knowledge_delete_allowed": false,
+      "runtime_write_allowed": false,
+      "human_approval_ref": {
+        "ref": "anchor://learning-loop/002/manual-review-001",
+        "content_hash": "sha256-anchor-ll002-review-001",
+        "approval_kind": "manual_review",
+        "verified": false
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "source_kind": "dead_end",
+      "fingerprint": "dead-end-draft:hcc-dry-run://learning-loop/002/manual-review-001|dead_end|dead-cross-service-without-contract",
+      "draft_id": "dead-end-draft-hcc-dry-run://learning-loop/002/manual-review-001-dead-dead-cross-service-without-contract",
+      "summary": "Cross-service work paused without boundary contract.",
+      "human_readable_summary": "The slice needs an explicit boundary before implementation.",
+      "failure_class": "design",
+      "recurrence_count": 1,
+      "trigger_context": "tried to ship across services in one change",
+      "why_failed": "No boundary contract was in place.",
+      "proposed_action": "warn_only",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/manual-review-001/dead/dead-cross-service-without-contract",
+          "content_hash": "sha256-ll002-review-dead-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "provenance": {
+        "generated_by": "human",
+        "submitted_by": "human",
+        "generation_model": "hcc-dry-run-projection",
+        "dual_reviewed": true,
+        "human_reviewed": true,
+        "reviewed_by": "human",
+        "reviewed_at": "2026-06-07T12:00:00.000Z",
+        "trust_level": "human_confirmed",
+        "human_approval_ref": {
+          "ref": "anchor://learning-loop/002/manual-review-001",
+          "content_hash": "sha256-anchor-ll002-review-001",
+          "approval_kind": "manual_review",
+          "verified": false
+        }
+      },
+      "source_task": "hcc-dry-run://learning-loop/002/manual-review-001",
+      "source_ref": "hcc://learning-loop/002/manual-review-001",
+      "source_fingerprint": "dead-cross-service-without-contract",
+      "dry_run_only": true,
+      "ranking_penalty_allowed": false,
+      "knowledge_demotion_allowed": false,
+      "knowledge_delete_allowed": false,
+      "runtime_write_allowed": false,
+      "human_approval_ref": {
+        "ref": "anchor://learning-loop/002/manual-review-001",
+        "content_hash": "sha256-anchor-ll002-review-001",
+        "approval_kind": "manual_review",
+        "verified": false
+      }
+    }
+  ]
+}

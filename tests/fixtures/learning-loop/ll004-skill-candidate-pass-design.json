@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "skill-candidate-design-draft",
+  "purpose": "LOOP-004 PASS skill candidate draft derived from ll002 PASS dry-run reflection's good_pattern (good-verifier-first-refactor). design-only. install_allowed=false. registry_mutation_allowed=false. approval_status=pending because the parent reflection is agent-submitted (submitted_by=hermes_main, not human-reviewed).",
+  "created_at": "2026-06-07T14:00:00.000Z",
+  "mode": "design_only",
+  "dry_run_only": true,
+  "install_allowed": false,
+  "registry_mutation_allowed": false,
+  "runtime_write_allowed": false,
+  "approval_status": "pending",
+  "draft_id": "draft-hcc-dry-run://learning-loop/002/pass-001-good-verifier-first-refactor",
+  "fingerprint": "skill-draft:hcc-dry-run://learning-loop/002/pass-001|good-verifier-first-refactor|verifier-first-refactor",
+  "name": "verifier-first-refactor",
+  "scope": "small refactor slices",
+  "trigger": "When non-trivial refactor AND existing tests available",
+  "non_goals": ["greenfield prototype", "greenfield", "large rewrites"],
+  "verification_notes": "Re-run evidence for good-verifier-first-refactor; check counterexamples: greenfield prototype; greenfield; large rewrites",
+  "source_task": "hcc-dry-run://learning-loop/002/pass-001",
+  "source_ref": "hcc://learning-loop/002/pass-001",
+  "evidence": [
+    {
+      "kind": "artifact",
+      "ref": "hcc://learning-loop/002/pass-001/skill/good-verifier-first-refactor",
+      "content_hash": "sha256-ll002-pass-good-001",
+      "excerpt": "redacted dry-run excerpt"
+    }
+  ],
+  "provenance": {
+    "generated_by": "hermes",
+    "submitted_by": "hermes_main",
+    "generation_model": "hcc-dry-run-projection",
+    "dual_reviewed": false,
+    "human_reviewed": false,
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "trust_level": "single_run",
+    "human_approval_ref": null
+  },
+  "derived_from_good_pattern": "good-verifier-first-refactor",
+  "human_approval_ref": null
+}

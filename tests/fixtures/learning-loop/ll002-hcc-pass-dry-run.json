@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "hcc-dry-run-reflection-input",
+  "purpose": "LOOP-002 PASS fixture: project a successful HCC dry-run verifier outcome into a LOOP-001.1 PostTaskReflection draft. Draft-only, no runtime write, no live knowledge flush.",
+  "created_at": "2026-06-07T12:00:00.000Z",
+  "mode": "dry_run",
+  "runtime_flush_allowed": false,
+  "verification_result": "pass",
+  "task_id": "hcc-dry-run://learning-loop/002/pass-001",
+  "artifact_ref": "hcc://learning-loop/002/pass-001",
+  "artifact_hash": "sha256-ll002-pass-001",
+  "task_summary": "Refactor: extract a 200-line redux slice into typed reducers with verifier-first pattern.",
+  "submitted_by": "hermes_main",
+  "good_patterns": [
+    {
+      "fingerprint": "good-verifier-first-refactor",
+      "summary": "Capture verifier inputs before refactor.",
+      "human_readable_summary": "Read the verifier shape before editing, then keep the change narrow.",
+      "reuse_scope": "small refactor slices",
+      "trigger_conditions": ["non-trivial refactor", "existing tests available"],
+      "counterexamples": ["greenfield prototype", "greenfield", "large rewrites"],
+      "risks": ["Can slow down tiny edits if applied blindly."],
+      "evidence_content_hash": "sha256-ll002-pass-good-001"
+    }
+  ],
+  "skill_candidates": [
+    {
+      "fingerprint": "skill-verifier-first-refactor",
+      "name": "verifier-first-refactor",
+      "scope": "small refactor slices",
+      "trigger": "before touching non-trivial code",
+      "non_goals": ["greenfield", "large rewrites"],
+      "verification_notes": "Re-run existing verifier fixtures; no new dependencies.",
+      "source_task": "hcc-dry-run://learning-loop/002/pass-001",
+      "evidence_content_hash": "sha256-ll002-pass-skill-001"
+    }
+  ],
+  "model_feedback": [
+    {
+      "task_class": "refactor",
+      "model_id": "local-e4b-primary",
+      "lane": "primary",
+      "outcome": "success",
+      "observed_limitation": "none significant",
+      "fallback_used": "none",
+      "evidence_content_hash": "sha256-ll002-pass-model-001"
+    }
+  ],
+  "knowledge_ingest_draft": [
+    {
+      "draft_kind": "skill_seed",
+      "body": "Verifier-first refactor pattern: capture verifier inputs before editing.",
+      "links_back_to_task": "hcc-dry-run://learning-loop/002/pass-001",
+      "evidence_content_hash": "sha256-ll002-pass-know-001"
+    }
+  ],
+  "next_task_recommendations": [
+    "Apply verifier-first to the next small refactor slice"
+  ],
+  "usage_feedback_signals": [
+    {
+      "knowledge_id": "kb-verifier-first-001",
+      "kind": "helped",
+      "weight": 1,
+      "recorded_at": "2026-06-07T12:00:00.000Z",
+      "source_task_id": "hcc-dry-run://learning-loop/002/pass-001",
+      "artifact_ref": "hcc://learning-loop/002/pass-001",
+      "evidence_content_hash": "sha256-ll002-pass-usage-001"
+    }
+  ]
+}

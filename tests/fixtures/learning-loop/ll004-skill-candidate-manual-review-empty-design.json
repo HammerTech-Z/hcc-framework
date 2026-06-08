@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "skill-candidate-design-empty-list",
+  "purpose": "LOOP-004 manual_review reflection (ll002 manual-review) has zero good_patterns by design — cross-service boundary work did not produce a positive pattern to promote. This fixture documents that the projection MUST return an empty list when no good_patterns are present, and is paired with the manual_review projection to confirm the future registry receives no install-ready skill candidate for this task.",
+  "created_at": "2026-06-07T14:01:00.000Z",
+  "mode": "design_only",
+  "dry_run_only": true,
+  "install_allowed": false,
+  "registry_mutation_allowed": false,
+  "runtime_write_allowed": false,
+  "source_task": "hcc-dry-run://learning-loop/002/manual-review-001",
+  "source_ref": "hcc://learning-loop/002/manual-review-001",
+  "drafts": []
+}

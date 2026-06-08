@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "hcc-dry-run-reflection-input",
+  "purpose": "LOOP-002 manual_review fixture: project a human-reviewed HCC dry-run into a LOOP-001.1 PostTaskReflection draft. Carries a HumanApprovalRef (verified=false) so consumer guards can accept it; runtime_flush_allowed is still literal false; no live flush.",
+  "created_at": "2026-06-07T12:02:00.000Z",
+  "mode": "dry_run",
+  "runtime_flush_allowed": false,
+  "verification_result": "manual_review",
+  "task_id": "hcc-dry-run://learning-loop/002/manual-review-001",
+  "artifact_ref": "hcc://learning-loop/002/manual-review-001",
+  "artifact_hash": "sha256-ll002-review-001",
+  "task_summary": "Cross-service refactor paused: boundary contract missing. Human reviewer sign-off required.",
+  "submitted_by": "human",
+  "human_approval_ref": {
+    "ref": "anchor://learning-loop/002/manual-review-001",
+    "content_hash": "sha256-anchor-ll002-review-001",
+    "approval_kind": "manual_review",
+    "verified": false
+  },
+  "bad_patterns": [
+    {
+      "fingerprint": "bad-ambiguous-service-scope",
+      "summary": "Ambiguous scope across services.",
+      "human_readable_summary": "Do not ship across service boundaries without a boundary contract.",
+      "trigger_context": "cross-service refactor planning",
+      "risks": ["Reviewers cannot validate ownership or rollback boundaries."],
+      "evidence_content_hash": "sha256-ll002-review-bad-001"
+    }
+  ],
+  "dead_ends": [
+    {
+      "fingerprint": "dead-cross-service-without-contract",
+      "summary": "Cross-service work paused without boundary contract.",
+      "human_readable_summary": "The slice needs an explicit boundary before implementation.",
+      "failure_class": "design",
+      "recurrence_count": 1,
+      "trigger_context": "tried to ship across services in one change",
+      "why_failed": "No boundary contract was in place.",
+      "proposed_action": "warn_only",
+      "evidence_content_hash": "sha256-ll002-review-dead-001"
+    }
+  ],
+  "knowledge_ingest_draft": [
+    {
+      "draft_kind": "judgement",
+      "body": "Cross-service changes require an explicit boundary contract first.",
+      "links_back_to_task": "hcc-dry-run://learning-loop/002/manual-review-001",
+      "evidence_content_hash": "sha256-ll002-review-know-001"
+    }
+  ],
+  "next_task_recommendations": [
+    "Define boundary contract before any further cross-service work"
+  ]
+}

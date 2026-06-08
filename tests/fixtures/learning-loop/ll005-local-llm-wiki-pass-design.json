@@ -1,0 +1,113 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "local-llm-wiki-draft",
+  "purpose": "LOOP-005 PASS wiki draft derived from ll002-hcc-pass-dry-run.json model_feedback (local-e4b-primary, outcome=success, refactor task). design-only. All runtime / API / download / config / persistence / model_strategy mutation flags false. Records task suitability for future review; does not promote to live lane.",
+  "created_at": "2026-06-07T16:00:00.000Z",
+  "mode": "design_only",
+  "dry_run_only": true,
+  "model_runtime_start_allowed": false,
+  "api_call_allowed": false,
+  "model_download_allowed": false,
+  "config_write_allowed": false,
+  "persistence_allowed": false,
+  "ranking_mutation_allowed": false,
+  "model_strategy_mutation_allowed": false,
+  "drafts": [
+    {
+      "schema_version": "1.0.0",
+      "draft_id": "wiki-draft-hcc-dry-run://learning-loop/002/pass-001-refactor-local-e4b-primary",
+      "fingerprint": "local-llm-wiki-draft:hcc-dry-run://learning-loop/002/pass-001|local-e4b-primary|refactor|success",
+      "model_ref": "local-e4b-primary",
+      "model_family": "local",
+      "model_alias": "local-e4b-primary",
+      "provider_kind": "local",
+      "lane": "task_fallback",
+      "capability_tags": [
+        "lane:task_fallback",
+        "family:local",
+        "outcome:success"
+      ],
+      "multimodal_support": {
+        "text": true,
+        "code": true,
+        "vision": false
+      },
+      "runtime_backend": "llama.cpp",
+      "endpoint_ref": null,
+      "benchmark_notes": "needs_benchmark — local on lane=complex_code: not yet smoke-tested; do not promote to live lane in LOOP-005",
+      "task_suitability": "refactor on lane=complex_code: outcome=success, suitability=needs_review (LOOP-005 design-only, not promoted)",
+      "failure_modes": [],
+      "fallback_decisions": ["none"],
+      "smoke_status": "not_run",
+      "source_model_feedback": {
+        "task_class": "refactor",
+        "model_id": "local-e4b-primary",
+        "lane": "primary",
+        "outcome": "success",
+        "observed_limitation": "",
+        "fallback_used": "none",
+        "evidence": [
+          {
+            "kind": "artifact",
+            "ref": "hcc://learning-loop/002/pass-001/model/refactor-local-e4b-primary",
+            "content_hash": "sha256-ll002-pass-model-001",
+            "excerpt": "redacted dry-run excerpt"
+          }
+        ],
+        "provenance": {
+          "generated_by": "hermes",
+          "submitted_by": "hermes_main",
+          "generation_model": "hcc-dry-run-projection",
+          "dual_reviewed": false,
+          "human_reviewed": false,
+          "reviewed_by": null,
+          "reviewed_at": null,
+          "trust_level": "single_run",
+          "human_approval_ref": null
+        },
+        "secret_scan": {
+          "scanned": true,
+          "passed": true,
+          "method": "fixture-static-scan"
+        },
+        "instruction_scan": {
+          "scanned": true,
+          "passed": true,
+          "method": "fixture-static-scan",
+          "authority_claim_detected": false,
+          "matched_terms": []
+        }
+      },
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/pass-001/wiki/refactor-local-e4b-primary",
+          "content_hash": "sha256-ll002-pass-model-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "provenance": {
+        "generated_by": "hermes",
+        "submitted_by": "hermes_main",
+        "generation_model": "hcc-dry-run-projection",
+        "dual_reviewed": false,
+        "human_reviewed": false,
+        "reviewed_by": null,
+        "reviewed_at": null,
+        "trust_level": "single_run",
+        "human_approval_ref": null
+      },
+      "source_task": "hcc-dry-run://learning-loop/002/pass-001",
+      "source_ref": "hcc://learning-loop/002/pass-001",
+      "dry_run_only": true,
+      "model_runtime_start_allowed": false,
+      "api_call_allowed": false,
+      "model_download_allowed": false,
+      "config_write_allowed": false,
+      "persistence_allowed": false,
+      "ranking_mutation_allowed": false,
+      "model_strategy_mutation_allowed": false,
+      "human_approval_ref": null
+    }
+  ]
+}

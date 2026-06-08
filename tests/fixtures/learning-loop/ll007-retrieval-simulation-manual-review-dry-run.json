@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "retrieval-feedback-simulation-candidates",
+  "purpose": "LOOP-007 manual_review retrieval feedback delta candidates derived from the ll003 manual_review usage event + ll006a manual_review consumer route decision bundle. human_approval_ref present + verified=false + route=context_dry_run_candidate ⇒ proposed_delta=0 / proposed_direction='none' (context surface only). isRetrievalDeltaApplyEligible MUST be false.",
+  "created_at": "2026-06-07T19:02:00.000Z",
+  "candidates": [
+    {
+      "schema_version": "1.0.0",
+      "candidate_id": "retrieval-delta-candidate:hcc-dry-run://learning-loop/002/manual-review-001|kb-boundary-contract-001|helped|context_dry_run_candidate",
+      "source_task": "hcc-dry-run://learning-loop/002/manual-review-001",
+      "source_ref": "hcc://learning-loop/002/manual-review-001",
+      "knowledge_id": "kb-boundary-contract-001",
+      "draft_fingerprint": "retrieval-delta-candidate:hcc-dry-run://learning-loop/002/manual-review-001|kb-boundary-contract-001|helped|context_dry_run_candidate",
+      "signal_kind": "helped",
+      "route": "context_dry_run_candidate",
+      "proposed_delta": 0,
+      "proposed_direction": "none",
+      "reason": "route=context_dry_run_candidate ⇒ context surface only; ranking delta stays at zero in LOOP-007",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": "hcc://learning-loop/002/manual-review-001/usage/kb-boundary-contract-001",
+          "content_hash": "sha256-ll003-review-usage-001",
+          "excerpt": "redacted dry-run excerpt"
+        }
+      ],
+      "human_approval_ref": {
+        "ref": "anchor://learning-loop/002/manual-review-001",
+        "content_hash": "sha256-anchor-ll002-review-001",
+        "approval_kind": "manual_review",
+        "verified": false
+      },
+      "dry_run_only": true,
+      "live_ranking_mutation_allowed": false,
+      "ranking_input_write_allowed": false,
+      "next_task_context_write_allowed": false,
+      "live_flush_allowed": false,
+      "audit_write_allowed": false,
+      "persistence_allowed": false
+    }
+  ],
+  "dry_run_only": true,
+  "live_ranking_mutation_allowed": false,
+  "ranking_input_write_allowed": false,
+  "next_task_context_write_allowed": false,
+  "live_flush_allowed": false,
+  "audit_write_allowed": false,
+  "persistence_allowed": false,
+  "audit_write_prohibited": true,
+  "config_write_prohibited": true
+}
