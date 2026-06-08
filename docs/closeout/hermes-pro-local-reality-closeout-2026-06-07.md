@@ -318,6 +318,35 @@ No drift between LOOP-009 source and prior slice sources. All imports are `impor
 
 ---
 
+## 8. Post-commit Status Update (2026-06-08)
+
+The §1.1 / §2 / §3 above described the local-reality snapshot at audit verification time (`HEAD 464d8de7d81d`, working tree uncommitted, 60 status lines). After the audit, the user authorized 7 atomic commits to land the audit deliverables:
+
+| # | Commit | Subject | Files | Sub-Total |
+|---|--------|---------|-------|-----------|
+| 1 | `bbd2eed24622` | `docs(governance): add Hermes soul implementation matrix` | 1 | 79 ins |
+| 2 | `fa004f3da7ba` | `docs(closeout): add Hermes Pro local reality audit` | 1 | 330 ins |
+| 3 | `8e4e539354e8` | `docs(learning-loop): sync LOOP-009 closeout status` | 3 | 1495 ins / 120 del |
+| 4 | `d4f06ff90470` | `feat(learning-loop): add post-task reflection design helpers` | 10 | 10 files |
+| 5 | `8485e3680657` | `test(learning-loop): add post-task reflection fixtures` | 33 | 5332 ins |
+| 6 | `fa632fee560c` | `test(learning-loop): cover post-task reflection dry-run chain` | 10 | 4913 ins |
+| 7 | `6c5a37d2e2df` | `feat(learning-loop): harden post-task reflection contract` | 2 | 1227 ins / 28 del |
+
+**Total: 60 file changes, 7 atomic commits, 0 amend, 0 squash.**
+
+Post-commit local reality (2026-06-08):
+
+- `HEAD = 6c5a37d2e2df` (group 7, final)
+- `git status --short` = **empty** (working tree clean)
+- `git diff --check` = empty
+- `git diff -- docs/roadmap-locked-2026-05-28.md` = empty
+- `npm run typecheck` = PASS
+- `npx vitest run` (full) = **Test Files 132 passed (132) · Tests 3754 passed (3754)**
+- `~/.hermes/config.yaml / handoff/packs / audit` mtime = **unchanged** (`1780225681 / 1780195726 / 1780230084`)
+- No push performed. Working tree awaits explicit push authorization.
+
+The §1.1 verbatim status block above is preserved as the audit-time snapshot (it is factually correct as of 2026-06-07 evening when the audit ran). This §8 documents the post-audit commit progression that consumed all 60 status lines into 7 atomic commits.
+
 ## 7. Sign-off
 
 - I have not deleted, moved, or renamed any file in the working tree.

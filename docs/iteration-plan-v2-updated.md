@@ -4,7 +4,7 @@
 > UI Slice 1–7 已完成并推送（`faf56f2` / `e0333ee` / `08db860` / `3e21df4` / `3dd12dd` / `de35e6f` / `b612d1a`）。
 > Knowledge IPC Migration Slice 0–8B + Closeout + Fix-Applied Declaration 已完成并推送（12 commits: `86b4a8f` / `9c0c808` / `1b87fb4` / `3136ddd` / `cc44a6f` / `eeb4069` / `3842d7e` / `66d0440` / `2229c9a` / `d641370` / `5a27d20` / `600a7fb`）。
 > Historical verified state for this Closeout Addendum: `HEAD == origin/hermes-pro-main == 600a7fb7be3e70127377db8fb8ab52fe1f35fed5`；working tree clean；121 files / 3505 tests PASS。
-> Current local reality after TODAY-CLOSEOUT-001 audit: HEAD `464d8de7d81d`；working tree has uncommitted LOOP-001.1→LOOP-009 + closeout deliverables; latest verified full baseline is 132 files / 3754 tests PASS.
+> Current local reality after 7-group atomic commit (2026-06-08): HEAD `6c5a37d2e2df`；working tree clean; LOOP-001.1→LOOP-009 atomic commit done (7 commits: bbd2eed docs(governance) / fa004f3 docs(closeout) / 8e4e539 docs(learning-loop) / d4f06ff feat(helpers) / 8485e36 test(fixtures) / fa632fe test(dry-run chain) / 6c5a37d feat(contract hardening)); latest verified full baseline is 132 files / 3754 tests PASS.
 > `src/preload/index.ts` 不含 `http://127.0.0.1:8643/knowledge*` raw fetch；`knowledgeSearch` / `knowledgeIngest` / `getGbrainStats` 已全部走 main-process IPC bridge；renderer API method names 与 response shapes 保持兼容；Knowledge / KnowledgeControl screen 行为不变。
 > `SCREEN_BOUNDARY_CONTRACT_DIRECT_GATEWAY_FIX_APPLIED = true`。
 > `~/.hermes/config.yaml` / `handoff/packs` / `audit` mtime 全程未变；`docs/roadmap-locked-2026-05-28.md` 未触碰。
