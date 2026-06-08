@@ -1,13 +1,15 @@
 # Hermes Pro 当前融合计划（2026-05-30）
 
 > 状态：当前执行参考，不替代锁定路线图。
-> 最高约束：`~/.hermes/HERMES-SOUL.md` v5.3。
+> 最高约束：`~/.hermes/HERMES-SOUL.md` v5.5.1 候选正文（2026-06-07；当前文件内容与 Downloads 候选文件 hash 一致）。
 > 锁定路线图：`docs/roadmap-locked-2026-05-28.md`。
 > 本文用途：把最新确认的架构、现状、下一步计划合并到一个不会漏模块的入口。
+> 灵魂落地守门：修改 `HERMES-SOUL.md`、学习闭环、安全写入路径、prompt 注入、HCC 编排、知识入库或 Next Task Context 前，先检查 `docs/governance/soul-hermes-pro-implementation-matrix-2026-06-07.md`，避免把灵魂目标态 / design-only / dry-run 写成 live runtime。
 > **Closeout Addendum — 2026-06-07**
 > UI Slice 1–7 已完成并推送（`faf56f2` / `e0333ee` / `08db860` / `3e21df4` / `3dd12dd` / `de35e6f` / `b612d1a`）。
 > Knowledge IPC Migration Slice 0–8B + Closeout + Fix-Applied Declaration 已完成并推送（12 commits: `86b4a8f` / `9c0c808` / `1b87fb4` / `3136ddd` / `cc44a6f` / `eeb4069` / `3842d7e` / `66d0440` / `2229c9a` / `d641370` / `5a27d20` / `600a7fb`）。
-> Final verified state: `HEAD == origin/hermes-pro-main == 600a7fb7be3e70127377db8fb8ab52fe1f35fed5`；working tree clean；121 files / 3505 tests PASS。
+> Historical verified state for this Closeout Addendum: `HEAD == origin/hermes-pro-main == 600a7fb7be3e70127377db8fb8ab52fe1f35fed5`；working tree clean；121 files / 3505 tests PASS。
+> Current local reality after TODAY-CLOSEOUT-001 audit: HEAD `464d8de7d81d`；working tree has uncommitted LOOP-001.1→LOOP-009 + closeout deliverables; latest verified full baseline is 132 files / 3754 tests PASS.
 > `src/preload/index.ts` 不含 `http://127.0.0.1:8643/knowledge*` raw fetch；`knowledgeSearch` / `knowledgeIngest` / `getGbrainStats` 已全部走 main-process IPC bridge；renderer API method names 与 response shapes 保持兼容；Knowledge / KnowledgeControl screen 行为不变。
 > `SCREEN_BOUNDARY_CONTRACT_DIRECT_GATEWAY_FIX_APPLIED = true`。
 > `~/.hermes/config.yaml` / `handoff/packs` / `audit` mtime 全程未变；`docs/roadmap-locked-2026-05-28.md` 未触碰。
@@ -37,7 +39,7 @@ Hermes Pro 的核心需求是：
 | 模块 | 本地事实 | 状态 |
 |------|----------|------|
 | Hermes Pro 项目 | `/Users/midoudou/hermes-pro` | ✅ 存在 |
-| 灵魂文件 | `/Users/midoudou/.hermes/HERMES-SOUL.md` v5.3 | ✅ 已更新 |
+| 灵魂文件 | `/Users/midoudou/.hermes/HERMES-SOUL.md` v5.5.1 候选正文；`~/.hermes/SOUL.md` 仍是 4 行指针，不等于运行时已加载全文 | ✅ 文件已更新；⚠️ loader 仍待建 |
 | BaiLongma | `docs/bailongma/` + POC-2 + QA PASS | ✅ 只读 POC 完成，Productionization 未批准 |
 | Knowledge UI | `knowledgeSearch` / `knowledgeIngest` / `getGbrainStats` | ✅ P0 PASS：固定查询 0 超时；过时计划目录硬排除已验证 |
 | Vault API | `listVaultFiles` / `readVaultFile` / `getVaultStats` | ✅ 已接 |
@@ -48,7 +50,7 @@ Hermes Pro 的核心需求是：
 | GBrain typed links | `src/shared/lib/typed-links.ts` + `tests/typed-links.test.ts` | ✅ P1 PASS：只读 typed links、evidence/provenance/trust_level 已实现，25/25 tests PASS |
 | Handoff / handoff-agent | `~/.hermes/handoff/packs/HANDOFF-P0.5-20260531-001.json` + verifier report | ✅ P0.5 PASS：Handoff Pack 已生成，脱敏扫描 0 发现，Verifier 7/7 通过 |
 | Usage Feedback | `src/shared/lib/usage-feedback.ts` + `tests/usage-feedback.test.ts` | ✅ P1.5 PASS：append-only in-memory ledger 已实现，15/15 tests PASS，不改变检索排序 |
-| Post-task Learning Loop | `docs/learning-loop/hermes-post-task-learning-loop-plan-2026-06-07.md` | ⏳ 规划补齐：任务结束后 summary → good/bad pattern → skill candidate / dead_end / model feedback → knowledge ingest draft → GBrain / local LLM wiki / next task context；当前 no runtime |
+| Post-task Learning Loop | `docs/learning-loop/hermes-post-task-learning-loop-plan-2026-06-07.md` + `src/shared/lib/post-task-reflection-contract.ts` | 🔄 LOOP-001 pure contract 已落地；后续顺序：002 fixture → 003 usage feedback adapter design → 004 good pattern skill draft → 004b bad pattern dead-end → 005 local LLM wiki connector → 006 ingest bridge → 007 retrieval simulation → 008 reflection evaluator；全程 no runtime / no live flush |
 | Domain Profile | 领域化 Quality Loop 接口 | ⏳ P3 接口先定，代码 profile 先实现，AI 漫剧 P5 插件化接入 |
 | P2.5 安全基座 | `docs/security/p2-5-safety-foundation-2026-05-30.md` | ✅ PASS：12/12 硬限制全满足；278/278 tests PASS；EXIT CODE 0 |
 | WeChat/iLink | schedule staggering verified; low-priority 4 jobs `deliver=local` applied | ✅ **P7 local delivery applied**（4 个低优先级 cron job：`db41a513ebfd` / `21129f505fb4` / `28f0bff3083d` / `skill-cleanup-weekly`；schedule / prompt / skill set / enable state / state 全部不变；仅 `deliver: weixin → local`；高优先级投递策略仍待决策）。报告：`~/.hermes/pipeline-runs/HCC-20260602-P7-WECHAT-ILINK-LOCAL-DELIVERY/01-report.md` |
@@ -368,26 +370,6 @@ usage_event:
   task_id: string
   retrieved:
     - knowledge_id
-
-### P1.6：Post-task Learning Loop
-
-目标：补齐任务结束后的学习闭环，把每次任务的结果沉淀为可复用知识、skill 草稿、失败经验、模型反馈和下一次任务上下文。
-
-范围：
-- 每次重要任务结束后生成 `PostTaskReflection`。
-- 从任务结果提取 `good_patterns`、`bad_patterns`、`dead_ends`、`model_feedback`、`skill_candidates`。
-- 好模式进入 pending skill candidate，不自动安装。
-- 坏模式进入 dead_end / anti-pattern ingest draft，不自动删除或降权既有知识。
-- 模型表现写入本地 LLM wiki draft，供 Model Strategy 后续判断 lane / fallback。
-- helped / misled 进入 Usage Feedback Ledger，未来用于 retrieval ranking simulation。
-- 详细计划见 `docs/learning-loop/hermes-post-task-learning-loop-plan-2026-06-07.md`。
-
-边界：
-- no runtime write。
-- no live knowledge flush。
-- no skill auto-install。
-- no model runtime startup。
-- no HCC Auto Executor change。
   used:
     - knowledge_id
   outcome: PASS | FAIL | rolled_back
@@ -396,6 +378,52 @@ usage_event:
   misled:
     - knowledge_id
 ```
+
+### P1.6：Post-task Learning Loop
+
+验收：
+
+目标：补齐任务结束后的学习闭环，把每次任务的结果沉淀为可复用知识、skill 草稿、失败经验、模型反馈和下一次任务上下文，同时避免 AI 反思自我确认进入主知识库。
+
+范围：
+- LOOP-001 已有纯契约：`src/shared/lib/post-task-reflection-contract.ts` + `tests/post-task-reflection-contract.test.ts`。
+- 每次重要任务结束后生成 `PostTaskReflection` candidate。
+- 从任务结果提取 `good_patterns`、`bad_patterns`、`dead_ends`、`model_feedback`、`skill_candidates`。
+- 每条衍生内容必须带 provenance / trust_level / evidence content_hash / artifact_hash。
+- `SafetyFlags` 替代旧的单一 `runtime_write_allowed`，运行时反序列化后也必须校验，任何写路径 flag 为 true 都拒绝。
+- `submitted_by` / `reviewed_by` / `reviewed_at` 编码 actor 边界；`human_reviewed=true` 只能由 human reviewer 产生，非人类 agent 不能自抬 trust。
+- 好模式进入 pending skill candidate，不自动安装，`install_allowed=false`。
+- 坏模式进入 dead_end / anti-pattern draft，必须带 `failure_class` 与 `recurrence_count`，不自动删除或降权既有知识。
+- 反思衍生知识默认 `quarantine=true`，不进入 Next Task Context，不影响 live ranking；消费侧 guard 也必须拒绝 quarantined / non-human-reviewed reflection。
+- `secret_scan` 与 `instruction_scan` 均为必过 gate，防 secret 泄漏与 prompt-injection/authority claim 回流。
+- 解除 quarantine 的唯一路径是显式人工确认 + `ApprovalGate`；批准本身仍不等于 live flush。
+- 模型表现写入本地 LLM wiki draft，供 Model Strategy 后续判断 lane / fallback。
+- helped / misled 进入 Usage Feedback Ledger，未来用于 retrieval ranking simulation。
+- 详细计划见 `docs/learning-loop/hermes-post-task-learning-loop-plan-2026-06-07.md`。
+
+执行顺序：
+- LOOP-001：Post-task Reflection Contract（pure contract，已落地）。
+- LOOP-001.1：Reflection Contract Hardening（HumanApprovalRef + submitter 矩阵 + free-text 扫扩 + Chinese instruction scan + hash 格式 + extract* pre-review projection；pure contract，已落地）。
+- LOOP-002：Reflection Fixture from Existing HCC Artifacts（pure 投影 helper + 3 个 dry-run JSON + 10/10 tests PASS；no runtime）。
+- LOOP-003：Usage Feedback Persistent Adapter Design（design-only descriptor + 投影 + 指紋 + 摺疊 + 資格分類器 + 3 fixture + 13/13 tests PASS；no runtime；不寫真實 adapter）。
+- LOOP-004：Good Pattern → Skill Candidate Draft Builder（design-only descriptor + projection + fingerprint + collapse + eligibility + 2 fixture + 14/14 tests PASS；no install；no registry mutation；no runtime write）。
+- LOOP-004b：Bad Pattern → Dead-end Builder（design-only descriptor + projection + fingerprint + collapse + 阈值 classifier + 2 fixture + 16/16 tests PASS；no ranking penalty；no knowledge demotion；no knowledge delete；no runtime write）。
+- LOOP-005：Local LLM Wiki Connector（design-only descriptor + 7 lane classifier + projection + fingerprint + collapse + runtime guard + activation eligibility + 3 fixture + 17/17 tests PASS；no model runtime；no API call；no model download；no config write；no persistence；no live model-strategy mutation）。
+- LOOP-006：Knowledge Ingest Bridge（draft only；7 per-source projection + batch projection + fingerprint + collapse + runtime guard + consumer eligibility + 3 fixture + 16/16 tests PASS；no knowledgeIngest；no knowledgeSearch；no live flush；no audit write；no live ranking mutation；no skill install；no model runtime）。
+- LOOP-006A：Human Approval Anchor + Consumer Guard Routing Design（pre-condition for LOOP-007；pure descriptor + 6 per-source decision helper + batch helper + decision id + collapse + runtime guard + 9-entry matrix + 3 fixture + **20/20 tests PASS**；no anchor verification；no consumer mutation；no Next Task Context write；no retrieval ranking mutation；no live flush；no audit write；no persistence；verified_must_remain_false_in_contract_layer）。
+- LOOP-007：Retrieval Feedback Simulation（**dry-run simulation done / 2026-06-07**；pure descriptor + 6 helper + 2 projection + 1 guard + 1 apply-eligibility stub + 3 candidate fixture + 1 fixture regenerator + 单测 PASS；no live ranking mutation；no live ranking input write；no Next Task Context write；no knowledgeIngest；no knowledgeSearch；no live flush；no audit write；no persistence；no config write；no skill install；no HCC Auto Executor；isRetrievalDeltaApplyEligible hard-wired to false；verified_must_remain_false_in_contract_layer；live ranking 仍未启用）。
+- LOOP-008：Reflection Evaluator（**pure projection done / 2026-06-07**；pure descriptor + 4 per-source evaluator + 1 batch helper pair + scoring + verdict id + collapse + runtime guard + promotion-eligibility stub hard-wired to false + 3 verdict fixture + 1 fixture regenerator; no live flush; no knowledgeIngest; no knowledgeSearch; no audit write; no persistence; no config write; no Next Task Context write; no live ranking mutation; no skill install; no model runtime; no HCC Auto Executor; isReflectionEvaluatorPromotionEligible hard-wired to false; verified_must_remain_false_in_contract_layer; PASS / FAIL fixture trust_score=0.65, manual_review fixture trust_score=1.0; LOOP-008 ⇒ GO LOOP-009 design-only done / 任何 live apply 仍 NOT-GO）。
+- LOOP-009：Knowledge Quarantine / Promotion Adapter（**design-only done / 2026-06-07**；pure descriptor + 2 decision helper + decision id + collapse + runtime guard + apply-eligibility stub hard-wired to false + 3 decision fixture + 1 fixture regenerator; no live flush; no knowledgeIngest; no knowledgeSearch; no audit write; no persistence; no config write; no Next Task Context write; no live ranking mutation; no skill install; no HCC Auto Executor; no anchor verification; isQuarantinePromotionApplyEligible hard-wired to false; verified_must_remain_false_in_contract_layer; PASS / FAIL decision 全部 proposed_state=remain_quarantined, manual_review decision 全部 proposed_state=promotion_candidate (apply 仍 NOT-GO); live knowledge flush / ingest / search / ranking mutation / Next Task Context write / HCC Auto Executor 全锁 false; live apply 仍冻结）。
+
+边界：
+- no runtime write。
+- no live knowledge flush。
+- no skill auto-install。
+- no model runtime startup。
+- no HCC Auto Executor change。
+- no real agent subprocess dispatch。
+- no default system prompt mutation。
+- no quarantine bypass。
 
 验收：
 - P1/P2 阶段只 append usage_event，不改变检索排序。
