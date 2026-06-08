@@ -35,6 +35,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: trusted_user read_public low risk",
       evidenceRef: "test-evid-001",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("allow");
@@ -56,6 +57,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: browser_action high risk without confirm",
       evidenceRef: "test-evid-002",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("require_user_approval");
@@ -74,6 +76,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: write_artifact medium risk without confirm",
       evidenceRef: "test-evid-003",
+      auditDir: tmpDir,
     });
 
     // medium-risk does not auto-require approval; follows normal allow/deny logic
@@ -96,6 +99,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: browser_action high risk with user confirm",
       evidenceRef: "test-evid-004",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("allow");
@@ -114,6 +118,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: credential_access high risk with user confirm",
       evidenceRef: "test-evid-005",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("allow");
@@ -137,6 +142,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: semi_trusted credential_access confirmed yet denied",
       evidenceRef: "test-evid-006",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -158,6 +164,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: untrusted_external write_project",
       evidenceRef: "test-evid-007",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -175,6 +182,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: archive_locked read_public",
       evidenceRef: "test-evid-008",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -195,6 +203,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: untrusted_external run_command low risk",
       evidenceRef: "test-evid-009",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -212,6 +221,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: unattended_cron write_artifact",
       evidenceRef: "test-evid-010",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -332,6 +342,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: credential_access implicit high",
       evidenceRef: "test-evid-012",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("require_user_approval");
@@ -348,6 +359,7 @@ describe("checkPreflight", () => {
       actor: "hermes",
       context: "test: read_local implicit low",
       evidenceRef: "test-evid-013",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("allow");

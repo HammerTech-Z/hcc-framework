@@ -36,6 +36,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: trusted_user read",
       evidenceRef: "ag-evid-001",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("allow");
@@ -58,6 +59,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: untrusted_external write_project",
       evidenceRef: "ag-evid-002",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -76,6 +78,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: archive_locked write",
       evidenceRef: "ag-evid-003",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -97,6 +100,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: delete without confirm",
       evidenceRef: "ag-evid-004",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("require_user_approval");
@@ -116,6 +120,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: delete with confirm",
       evidenceRef: "ag-evid-005",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("allow");
@@ -138,6 +143,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: untrusted_external publish",
       evidenceRef: "ag-evid-006",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -156,6 +162,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: untrusted_external execute",
       evidenceRef: "ag-evid-007",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -177,6 +184,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: archive_locked delete",
       evidenceRef: "ag-evid-008",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -195,6 +203,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: archive_locked execute",
       evidenceRef: "ag-evid-009",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
@@ -216,6 +225,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: publish without confirm",
       evidenceRef: "ag-evid-010",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("require_user_approval");
@@ -341,6 +351,7 @@ describe("checkActionGate", () => {
       actor: "hermes",
       context: "test: semi_trusted credential_access confirmed yet denied",
       evidenceRef: "ag-evid-012",
+      auditDir: tmpDir,
     });
 
     expect(result.decision).toBe("deny");
