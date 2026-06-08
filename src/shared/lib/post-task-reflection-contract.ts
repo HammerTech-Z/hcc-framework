@@ -1,9 +1,23 @@
-// Post-task Learning Loop - Slice LOOP-001
+// Post-task Learning Loop - Slice LOOP-001.1
 // Pure shared contract for post-task reflection records. This module
 // contains no runtime wiring, persistence, IPC, knowledge ingest, skill
 // install, model startup, audit write, or config write.
+//
+// LOOP-001.1 hardening (2026-06-07):
+// - human_reviewed/reviewed_by/reviewed_at are STRUCTURAL MARKERS only.
+//   They do not authenticate "human approval". Authenticity must be
+//   proven by HumanApprovalRef + downstream consumer-layer verification
+//   (LOOP-006+). Pure contract layer only validates field shape.
+// - HumanApprovalRef.ref / content_hash / approval_kind are still
+//   structural. HumanApprovalRef.verified is hard-asserted false here so
+//   no consumer can mistake the contract layer for an authenticity
+//   verifier. Real verification lives in the consumer/anchor layer.
+// - extract* helpers are PRE-REVIEW PROJECTIONS. They may not be fed
+//   into Next Task Context or ranking input. Consumer guards
+//   (assertReflectionAllowedForNextTaskContext /
+//   assertReflectionAllowedForRankingInput) gate that.
 
-export const POST_TASK_REFLECTION_SCHEMA_VERSION = "1.0.0" as const;
+export const POST_TASK_REFLECTION_SCHEMA_VERSION = "1.1.0" as const;
 export const POST_TASK_REFLECTION_MODE =
   "post_task_reflection_contract_only" as const;
 export const POST_TASK_APPROVAL_GATE_VERSION = "1.0.0" as const;
@@ -16,6 +30,32 @@ export type TrustLevel =
   | "human_confirmed";
 
 export type ReflectionAgent = "hermes" | "claude_code" | "codex" | "human";
+export type ReflectionSubmitter =
+  | "hermes_main"
+  | "claude_code"
+  | "codex"
+  | "human";
+export type HumanReviewActor = "human";
+
+export type HumanApprovalKind = "manual_review" | "explicit_user_action";
+
+/**
+ * HumanApprovalRef is a STRUCTURAL pointer to a human approval anchor.
+ *
+ * LOOP-001.1 contract-layer rules:
+ * - ref / content_hash / approval_kind are required string fields
+ *   when human_reviewed=true or trust_level="human_confirmed".
+ * - verified is HARDCODED false in this layer. The contract MUST NOT
+ *   assert that any human approval has been authenticated. Real
+ *   verification is delegated to the consumer/anchor layer
+ *   (LOOP-006+ / human approval anchor + consumer guard).
+ */
+export interface HumanApprovalRef {
+  ref: string;
+  content_hash: string;
+  approval_kind: HumanApprovalKind;
+  verified: false;
+}
 
 export type PostTaskVerificationResult =
   | "pass"
@@ -74,6 +114,14 @@ export interface SecretScanResult {
   method: string;
 }
 
+export interface InstructionScanResult {
+  scanned: boolean;
+  passed: boolean;
+  method: string;
+  authority_claim_detected: boolean;
+  matched_terms: string[];
+}
+
 export interface EvidenceRef {
   kind: EvidenceKind;
   ref: string;
@@ -83,10 +131,20 @@ export interface EvidenceRef {
 
 export interface Provenance {
   generated_by: ReflectionAgent;
+  submitted_by: ReflectionSubmitter;
   generation_model?: string;
   dual_reviewed: boolean;
   human_reviewed: boolean;
+  reviewed_by: HumanReviewActor | null;
+  reviewed_at: string | null;
   trust_level: TrustLevel;
+  /**
+   * Structural pointer to a human approval anchor. NULL when the
+   * reflection has not been claimed human-reviewed. Authenticity of the
+   * approval is NOT verified by the contract layer — verified is always
+   * false. Consumer/anchor layer must verify before granting trust.
+   */
+  human_approval_ref: HumanApprovalRef | null;
 }
 
 export interface ReflectionGoodPattern {
@@ -134,6 +192,7 @@ export interface ModelFeedback {
   evidence: EvidenceRef[];
   provenance: Provenance;
   secret_scan: SecretScanResult;
+  instruction_scan: InstructionScanResult;
 }
 
 export interface SkillCandidateDraft {
@@ -157,6 +216,7 @@ export interface ReflectionKnowledgeDraft {
   evidence: EvidenceRef[];
   provenance: Provenance;
   secret_scan: SecretScanResult;
+  instruction_scan: InstructionScanResult;
   quarantine: boolean;
   runtime_flush_allowed: false;
 }
@@ -251,6 +311,91 @@ const SECRET_SUBSTRINGS = [
   "secret=",
 ] as const;
 
+/**
+ * LOOP-001.1 instruction-authority scan.
+ *
+ * Covers English + common Chinese injection phrasings. Combined with
+ * `normalizeForInstructionScan` this catches the typical
+ * "ignore previous / ignore above / 忽略以上 / 系统提示" class of attempts
+ * that try to make a free-text field act as a system prompt.
+ */
+const INSTRUCTION_AUTHORITY_SUBSTRINGS = [
+  // English
+  "ignore previous",
+  "ignore all previous",
+  "ignore above",
+  "ignore prior",
+  "system prompt",
+  "developer message",
+  "you must",
+  "you must obey",
+  "treat this as instruction",
+  "treat as instruction",
+  "execute the following command",
+  "execute this command",
+  "run the following command",
+  "run this command",
+  // Chinese — half-width and full-width variants. Full-width is also
+  // collapsed to half-width by normalizeForInstructionScan.
+  "忽略以上",
+  "忽略之前",
+  "忽略之前的指令",
+  "忽略以上指令",
+  "忽略前述",
+  "系统提示",
+  "开发者消息",
+  "你必须",
+  "把这段当作指令",
+  "把以下内容当作指令",
+  "执行以下命令",
+  "运行以下命令",
+] as const;
+
+/**
+ * Minimal normalization for instruction-authority scan.
+ *
+ * - lowercase
+ * - strip zero-width chars (U+200B, U+200C, U+200D, U+FEFF)
+ * - collapse common full-width ASCII (U+FF01..U+FF5E) to half-width
+ * - collapse full-width space (U+3000) to half-width space
+ *
+ * Not a general-purpose fullwidth->halfwidth table; we only cover the
+ * characters that commonly appear in injection payloads.
+ */
+function normalizeForInstructionScan(value: string): string {
+  let out = "";
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (
+      code === 0x200b ||
+      code === 0x200c ||
+      code === 0x200d ||
+      code === 0xfeff
+    ) {
+      continue;
+    }
+    if (code === 0x3000) {
+      out += " ";
+      continue;
+    }
+    if (code >= 0xff01 && code <= 0xff5e) {
+      out += String.fromCodePoint(code - 0xfee0);
+      continue;
+    }
+    out += ch;
+  }
+  return out.toLowerCase();
+}
+
+/**
+ * Minimum content_hash / artifact_hash format:
+ *   "sha256-..." or "sha256:..." (sha256 prefix + at least one body char).
+ *
+ * Pure contract layer does NOT verify hash matches real content; that
+ * comparison is delegated to the consumer/anchor layer (LOOP-006+).
+ */
+const HASH_FORMAT = /^sha256[-:][A-Za-z0-9_-]+$/;
+
 function asArray<T>(value: T[] | undefined): T[] {
   return value ? [...value] : [];
 }
@@ -265,6 +410,15 @@ function cloneProvenance(provenance: Provenance): Provenance {
 
 function cloneSecretScan(secretScan: SecretScanResult): SecretScanResult {
   return { ...secretScan };
+}
+
+function cloneInstructionScan(
+  instructionScan: InstructionScanResult,
+): InstructionScanResult {
+  return {
+    ...instructionScan,
+    matched_terms: [...instructionScan.matched_terms],
+  };
 }
 
 function cloneSafety(): SafetyFlags {
@@ -318,6 +472,13 @@ function assertProvenance(value: unknown, path: string): asserts value is Proven
     ["hermes", "claude_code", "codex", "human"].includes(value.generated_by),
     `${path}.provenance.generated_by is invalid`,
   );
+  assertString(value.submitted_by, `${path}.provenance.submitted_by is required`);
+  assertCondition(
+    ["hermes_main", "claude_code", "codex", "human"].includes(
+      value.submitted_by,
+    ),
+    `${path}.provenance.submitted_by is invalid`,
+  );
   assertCondition(
     typeof value.dual_reviewed === "boolean",
     `${path}.provenance.dual_reviewed is required`,
@@ -326,6 +487,72 @@ function assertProvenance(value: unknown, path: string): asserts value is Proven
     typeof value.human_reviewed === "boolean",
     `${path}.provenance.human_reviewed is required`,
   );
+  // trust_level=human_confirmed check is placed first so the
+  // human_confirmed error path can be reached independently of
+  // human_reviewed branch ordering.
+  if (value.trust_level === "human_confirmed") {
+    assertCondition(
+      value.human_reviewed === true,
+      `${path}.provenance.human_confirmed requires human_reviewed=true`,
+    );
+    assertCondition(
+      value.human_approval_ref !== null,
+      `${path}.provenance.human_confirmed requires human_approval_ref to be present`,
+    );
+    assertHumanApprovalRef(
+      value.human_approval_ref,
+      `${path}.provenance.human_approval_ref`,
+    );
+  }
+
+  if (value.human_reviewed) {
+    assertCondition(
+      value.reviewed_by === "human",
+      `${path}.provenance.human_reviewed requires reviewed_by=human`,
+    );
+    assertString(
+      value.reviewed_at,
+      `${path}.provenance.human_reviewed requires reviewed_at`,
+    );
+    assertCondition(
+      value.human_approval_ref !== null,
+      `${path}.provenance.human_reviewed=true requires human_approval_ref to be present`,
+    );
+    assertHumanApprovalRef(
+      value.human_approval_ref,
+      `${path}.provenance.human_approval_ref`,
+    );
+  } else {
+    assertCondition(
+      value.reviewed_by === null,
+      `${path}.provenance.reviewed_by must be null without human review`,
+    );
+    assertCondition(
+      value.reviewed_at === null,
+      `${path}.provenance.reviewed_at must be null without human review`,
+    );
+    assertCondition(
+      value.human_approval_ref === null,
+      `${path}.provenance.human_approval_ref must be null without human review`,
+    );
+  }
+
+  // submitter-vs-human-review matrix
+  if (value.submitted_by === "claude_code" || value.submitted_by === "codex") {
+    assertCondition(
+      value.human_reviewed === false,
+      `${path}.provenance.submitted_by=${value.submitted_by} requires human_reviewed=false`,
+    );
+    assertCondition(
+      value.trust_level !== "human_confirmed",
+      `${path}.provenance.submitted_by=${value.submitted_by} requires trust_level!=human_confirmed`,
+    );
+    assertCondition(
+      value.human_approval_ref === null,
+      `${path}.provenance.submitted_by=${value.submitted_by} requires human_approval_ref=null`,
+    );
+  }
+
   assertString(value.trust_level, `${path}.provenance.trust_level is required`);
   assertCondition(
     [
@@ -336,6 +563,30 @@ function assertProvenance(value: unknown, path: string): asserts value is Proven
       "human_confirmed",
     ].includes(value.trust_level),
     `${path}.provenance.trust_level is invalid`,
+  );
+}
+
+function assertInstructionScan(
+  value: unknown,
+  path: string,
+): asserts value is InstructionScanResult {
+  assertCondition(hasObjectShape(value), `${path}.instruction_scan is required`);
+  assertCondition(
+    value.scanned === true,
+    `${path}.instruction_scan.scanned must be true`,
+  );
+  assertCondition(
+    value.passed === true,
+    `${path}.instruction_scan.passed must be true`,
+  );
+  assertString(value.method, `${path}.instruction_scan.method is required`);
+  assertCondition(
+    value.authority_claim_detected === false,
+    `${path}.instruction_scan.authority_claim_detected must be false`,
+  );
+  assertCondition(
+    Array.isArray(value.matched_terms) && value.matched_terms.length === 0,
+    `${path}.instruction_scan.matched_terms must be empty`,
   );
 }
 
@@ -355,14 +606,26 @@ function assertSecretScan(
   assertString(value.method, `${path}.secret_scan.method is required`);
 }
 
-function assertEvidenceArray(value: unknown, path: string): asserts value is EvidenceRef[] {
+function assertEvidenceArray(
+  value: unknown,
+  path: string,
+  options: { minLength?: number } = {},
+): asserts value is EvidenceRef[] {
   assertCondition(Array.isArray(value), `${path}.evidence must be an array`);
+  const minLength = options.minLength ?? 1;
+  assertCondition(
+    value.length >= minLength,
+    `${path}.evidence must contain at least ${minLength} entry; got ${value.length}`,
+  );
   for (const [index, entry] of value.entries()) {
     const entryPath = `${path}.evidence[${index}]`;
     assertCondition(hasObjectShape(entry), `${entryPath} must be an object`);
     assertString(entry.kind, `${entryPath}.kind is required`);
     assertString(entry.ref, `${entryPath}.ref is required`);
-    assertString(entry.content_hash, `${entryPath}.content_hash is required`);
+    assertCondition(
+      HASH_FORMAT.test(String(entry.content_hash ?? "")),
+      `${entryPath}.content_hash must match sha256[-:]<body>`,
+    );
   }
 }
 
@@ -379,6 +642,41 @@ function assertNoSecretText(value: unknown, path: string): void {
   }
 }
 
+function assertNoInstructionAuthorityText(value: unknown, path: string): void {
+  if (typeof value !== "string") {
+    return;
+  }
+  const normalized = normalizeForInstructionScan(value);
+  for (const needle of INSTRUCTION_AUTHORITY_SUBSTRINGS) {
+    assertCondition(
+      !normalized.includes(needle),
+      `${path} contains instruction-authority material`,
+    );
+  }
+}
+
+function assertHumanApprovalRef(
+  value: unknown,
+  path: string,
+): asserts value is HumanApprovalRef {
+  assertCondition(hasObjectShape(value), `${path} must be an object`);
+  assertString(value.ref, `${path}.ref is required`);
+  assertCondition(
+    HASH_FORMAT.test(String(value.content_hash ?? "")),
+    `${path}.content_hash must match sha256[-:]<body>`,
+  );
+  const kind = value.approval_kind;
+  assertCondition(
+    kind === "manual_review" || kind === "explicit_user_action",
+    `${path}.approval_kind is invalid`,
+  );
+  assertFalse(
+    value.verified,
+    `${path}.verified must be false in contract layer; ` +
+      `authenticity is verified by the consumer/anchor layer (LOOP-006+)`,
+  );
+}
+
 function assertKnowledgeDraft(
   draft: unknown,
   index: number,
@@ -391,16 +689,37 @@ function assertKnowledgeDraft(
   assertEvidenceArray(draft.evidence, path);
   assertProvenance(draft.provenance, path);
   assertSecretScan(draft.secret_scan, path);
+  assertInstructionScan(draft.instruction_scan, path);
   assertFalse(draft.runtime_flush_allowed, `${path}.runtime_flush_allowed must be false`);
   assertCondition(
     typeof draft.quarantine === "boolean",
     `${path}.quarantine is required`,
   );
-  assertCondition(
-    draft.quarantine === true || draft.provenance.human_reviewed === true,
-    `${path}.quarantine=false requires human_reviewed=true`,
-  );
+
+  // Agent-submitted knowledge drafts MUST be quarantined. The contract
+  // cannot authenticate "human", so the safest default is quarantine
+  // unless the provenance explicitly carries a HumanApprovalRef.
+  const submittedBy = draft.provenance.submitted_by;
+  if (submittedBy === "claude_code" || submittedBy === "codex") {
+    assertCondition(
+      draft.quarantine === true,
+      `${path}.submitted_by=${submittedBy} requires quarantine=true`,
+    );
+  } else if (draft.quarantine === false) {
+    // quarantine=false is only allowed when the draft's provenance is
+    // human-reviewed AND carries a HumanApprovalRef.
+    assertCondition(
+      draft.provenance.human_reviewed === true,
+      `${path}.quarantine=false requires human_reviewed=true`,
+    );
+    assertCondition(
+      draft.provenance.human_approval_ref !== null,
+      `${path}.quarantine=false requires human_approval_ref to be present`,
+    );
+  }
+
   assertNoSecretText(draft.body, `${path}.body`);
+  assertNoInstructionAuthorityText(draft.body, `${path}.body`);
 }
 
 function cloneGoodPattern(pattern: ReflectionGoodPattern): ReflectionGoodPattern {
@@ -447,6 +766,7 @@ function cloneModelFeedback(feedback: ModelFeedback): ModelFeedback {
     evidence: cloneEvidence(feedback.evidence),
     provenance: cloneProvenance(feedback.provenance),
     secret_scan: cloneSecretScan(feedback.secret_scan),
+    instruction_scan: cloneInstructionScan(feedback.instruction_scan),
   };
 }
 
@@ -458,6 +778,7 @@ function cloneKnowledgeDraft(
     evidence: cloneEvidence(draft.evidence),
     provenance: cloneProvenance(draft.provenance),
     secret_scan: cloneSecretScan(draft.secret_scan),
+    instruction_scan: cloneInstructionScan(draft.instruction_scan),
     quarantine: draft.quarantine,
     runtime_flush_allowed: false,
   };
@@ -514,6 +835,14 @@ export function buildPostTaskReflection(
   return reflection;
 }
 
+/**
+ * PRE-REVIEW PROJECTION.
+ *
+ * Returns cloned skill candidate drafts from a reflection. The result
+ * MUST NOT be fed into Next Task Context or ranking input directly.
+ * Use `assertReflectionAllowedForNextTaskContext` /
+ * `assertReflectionAllowedForRankingInput` to gate the consumer.
+ */
 export function extractSkillCandidateDrafts(
   reflection: PostTaskReflection,
 ): SkillCandidateDraft[] {
@@ -521,6 +850,14 @@ export function extractSkillCandidateDrafts(
   return reflection.skill_candidates.map(cloneSkillCandidate);
 }
 
+/**
+ * PRE-REVIEW PROJECTION.
+ *
+ * Returns cloned dead-end drafts from a reflection. The result MUST
+ * NOT be fed into Next Task Context or ranking input directly. Use
+ * `assertReflectionAllowedForNextTaskContext` /
+ * `assertReflectionAllowedForRankingInput` to gate the consumer.
+ */
 export function extractDeadEndDrafts(
   reflection: PostTaskReflection,
 ): ReflectionDeadEnd[] {
@@ -528,6 +865,14 @@ export function extractDeadEndDrafts(
   return reflection.dead_ends.map(cloneDeadEnd);
 }
 
+/**
+ * PRE-REVIEW PROJECTION.
+ *
+ * Returns cloned model feedback from a reflection. The result MUST NOT
+ * be fed into Next Task Context or ranking input directly. Use
+ * `assertReflectionAllowedForNextTaskContext` /
+ * `assertReflectionAllowedForRankingInput` to gate the consumer.
+ */
 export function extractModelFeedback(
   reflection: PostTaskReflection,
 ): ModelFeedback[] {
@@ -535,6 +880,14 @@ export function extractModelFeedback(
   return reflection.model_feedback.map(cloneModelFeedback);
 }
 
+/**
+ * PRE-REVIEW PROJECTION.
+ *
+ * Returns cloned knowledge ingest drafts from a reflection. The result
+ * MUST NOT be fed into Next Task Context or ranking input directly.
+ * Use `assertReflectionAllowedForNextTaskContext` /
+ * `assertReflectionAllowedForRankingInput` to gate the consumer.
+ */
 export function extractKnowledgeIngestDrafts(
   reflection: PostTaskReflection,
 ): ReflectionKnowledgeDraft[] {
@@ -542,6 +895,14 @@ export function extractKnowledgeIngestDrafts(
   return reflection.knowledge_ingest_draft.map(cloneKnowledgeDraft);
 }
 
+/**
+ * PRE-REVIEW PROJECTION.
+ *
+ * Returns cloned usage feedback signals from a reflection. The result
+ * MUST NOT be fed into Next Task Context or ranking input directly.
+ * Use `assertReflectionAllowedForNextTaskContext` /
+ * `assertReflectionAllowedForRankingInput` to gate the consumer.
+ */
 export function extractUsageFeedbackSignals(
   reflection: PostTaskReflection,
 ): UsageFeedbackSignal[] {
@@ -610,8 +971,14 @@ export function assertPostTaskReflectionNoRuntime(
     assertProvenance(feedback.provenance, path);
     assertEvidenceArray(feedback.evidence, path);
     assertSecretScan(feedback.secret_scan, path);
+    assertInstructionScan(feedback.instruction_scan, path);
     assertNoSecretText(feedback.observed_limitation, `${path}.observed_limitation`);
     assertNoSecretText(feedback.fallback_used, `${path}.fallback_used`);
+    assertNoInstructionAuthorityText(
+      feedback.observed_limitation,
+      `${path}.observed_limitation`,
+    );
+    assertNoInstructionAuthorityText(feedback.fallback_used, `${path}.fallback_used`);
   }
 
   assertCondition(Array.isArray(value.good_patterns), "good_patterns must be an array");
@@ -619,8 +986,23 @@ export function assertPostTaskReflectionNoRuntime(
     const path = `good_patterns[${index}]`;
     assertCondition(hasObjectShape(pattern), `${path} must be an object`);
     assertString(pattern.fingerprint, `${path}.fingerprint is required`);
+    assertString(pattern.summary, `${path}.summary is required`);
+    assertString(
+      pattern.human_readable_summary,
+      `${path}.human_readable_summary is required`,
+    );
     assertProvenance(pattern.provenance, path);
     assertEvidenceArray(pattern.evidence, path);
+    assertNoSecretText(pattern.summary, `${path}.summary`);
+    assertNoSecretText(
+      pattern.human_readable_summary,
+      `${path}.human_readable_summary`,
+    );
+    assertNoInstructionAuthorityText(pattern.summary, `${path}.summary`);
+    assertNoInstructionAuthorityText(
+      pattern.human_readable_summary,
+      `${path}.human_readable_summary`,
+    );
   }
 
   assertCondition(Array.isArray(value.bad_patterns), "bad_patterns must be an array");
@@ -628,8 +1010,32 @@ export function assertPostTaskReflectionNoRuntime(
     const path = `bad_patterns[${index}]`;
     assertCondition(hasObjectShape(pattern), `${path} must be an object`);
     assertString(pattern.fingerprint, `${path}.fingerprint is required`);
+    assertString(pattern.summary, `${path}.summary is required`);
+    assertString(
+      pattern.human_readable_summary,
+      `${path}.human_readable_summary is required`,
+    );
+    assertString(
+      pattern.trigger_context,
+      `${path}.trigger_context is required`,
+    );
     assertProvenance(pattern.provenance, path);
     assertEvidenceArray(pattern.evidence, path);
+    assertNoSecretText(pattern.summary, `${path}.summary`);
+    assertNoSecretText(
+      pattern.human_readable_summary,
+      `${path}.human_readable_summary`,
+    );
+    assertNoSecretText(pattern.trigger_context, `${path}.trigger_context`);
+    assertNoInstructionAuthorityText(pattern.summary, `${path}.summary`);
+    assertNoInstructionAuthorityText(
+      pattern.human_readable_summary,
+      `${path}.human_readable_summary`,
+    );
+    assertNoInstructionAuthorityText(
+      pattern.trigger_context,
+      `${path}.trigger_context`,
+    );
   }
 
   assertCondition(Array.isArray(value.dead_ends), "dead_ends must be an array");
@@ -637,12 +1043,126 @@ export function assertPostTaskReflectionNoRuntime(
     const path = `dead_ends[${index}]`;
     assertCondition(hasObjectShape(deadEnd), `${path} must be an object`);
     assertString(deadEnd.fingerprint, `${path}.fingerprint is required`);
+    assertString(deadEnd.summary, `${path}.summary is required`);
+    assertString(
+      deadEnd.human_readable_summary,
+      `${path}.human_readable_summary is required`,
+    );
+    assertString(deadEnd.trigger_context, `${path}.trigger_context is required`);
+    assertString(deadEnd.why_failed, `${path}.why_failed is required`);
     assertCondition(
       typeof deadEnd.recurrence_count === "number",
       `${path}.recurrence_count is required`,
     );
     assertProvenance(deadEnd.provenance, path);
     assertEvidenceArray(deadEnd.evidence, path);
+    assertNoSecretText(deadEnd.summary, `${path}.summary`);
+    assertNoSecretText(
+      deadEnd.human_readable_summary,
+      `${path}.human_readable_summary`,
+    );
+    assertNoSecretText(deadEnd.trigger_context, `${path}.trigger_context`);
+    assertNoSecretText(deadEnd.why_failed, `${path}.why_failed`);
+    assertNoInstructionAuthorityText(deadEnd.summary, `${path}.summary`);
+    assertNoInstructionAuthorityText(
+      deadEnd.human_readable_summary,
+      `${path}.human_readable_summary`,
+    );
+    assertNoInstructionAuthorityText(
+      deadEnd.trigger_context,
+      `${path}.trigger_context`,
+    );
+    assertNoInstructionAuthorityText(deadEnd.why_failed, `${path}.why_failed`);
+  }
+
+  // next_task_recommendations — every entry is context-eligible text and
+  // must clear both scans.
+  assertCondition(
+    Array.isArray(value.next_task_recommendations),
+    "next_task_recommendations must be an array",
+  );
+  for (const [index, rec] of value.next_task_recommendations.entries()) {
+    const path = `next_task_recommendations[${index}]`;
+    assertString(rec, `${path} is required`);
+    assertNoSecretText(rec, path);
+    assertNoInstructionAuthorityText(rec, path);
+  }
+
+  // artifact_hash is context-eligible too when present.
+  if (value.artifact_hash !== null) {
+    assertCondition(
+      HASH_FORMAT.test(String(value.artifact_hash)),
+      "artifact_hash must match sha256[-:]<body>",
+    );
+  }
+
+  // usage_feedback_signals are kept as a ranking signal and must carry
+  // at least one evidence ref.
+  assertCondition(
+    Array.isArray(value.usage_feedback_signals),
+    "usage_feedback_signals must be an array",
+  );
+  for (const [index, signal] of value.usage_feedback_signals.entries()) {
+    const path = `usage_feedback_signals[${index}]`;
+    assertCondition(hasObjectShape(signal), `${path} must be an object`);
+    assertString(signal.knowledge_id, `${path}.knowledge_id is required`);
+    assertEvidenceArray(signal.evidence, path);
+  }
+}
+
+export function assertReflectionAllowedForNextTaskContext(
+  reflection: PostTaskReflection,
+): void {
+  assertPostTaskReflectionNoRuntime(reflection);
+  assertCondition(
+    reflection.provenance.human_reviewed === true,
+    "next-task context requires human-reviewed reflection",
+  );
+  assertCondition(
+    reflection.provenance.human_approval_ref !== null,
+    "next-task context requires human_approval_ref to be present",
+  );
+  for (const [index, draft] of reflection.knowledge_ingest_draft.entries()) {
+    assertCondition(
+      draft.provenance.human_approval_ref !== null,
+      `next-task context requires human_approval_ref on draft at index ${index}`,
+    );
+    assertCondition(
+      draft.provenance.human_reviewed === true,
+      `next-task context requires human-reviewed draft at index ${index}`,
+    );
+    assertCondition(
+      draft.quarantine === false,
+      `next-task context rejects quarantined draft at index ${index}`,
+    );
+  }
+}
+
+export function assertReflectionAllowedForRankingInput(
+  reflection: PostTaskReflection,
+): void {
+  assertPostTaskReflectionNoRuntime(reflection);
+  assertCondition(
+    reflection.provenance.human_reviewed === true,
+    "ranking input requires human-reviewed reflection",
+  );
+  assertCondition(
+    reflection.provenance.human_approval_ref !== null,
+    "ranking input requires human_approval_ref to be present",
+  );
+  for (const [index, draft] of reflection.knowledge_ingest_draft.entries()) {
+    assertCondition(
+      draft.provenance.human_approval_ref !== null,
+      `ranking input requires human_approval_ref on draft at index ${index}`,
+    );
+    assertCondition(
+      draft.provenance.human_reviewed === true,
+      `ranking input requires human-reviewed draft at index ${index}`,
+    );
+    assertCondition(
+      draft.quarantine === false,
+      `ranking input rejects quarantined draft at index ${index}`,
+    );
   }
 }
 
@@ -654,24 +1174,45 @@ export interface PostTaskReflectionFixtures {
 
 const GENERATED_BY_HERMES: Provenance = {
   generated_by: "hermes",
+  submitted_by: "hermes_main",
   generation_model: "contract-fixture",
   dual_reviewed: false,
   human_reviewed: false,
+  reviewed_by: null,
+  reviewed_at: null,
   trust_level: "single_run",
+  human_approval_ref: null,
 };
 
 const HUMAN_CONFIRMED: Provenance = {
   generated_by: "human",
+  submitted_by: "human",
   generation_model: "manual-review",
   dual_reviewed: true,
   human_reviewed: true,
+  reviewed_by: "human",
+  reviewed_at: "2026-06-07T00:00:02.000Z",
   trust_level: "human_confirmed",
+  human_approval_ref: {
+    ref: "anchor://fixture/manual-review-001",
+    content_hash: "sha256-anchor-fixture-001",
+    approval_kind: "manual_review",
+    verified: false,
+  },
 };
 
 const CLEAN_SECRET_SCAN: SecretScanResult = {
   scanned: true,
   passed: true,
   method: "fixture-static-scan",
+};
+
+const CLEAN_INSTRUCTION_SCAN: InstructionScanResult = {
+  scanned: true,
+  passed: true,
+  method: "fixture-static-scan",
+  authority_claim_detected: false,
+  matched_terms: [],
 };
 
 function evidence(ref: string, content_hash: string): EvidenceRef {
@@ -739,6 +1280,7 @@ export function buildPostTaskReflectionFixtures(): PostTaskReflectionFixtures {
         evidence: passEvidence,
         provenance: GENERATED_BY_HERMES,
         secret_scan: CLEAN_SECRET_SCAN,
+        instruction_scan: CLEAN_INSTRUCTION_SCAN,
         quarantine: true,
         runtime_flush_allowed: false,
       },
@@ -806,6 +1348,7 @@ export function buildPostTaskReflectionFixtures(): PostTaskReflectionFixtures {
         evidence: failEvidence,
         provenance: GENERATED_BY_HERMES,
         secret_scan: CLEAN_SECRET_SCAN,
+        instruction_scan: CLEAN_INSTRUCTION_SCAN,
       },
     ],
     knowledge_ingest_draft: [
@@ -816,6 +1359,7 @@ export function buildPostTaskReflectionFixtures(): PostTaskReflectionFixtures {
         evidence: failEvidence,
         provenance: GENERATED_BY_HERMES,
         secret_scan: CLEAN_SECRET_SCAN,
+        instruction_scan: CLEAN_INSTRUCTION_SCAN,
         quarantine: true,
         runtime_flush_allowed: false,
       },
@@ -882,6 +1426,7 @@ export function buildPostTaskReflectionFixtures(): PostTaskReflectionFixtures {
         evidence: reviewEvidence,
         provenance: HUMAN_CONFIRMED,
         secret_scan: CLEAN_SECRET_SCAN,
+        instruction_scan: CLEAN_INSTRUCTION_SCAN,
         quarantine: false,
         runtime_flush_allowed: false,
       },
