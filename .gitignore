@@ -44,3 +44,8 @@ release/
 .claude/skills/impeccable/
 .claude/skills/electron-pro/
 .claude/skills/typescript-expert/
+
+# AGENT-BRIDGE: local Codex ⇄ Claude Code file-bridge runtime state
+# (created at runtime by scripts/agent-bridge/run-claude-task.mjs; never
+# committed). Design doc: docs/agent-bridge/codex-claude-file-bridge-2026-06-08.md.
+.agent-bridge/
