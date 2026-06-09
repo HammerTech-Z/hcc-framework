@@ -438,6 +438,16 @@ node scripts/agent-bridge/generate-authorization-report.mjs \
 - The bridge **must not** call `knowledgeIngest`, `knowledgeSearch`, live apply, HCC Auto Executor, or any local model runtime.
 - The user must always issue an explicit plain-text authorization phrase for commit / push / abort.
 
+## AGENT-BRIDGE-008 real Claude smoke (closeout)
+
+The full pipeline was exercised with the real `claude` CLI on 2026-06-09.
+**Run 1 failed safely** (wrong JSON types rejected by the 005A validator).
+**005D prompt hardening** added a canonical JSON example and anti-overclaim
+rules. **Run 2 passed** — `.result.json`, audit `READY_FOR_USER_AUTHORIZATION`,
+authorization report `READY FOR USER AUTHORIZATION`. The auto-mode classifier
+blocks bridge-driven real Claude invocation, so the smoke was run manually.
+Full details: `docs/agent-bridge/agent-bridge-real-claude-smoke-2026-06-09.md`.
+
 ## Phase roadmap (per design doc)
 
 | Phase | What it adds | Status |
