@@ -1,18 +1,19 @@
 # AGENT-BRIDGE — Codex ⇄ Claude Code File-Bridge
 
-> Slices: **AGENT-BRIDGE-002** (skeleton + task-packet validator) + **AGENT-BRIDGE-002A** (hardened allowlist) + **AGENT-BRIDGE-002B** (cleanup) + **AGENT-BRIDGE-003** (Claude invocation runner) + **AGENT-BRIDGE-003A** (bridge-root sandboxing) + **AGENT-BRIDGE-004** (deterministic local audit runner) + **AGENT-BRIDGE-012** (read-only Claude tool mode).
+> Slices: **AGENT-BRIDGE-002** (skeleton + task-packet validator) + **AGENT-BRIDGE-002A** (hardened allowlist) + **AGENT-BRIDGE-002B** (cleanup) + **AGENT-BRIDGE-003** (Claude invocation runner) + **AGENT-BRIDGE-003A** (bridge-root sandboxing) + **AGENT-BRIDGE-004** (deterministic local audit runner) + **AGENT-BRIDGE-012** (read-only Claude tool mode) + **AGENT-BRIDGE-013** (controlled write-files-only mode).
 > Design doc: `docs/agent-bridge/codex-claude-file-bridge-2026-06-08.md`.
 
 ## What this slice family is
 
 - Skeleton + dry-run validator (002/002A/002B).
-- `run-claude-task.mjs` with `--execute` (003) parses a task packet, validates its shape, and (in `mode=design-only` or `mode=read-only`) invokes Claude in non-interactive print mode with **tools disabled by default**.
+- `run-claude-task.mjs` with `--execute` parses a task packet, validates its shape, and invokes Claude in non-interactive print mode. Tools are **disabled by default** for `design-only` and default `read-only`.
 - `--read-only-tools` (012) is an opt-in mode for `mode=read-only` packets only. It allows Claude to inspect the repo with Read/Grep/Glob while preserving the strict JSON result contract. Bash is disabled.
-- It does **not** invoke Codex. It does **not** write to `.agent-bridge/tasks/`. It does **not** modify repo files.
+- `mode=write-files-only` (013) allows Claude to edit only explicit `allowed_files` with Read/Grep/Glob/Edit/MultiEdit/Write. Bash, Task, web tools, commit, push, amend, rebase, squash, live apply, and HCC Auto Executor remain disabled.
+- It does **not** invoke Codex. It does **not** write to `.agent-bridge/tasks/`. It does **not** commit, push, or approve Claude's own work.
 
 ## What this slice family is NOT
 
-- It is **not** a runner for write-mode tasks. `--execute` rejects `mode=write-files-only` and any other mode that would require file edits.
+- It is **not** an auto-approval runner. `write-files-only` stops at local edits plus structured result; Codex/audit must inspect the actual local diff before the user decides whether to commit or push.
 - It is **not** a Codex invocation runner. (AGENT-BRIDGE-004 adds a deterministic *local* audit runner that re-verifies the Claude result against local repo reality; it does **not** invoke Codex.)
 - It is **not** a daemon. It is invoked manually per task.
 - It is **not** HCC Auto Executor. It does not enable live apply.
@@ -35,7 +36,7 @@
 --task <path>          Path to task packet JSON
 --repo <path>          Path to repo root
 --dry-run              Validate only; do not execute
---execute              Invoke Claude (design-only / read-only tasks only)
+  --execute              Invoke Claude (design-only / read-only / write-files-only)
 --read-only-tools      Opt-in read-only Claude tools for mode=read-only only
 --bridge-root <path>   Optional; default = <repo>/.agent-bridge
 --claude-bin <path>     Optional; default = claude
@@ -72,9 +73,10 @@ node scripts/agent-bridge/run-claude-task.mjs \
 ```
 
 - `--execute` is **only** supported for `mode=design-only` or `mode=read-only`.
-- Other modes (including `mode=write-files-only`) exit 2 with a clear message.
+- `mode=write-files-only` is accepted only with non-empty `allowed_files` and empty `allowed_commands`.
 - By default, Claude is invoked in non-interactive print mode (`claude -p`) with tools disabled (`--tools ""`).
 - With `--read-only-tools`, Claude is invoked with repo read/search tools only. The runner passes `--bare`, `--output-format json`, `--json-schema`, `--tools Read,Grep,Glob`, `--allowedTools Read,Grep,Glob`, and explicitly denies Bash/edit/write/network/task tools. The runner injects a small local git context into the prompt instead of allowing Claude to run git.
+- With `mode=write-files-only`, Claude is invoked with `--bare`, `--output-format json`, `--json-schema`, `--tools Read,Grep,Glob,Edit,MultiEdit,Write`, `--allowedTools Read,Grep,Glob,Edit,MultiEdit,Write`, and `--disallowedTools Bash,NotebookEdit,WebFetch,WebSearch,Task`. Bash is not exposed, so tests and git commands are performed by Codex after the run.
 - Output goes to `.agent-bridge/results/<task_id>.result.json` on strict schema success or `.agent-bridge/results/<task_id>.result.raw.txt` on failure.
 - Lifecycle log goes to `.agent-bridge/logs/<task_id>.log`.
 - The script **never** writes to `.agent-bridge/tasks/`.
@@ -140,7 +142,7 @@ The validator enforces the following invariants on a task packet:
 - The lifecycle log records `tools_disabled=false`, `read_only_tools=true`, and `claude_argv_summary`, where the prompt body is replaced by `<prompt omitted>`.
 - Strict local result validation is unchanged. In read-only tools mode, Claude's JSON envelope is accepted in this order: `structured_output` object first; otherwise Claude Code 2.1.141's `result` string fallback only when it is a raw JSON object string. The extracted object is locally revalidated against the AGENT-BRIDGE 12-field contract. No markdown repair, prose trimming, or code-fence extraction is performed.
 - Claude Code 2.1.141 may return schema-constrained data as a JSON string in `envelope.result` rather than `envelope.structured_output`; the runner accepts only that strict JSON-object fallback when `is_error` is not `true`.
-- The mode still does not implement write-files-only, live apply, LOOP-010.A, HCC Auto Executor, commit, push, amend, rebase, squash, or writes outside ignored `.agent-bridge/`.
+- The mode still does not implement live apply, LOOP-010.A, HCC Auto Executor, commit, push, amend, rebase, squash, or writes outside the task allowlist plus ignored `.agent-bridge/` runner artifacts.
 - P0 before rerunning AGENT-BRIDGE-011 on the real repo: verify with real Claude that Read/Grep/Glob cannot read `~/.hermes/*`, `~/.ssh/*`, `.env*`, absolute paths, `~` paths, or `..` paths. Deterministic auditing of actual tool-use events remains a follow-up if future slices reintroduce command execution.
 
 ## AGENT-BRIDGE-005 strict Claude result JSON schema
@@ -352,11 +354,44 @@ After a successful `--execute`, the verification expectation is:
 
 The verification expectation is **not** `test ! -d .agent-bridge` (that would be wrong — the directory is created by `--execute`).
 
-## Out of scope (AGENT-BRIDGE-003)
+## Controlled Write Flow (AGENT-BRIDGE-013)
+
+`mode=write-files-only` restores the intended human-in-the-loop workflow:
+
+1. Codex creates a task packet with an explicit `allowed_files` write allowlist.
+2. Claude Code executes only repo-local file edits with Read/Grep/Glob/Edit/MultiEdit/Write.
+3. Claude Code returns the strict 12-field structured JSON result.
+4. The runner validates the JSON and independently checks the actual before/after repo delta.
+5. Codex runs focused tests, `git status`, `git diff --check`, protected diffs, and `~/.hermes` mtime checks.
+6. `audit-claude-result.mjs` compares Claude claims to local reality.
+7. Codex reports the result to the user and asks before commit/push.
+
+Write-mode runner rules:
+
+- `allowed_files` is required and must be non-empty.
+- `allowed_commands` must be empty because Bash is not exposed.
+- Claude argv uses `--tools Read,Grep,Glob,Edit,MultiEdit,Write` and `--allowedTools Read,Grep,Glob,Edit,MultiEdit,Write`.
+- Claude argv uses `--disallowedTools Bash,NotebookEdit,WebFetch,WebSearch,Task`.
+- `claimed_commit` must be `null`, `claimed_pushed` must be `false`, and `claimed_push_state` must be `null`.
+- The runner snapshots repo files, HEAD/origin/ahead/behind, and `~/.hermes` mtimes before and after Claude.
+- `.result.json` is written only if changed files are exactly represented by `files_modified` and every actual changed file is inside `allowed_files`.
+- A forbidden write, missing claimed file, extra claimed file, commit/push claim, HEAD/origin change, or `~/.hermes` mtime change writes `.result.raw.txt` and exits 1.
+- The runner adds `_agent_bridge.changed_files` to successful `.result.json`; the audit runner uses that runner-collected fact to catch mismatched file claims.
+
+Current residual risk:
+
+- The runner validates repo-local file deltas and the explicit `~/.hermes`
+  mtime sentinels. It does not provide a general filesystem monitor for every
+  possible path outside the repo. `write-files-only` prompts forbid absolute,
+  `~`, `..`, secret, and external paths, and Claude is invoked without Bash, but
+  arbitrary external writes by the Claude process are outside the runner's
+  current observable delta model. Treat external-path containment as an
+  unsupported risk until a future sandbox/FS monitor slice addresses it.
+
+## Out of scope (current bridge)
 
 - **No Codex invocation runner / no LLM semantic audit invocation.** Phase 3 (Codex audit) is a separate future slice with a separate user authorization.
 - **No commit / push / live apply automation.** User authorization remains required for every commit / push / abort.
-- **No write-files-only execution.** Tasks that require file edits are rejected by the validator (exit 2).
 - **No live apply / HCC Auto Executor / model runtime.**
 - **No `--dangerously-skip-permissions`.**
 
@@ -521,9 +556,13 @@ Claude tasks without hand-copying prompts.
 
 - It does **not** execute Claude or Codex.
 - It does **not** commit, push, or write outside `.agent-bridge/tasks/pending/`.
-- Hard forbidden actions (`git commit`, `git push`, `git commit --amend`, `git rebase`, `git reset --hard`, `live apply`, `HCC Auto Executor`) are always included automatically.
+- Hard forbidden actions (`git commit`, `git push`, `git commit --amend`, `git rebase`, `git reset --hard`, `squash`, `live apply`, `HCC Auto Executor`) are always included automatically.
 - Hard forbidden files (`~/.hermes/*`, `docs/roadmap-locked-2026-05-28.md`) are merged with user-supplied forbidden files.
-- `write-files-only` mode is rejected in AGENT-BRIDGE-010.
+- `write-files-only` mode requires at least one `--allowed-file` and rejects `--allowed-command`.
+- The write-mode smoke suite includes a documented unsupported-risk case for
+  repo-external writes: the runner can detect repo-local forbidden changes but
+  cannot currently prove absence of arbitrary writes outside the repo beyond
+  the explicit `~/.hermes` mtime sentinels.
 - Existing task files are not overwritten; use a different `--task-id` or remove the old file first.
 
 ### CLI flags
@@ -532,7 +571,7 @@ Claude tasks without hand-copying prompts.
 |---|---|---|
 | `--repo <path>` | yes | repo root (absolute) |
 | `--task-id <id>` | yes | `[A-Za-z0-9._-]+` |
-| `--mode <mode>` | yes | `design-only` or `read-only` |
+| `--mode <mode>` | yes | `design-only`, `read-only`, or `write-files-only` |
 | `--objective <text>` | yes | 1-3 sentence description |
 | `--allowed-file <path>` | no | repeatable |
 | `--forbidden-file <path>` | no | repeatable |
@@ -577,9 +616,8 @@ node scripts/agent-bridge/run-claude-task.mjs \
 | 3 | Claude Runner + Codex Audit Runner | Future slice, separate user authorization |
 | 4 | Authorization Dashboard / one-click approval | Future slice, separate user authorization |
 
-## Future-slice notes (not in scope for AGENT-BRIDGE-003)
+## Future-slice notes
 
 - A future slice may add real Codex audit invocation, gated on a separate user authorization slice.
-- A future slice may add write-files-only execution (with explicit user authorization per write), gated on a separate user authorization slice.
 - A future slice may add a local web UI, gated on a separate user authorization slice.
-- None of these are part of AGENT-BRIDGE-003.
+- None of these are part of AGENT-BRIDGE-013.

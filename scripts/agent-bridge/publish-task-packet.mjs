@@ -43,7 +43,7 @@ function validateTaskId(id) {
 // Constants
 // -----------------------------------------------------------------
 
-const SUPPORTED_MODES = new Set(["design-only", "read-only"]);
+const SUPPORTED_MODES = new Set(["design-only", "read-only", "write-files-only"]);
 
 const HARD_FORBIDDEN_ACTIONS = [
   "git commit",
@@ -51,6 +51,7 @@ const HARD_FORBIDDEN_ACTIONS = [
   "git commit --amend",
   "git rebase",
   "git reset --hard",
+  "squash",
   "live apply",
   "HCC Auto Executor",
 ];
@@ -111,7 +112,7 @@ function printUsage() {
       "Options:",
       "  --repo <path>               Path to repo root",
       "  --task-id <id>              Task identifier [A-Za-z0-9._-]+",
-      "  --mode <mode>               design-only | read-only",
+      "  --mode <mode>               design-only | read-only | write-files-only",
       "  --objective <text>          1-3 sentence description",
       "  --allowed-file <path>       Repeatable",
       "  --forbidden-file <path>     Repeatable",
@@ -125,7 +126,7 @@ function printUsage() {
       "",
       "Exactly one of --dry-run or --write-task must be provided.",
       "Hard forbidden actions and files are always included automatically.",
-      "write-files-only is rejected in AGENT-BRIDGE-010.",
+      "write-files-only requires at least one --allowed-file and keeps Bash unavailable.",
       "",
     ].join("\n"),
   );
@@ -158,6 +159,7 @@ function resolveBridgeRoot(args, repoRoot) {
 
 function isHardForbiddenPath(p) {
   if (typeof p !== "string") return false;
+  if (p === ".git" || p.startsWith(".git/")) return true;
   if (p === "~/.hermes" || p.startsWith("~/.hermes/")) return true;
   if (p === "docs/roadmap-locked-2026-05-28.md") return true;
   return false;
@@ -203,6 +205,14 @@ function validateArgs(args) {
   // expected_authorization_type must be non-empty string
   if (!args.expectedAuthorizationType || typeof args.expectedAuthorizationType !== "string" || args.expectedAuthorizationType.length === 0) {
     return "expected_authorization_type must be a non-empty string";
+  }
+  if (args.mode === "write-files-only") {
+    if (args.allowedFiles.length === 0) {
+      return "write-files-only requires at least one allowed_file";
+    }
+    if (args.allowedCommands.length > 0) {
+      return "write-files-only does not expose Bash; allowed_commands must be empty";
+    }
   }
 
   return null; // valid
@@ -279,15 +289,9 @@ function main() {
   }
 
   if (!SUPPORTED_MODES.has(args.mode)) {
-    if (args.mode === "write-files-only") {
-      process.stderr.write(
-        "error: write-files-only is not supported in AGENT-BRIDGE-010. Only design-only and read-only are supported.\n",
-      );
-    } else {
-      process.stderr.write(
-        `error: unsupported --mode "${args.mode}". Only design-only and read-only are supported in AGENT-BRIDGE-010.\n`,
-      );
-    }
+    process.stderr.write(
+      `error: unsupported --mode "${args.mode}". Supported modes: design-only, read-only, write-files-only.\n`,
+    );
     process.exit(2);
   }
 

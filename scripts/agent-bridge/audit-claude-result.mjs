@@ -159,6 +159,7 @@ const HARD_FORBIDDEN_PATHS = [
 
 function isHardForbiddenPath(p) {
   if (typeof p !== "string") return false;
+  if (p === ".git" || p.startsWith(".git/")) return true;
   for (const f of HARD_FORBIDDEN_PATHS) {
     if (p === f) return true;
   }
@@ -328,6 +329,10 @@ function extractClaims(result) {
         result.claimed_push_state && typeof result.claimed_push_state === "object"
           ? result.claimed_push_state
           : null,
+      agent_bridge:
+        result._agent_bridge && typeof result._agent_bridge === "object"
+          ? result._agent_bridge
+          : null,
     };
   }
   return {
@@ -341,6 +346,7 @@ function extractClaims(result) {
     claimed_commit: null,
     claimed_pushed: false,
     claimed_push_state: null,
+    agent_bridge: null,
   };
 }
 
@@ -405,7 +411,7 @@ function uniq(arr) {
   return Array.from(new Set(arr));
 }
 
-function compare(repoRoot, snapshot, claims) {
+function compare(repoRoot, snapshot, claims, taskPacket = null) {
   const verified_correct = [];
   const mismatches = [];
   const ai_hallucinations_or_overclaims = [];
@@ -413,42 +419,85 @@ function compare(repoRoot, snapshot, claims) {
   const unknowns = [];
   const forbidden_path_findings = [];
 
-  // Working tree: if clean, any "files modified" claim must match HEAD.
-  // If dirty, claim must be a subset of `git status` output.
-  const modifiedFromStatus = parseModifiedFromStatus(snapshot.working_tree_status);
-  if (snapshot.working_tree_dirty) {
-    for (const f of claims.files_modified) {
-      if (modifiedFromStatus.has(f)) {
-        verified_correct.push(`claimed file modified present in working tree: ${f}`);
-      } else {
+  const mode = taskPacket && typeof taskPacket.mode === "string" ? taskPacket.mode : null;
+  const runnerChangedFiles =
+    claims.agent_bridge &&
+    Array.isArray(claims.agent_bridge.changed_files) &&
+    claims.agent_bridge.changed_files.every((x) => typeof x === "string")
+      ? claims.agent_bridge.changed_files
+      : null;
+
+  if (mode === "write-files-only") {
+    const allowed = new Set(asArray(taskPacket.allowed_files).filter((x) => typeof x === "string"));
+    const forbidden = new Set(asArray(taskPacket.forbidden_files).filter((x) => typeof x === "string"));
+    if (runnerChangedFiles === null) {
+      unknowns.push("write-files-only result missing runner _agent_bridge.changed_files; cannot audit run delta");
+    } else {
+      for (const f of runnerChangedFiles) {
+        if (!allowed.has(f)) {
+          forbidden_path_findings.push(`actual changed file outside allowed_files: ${f}`);
+        } else {
+          verified_correct.push(`actual changed file is allowed: ${f}`);
+        }
+        if (forbidden.has(f) || isHardForbiddenPath(f)) {
+          forbidden_path_findings.push(`actual changed file is forbidden: ${f}`);
+        }
+      }
+      if (!arrayEq(uniq(claims.files_modified).sort(), uniq(runnerChangedFiles).sort())) {
         mismatches.push(
-          `claimed file modified not present in working tree (git status --short -uall): ${f}`,
+          `result.files_modified ${JSON.stringify(uniq(claims.files_modified).sort())} does not match runner changed_files ${JSON.stringify(uniq(runnerChangedFiles).sort())}`,
         );
+      } else {
+        verified_correct.push("result.files_modified matches runner changed_files");
       }
     }
+    if (claims.commands_run.length > 0) {
+      forbidden_path_findings.push("write-files-only result claims commands_run even though Bash is disabled");
+    }
+    if (claims.claimed_commit !== null) {
+      forbidden_path_findings.push("write-files-only result claims a commit; Claude cannot approve/commit its own work");
+    }
+    if (claims.claimed_pushed) {
+      forbidden_path_findings.push("write-files-only result claims a push; Claude cannot push");
+    }
   } else {
-    if (claims.files_modified.length > 0) {
-      // Working tree is clean. Compare against HEAD.
-      const headFiles = runGit(repoRoot, [
-        "show",
-        "--name-only",
-        "--pretty=",
-        "HEAD",
-      ]);
-      const headSet = new Set(
-        headFiles.stdout.split("\n").map((s) => s.trim()).filter((s) => s.length > 0),
-      );
+    // Working tree: if clean, any "files modified" claim must match HEAD.
+    // If dirty, claim must be a subset of `git status` output.
+    const modifiedFromStatus = parseModifiedFromStatus(snapshot.working_tree_status);
+    if (snapshot.working_tree_dirty) {
       for (const f of claims.files_modified) {
-        if (headSet.has(f)) {
-          verified_correct.push(`claimed file modified matches HEAD: ${f}`);
+        if (modifiedFromStatus.has(f)) {
+          verified_correct.push(`claimed file modified present in working tree: ${f}`);
         } else {
           mismatches.push(
-            `claimed file modified not in HEAD (working tree clean): ${f}`,
+            `claimed file modified not present in working tree (git status --short -uall): ${f}`,
           );
         }
       }
     } else {
-      verified_correct.push("no files_modified claim; working tree clean");
+      if (claims.files_modified.length > 0) {
+        // Working tree is clean. Compare against HEAD.
+        const headFiles = runGit(repoRoot, [
+          "show",
+          "--name-only",
+          "--pretty=",
+          "HEAD",
+        ]);
+        const headSet = new Set(
+          headFiles.stdout.split("\n").map((s) => s.trim()).filter((s) => s.length > 0),
+        );
+        for (const f of claims.files_modified) {
+          if (headSet.has(f)) {
+            verified_correct.push(`claimed file modified matches HEAD: ${f}`);
+          } else {
+            mismatches.push(
+              `claimed file modified not in HEAD (working tree clean): ${f}`,
+            );
+          }
+        }
+      } else {
+        verified_correct.push("no files_modified claim; working tree clean");
+      }
     }
   }
 
@@ -826,7 +875,7 @@ function main() {
   }
 
   const snapshot = snapshotLocalReality(repoRoot);
-  let audit = compare(repoRoot, snapshot, claims);
+  let audit = compare(repoRoot, snapshot, claims, taskPacket);
 
   // AGENT-BRIDGE-005A: for structured JSON results, validate field presence
   // and field types. Missing fields and wrong types are added to unknowns

@@ -1,5 +1,13 @@
 #!/usr/bin/env node
-// AGENT-BRIDGE-002/002A/002B/003/003A/005/005A/005B/005C/005D/009/012 — Codex ⇄ Claude Code file-bridge.
+// AGENT-BRIDGE-002/002A/002B/003/003A/005/005A/005B/005C/005D/009/012/013 — Codex ⇄ Claude Code file-bridge.
+//
+// AGENT-BRIDGE-013 changes (runner-side):
+//   - adds controlled mode=write-files-only execution.
+//   - write mode exposes only Read/Grep/Glob/Edit/MultiEdit/Write.
+//   - Bash, Task, web tools, commit, push, amend, rebase, squash, live apply,
+//     and HCC Auto Executor remain forbidden.
+//   - runner snapshots local repo/hermes state before Claude and rejects the
+//     result unless post-run changes are confined to allowed_files.
 //
 // AGENT-BRIDGE-012/012C changes (runner-side):
 //   - adds opt-in --read-only-tools for mode=read-only task packets.
@@ -39,11 +47,12 @@
 //   - write to ~/.hermes/*
 //   - write to docs/roadmap-locked-2026-05-28.md
 //   - write to .agent-bridge/tasks/
-//   - allow Claude to edit files in this slice
+//   - allow Claude to approve, commit, or push its own work
 
-import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync, readFileSync, statSync } from "node:fs";
 import { join, resolve, isAbsolute, sep } from "node:path";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
 // -----------------------------------------------------------------
 // Required forbidden actions
@@ -55,16 +64,25 @@ const REQUIRED_FORBIDDEN_ACTIONS = [
   "git commit --amend",
   "git rebase",
   "git reset --hard",
+  "squash",
   "live apply",
   "HCC Auto Executor",
 ];
 
 const READ_ONLY_CLAUDE_TOOLS = "Read,Grep,Glob";
+const WRITE_FILES_CLAUDE_TOOLS = "Read,Grep,Glob,Edit,MultiEdit,Write";
 const DISALLOWED_CLAUDE_TOOLS = [
   "Bash",
   "Edit",
   "MultiEdit",
   "Write",
+  "NotebookEdit",
+  "WebFetch",
+  "WebSearch",
+  "Task",
+];
+const WRITE_FILES_DISALLOWED_CLAUDE_TOOLS = [
+  "Bash",
   "NotebookEdit",
   "WebFetch",
   "WebSearch",
@@ -89,8 +107,8 @@ const REQUIRED_FIELDS = [
   "expected_authorization_type",
 ];
 
-// Modes supported in AGENT-BRIDGE-003 --execute.
-const EXECUTE_SUPPORTED_MODES = new Set(["design-only", "read-only"]);
+// Modes supported in AGENT-BRIDGE --execute.
+const EXECUTE_SUPPORTED_MODES = new Set(["design-only", "read-only", "write-files-only"]);
 
 const RESULT_JSON_SCHEMA = {
   type: "object",
@@ -138,6 +156,7 @@ const HARD_FORBIDDEN_PATHS = [
 
 function isHardForbiddenPath(p) {
   if (typeof p !== "string") return false;
+  if (p === ".git" || p.startsWith(".git/")) return true;
   for (const forbidden of HARD_FORBIDDEN_PATHS) {
     if (p === forbidden) return true;
   }
@@ -254,7 +273,7 @@ function printUsage() {
       "  --task <path>          Path to task packet JSON",
       "  --repo <path>          Path to repo root",
       "  --dry-run              Validate only; do not execute",
-      "  --execute              Invoke Claude (design-only / read-only tasks only)",
+      "  --execute              Invoke Claude (design-only / read-only / write-files-only)",
       "  --read-only-tools      Opt-in read-only Claude tools for mode=read-only only",
       "  --bridge-root <path>    Optional; default = <repo>/.agent-bridge",
       "  --claude-bin <path>     Optional; default = claude",
@@ -262,8 +281,9 @@ function printUsage() {
       "  --help, -h              Print this message",
       "",
       "Exactly one of --dry-run or --execute must be provided.",
-      "AGENT-BRIDGE-003 --execute only supports mode = design-only or read-only.",
+      "AGENT-BRIDGE --execute supports mode = design-only, read-only, or write-files-only.",
       "Tools are disabled by default; --read-only-tools enables read-only inspection only.",
+      "mode=write-files-only automatically enables Read/Grep/Glob/Edit/MultiEdit/Write only.",
       "No commit / push / live apply automation; user authorization remains required.",
       "",
     ].join("\n"),
@@ -325,6 +345,14 @@ function validateTaskPacket(packet) {
   if (typeof packet.objective !== "string" || packet.objective.length === 0) {
     throw new Error("validate: objective must be a non-empty string");
   }
+  if (packet.mode === "write-files-only") {
+    if (packet.allowed_files.length === 0) {
+      throw new Error("validate: write-files-only requires non-empty allowed_files");
+    }
+    if (packet.allowed_commands.length > 0) {
+      throw new Error("validate: write-files-only does not expose Bash; allowed_commands must be empty");
+    }
+  }
 }
 
 // -----------------------------------------------------------------
@@ -333,11 +361,16 @@ function validateTaskPacket(packet) {
 
 function buildPrompt(packet, opts = {}) {
   const readOnlyTools = opts.readOnlyTools === true;
+  const writeFilesTools = opts.writeFilesTools === true;
   const localReadOnlyContext = opts.localReadOnlyContext ?? null;
   const lines = [];
-  lines.push(readOnlyTools
-    ? "AGENT-BRIDGE-012 read-only task execution."
-    : "AGENT-BRIDGE-005D task execution.");
+  lines.push(
+    writeFilesTools
+      ? "AGENT-BRIDGE-013 write-files-only task execution."
+      : readOnlyTools
+        ? "AGENT-BRIDGE-012 read-only task execution."
+        : "AGENT-BRIDGE-005D task execution.",
+  );
   lines.push("");
   lines.push(`task_id: ${packet.task_id}`);
   lines.push(`mode: ${packet.mode}`);
@@ -383,7 +416,22 @@ function buildPrompt(packet, opts = {}) {
   lines.push("- Never use empty string \"\" as a substitute for null, false, or [].");
   lines.push("");
   lines.push("ANTI-OVERCLAIM RULES:");
-  if (readOnlyTools) {
+  if (writeFilesTools) {
+    lines.push("- Write tools are available ONLY for repo-local edits to allowed_files.");
+    lines.push("- You may use Read/Grep/Glob/Edit/MultiEdit/Write only.");
+    lines.push("- Bash is disabled. Do not run tests, install dependencies, git commands,");
+    lines.push("  network commands, live apply, HCC Auto Executor, or any shell command.");
+    lines.push("- You MUST modify only paths listed in allowed_files. Do not create, delete,");
+    lines.push("  or modify any forbidden_files, .gitignore, roadmap, package files,");
+    lines.push("  source/runtime/test files not listed in allowed_files, .git metadata,");
+    lines.push("  ~/.hermes, ~/.ssh, .env, absolute paths, ~ paths, .. paths, or secrets.");
+    lines.push("- You cannot approve your own work. claimed_commit MUST be null,");
+    lines.push("  claimed_pushed MUST be false, and claimed_push_state MUST be null.");
+    lines.push("- commands_run must be [] because Bash is disabled. Put unrun checks in");
+    lines.push("  not_done or known_unknowns for Codex-side audit.");
+    lines.push("- The final response must satisfy the provided JSON schema. No prose,");
+    lines.push("  markdown, code fences, or explanation outside the structured result.");
+  } else if (readOnlyTools) {
     lines.push("- Read-only tools are available ONLY for inspection inside the repo.");
     lines.push("- Use Read/Grep/Glob for repo-local file inspection. Bash is disabled.");
     lines.push("- allowed_commands and required_verification are descriptive only; they do");
@@ -552,6 +600,13 @@ function validateReadOnlyCommands(packet) {
   return null;
 }
 
+function validateWriteFilesCommands(packet) {
+  if (packet.allowed_commands.length > 0) {
+    return "write-files-only does not expose Bash; allowed_commands must be empty";
+  }
+  return null;
+}
+
 function runLocalGitContext(repoRoot, args) {
   const r = spawnSync("git", args, {
     cwd: repoRoot,
@@ -580,26 +635,187 @@ function buildLocalReadOnlyContext(repoRoot) {
   };
 }
 
+function readSnapshotFiles(repoRoot) {
+  const tracked = spawnSync("git", ["ls-files", "--cached"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    timeout: 30000,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  const untracked = spawnSync("git", ["ls-files", "--others", "--exclude-standard"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    timeout: 30000,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  const ignored = spawnSync("git", [
+    "ls-files",
+    "--others",
+    "--ignored",
+    "--exclude-standard",
+    "--",
+    ":!.agent-bridge",
+    ":!node_modules",
+  ], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    timeout: 30000,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  if (tracked.status !== 0 || untracked.status !== 0 || ignored.status !== 0) {
+    throw new Error("failed to list repo files for write-files-only snapshot");
+  }
+  return Array.from(
+    new Set(
+      `${tracked.stdout ?? ""}\n${untracked.stdout ?? ""}\n${ignored.stdout ?? ""}`
+        .split("\n")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.startsWith(".agent-bridge/")),
+    ),
+  ).sort();
+}
+
+function hashFile(path) {
+  const data = readFileSync(path);
+  return createHash("sha256").update(data).digest("hex");
+}
+
+function snapshotRepoFiles(repoRoot) {
+  const files = new Map();
+  for (const rel of readSnapshotFiles(repoRoot)) {
+    const abs = join(repoRoot, rel);
+    try {
+      const st = statSync(abs);
+      if (!st.isFile()) continue;
+      files.set(rel, hashFile(abs));
+    } catch {
+      files.set(rel, null);
+    }
+  }
+  return files;
+}
+
+function diffRepoSnapshots(before, after) {
+  const out = [];
+  const all = new Set([...before.keys(), ...after.keys()]);
+  for (const rel of Array.from(all).sort()) {
+    if (before.get(rel) !== after.get(rel)) {
+      out.push(rel);
+    }
+  }
+  return out;
+}
+
+function snapshotRefs(repoRoot) {
+  return {
+    head: runLocalGitContext(repoRoot, ["rev-parse", "HEAD"]).stdout.trim(),
+    origin_head: runLocalGitContext(repoRoot, ["rev-parse", "origin/hermes-pro-main"]).stdout.trim(),
+    ahead: Number(runLocalGitContext(repoRoot, ["rev-list", "--count", "origin/hermes-pro-main..HEAD"]).stdout.trim()),
+    behind: Number(runLocalGitContext(repoRoot, ["rev-list", "--count", "HEAD..origin/hermes-pro-main"]).stdout.trim()),
+  };
+}
+
+function snapshotHermesMtime() {
+  const paths = {
+    config_yaml: "/Users/midoudou/.hermes/config.yaml",
+    handoff_packs: "/Users/midoudou/.hermes/handoff/packs",
+    audit: "/Users/midoudou/.hermes/audit",
+  };
+  const out = {};
+  for (const [key, path] of Object.entries(paths)) {
+    try {
+      out[key] = Math.floor(statSync(path).mtimeMs / 1000);
+    } catch {
+      out[key] = null;
+    }
+  }
+  return out;
+}
+
+function sameJson(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function validateWriteFilesPostRun(packet, parsed, beforeState, afterState) {
+  const errors = [];
+  const changedFiles = diffRepoSnapshots(beforeState.files, afterState.files);
+  const allowed = new Set(packet.allowed_files);
+  const forbidden = new Set(packet.forbidden_files);
+
+  for (const file of changedFiles) {
+    if (!allowed.has(file)) {
+      errors.push(`changed file outside allowed_files: ${file}`);
+    }
+    if (forbidden.has(file) || isHardForbiddenPath(file)) {
+      errors.push(`changed forbidden file: ${file}`);
+    }
+  }
+  for (const file of parsed.files_modified) {
+    if (!changedFiles.includes(file)) {
+      errors.push(`result.files_modified claims file not changed during run: ${file}`);
+    }
+  }
+  for (const file of changedFiles) {
+    if (!parsed.files_modified.includes(file)) {
+      errors.push(`changed file missing from result.files_modified: ${file}`);
+    }
+  }
+  if (parsed.commands_run.length > 0) {
+    errors.push("write-files-only result.commands_run must be [] because Bash is disabled");
+  }
+  if (parsed.claimed_commit !== null) {
+    errors.push("write-files-only result.claimed_commit must be null");
+  }
+  if (parsed.claimed_pushed !== false) {
+    errors.push("write-files-only result.claimed_pushed must be false");
+  }
+  if (parsed.claimed_push_state !== null) {
+    errors.push("write-files-only result.claimed_push_state must be null");
+  }
+  if (!sameJson(beforeState.hermes, afterState.hermes)) {
+    errors.push("~/.hermes mtimes changed during write-files-only run");
+  }
+  if (beforeState.refs.head !== afterState.refs.head) {
+    errors.push("HEAD changed during write-files-only run; commits are forbidden");
+  }
+  if (beforeState.refs.origin_head !== afterState.refs.origin_head) {
+    errors.push("origin/hermes-pro-main changed during write-files-only run; pushes/fetches are forbidden");
+  }
+  if (beforeState.refs.ahead !== afterState.refs.ahead || beforeState.refs.behind !== afterState.refs.behind) {
+    errors.push("ahead/behind changed during write-files-only run");
+  }
+  return {
+    ok: errors.length === 0,
+    errors,
+    changedFiles,
+  };
+}
+
 function buildClaudeArgv(packet, prompt, opts = {}) {
   const readOnlyTools = opts.readOnlyTools === true;
+  const writeFilesTools = opts.writeFilesTools === true;
   const argv = [
     "-p",
     prompt,
     "--output-format",
   ];
 
-  if (readOnlyTools) {
+  if (readOnlyTools || writeFilesTools) {
+    const tools = writeFilesTools ? WRITE_FILES_CLAUDE_TOOLS : READ_ONLY_CLAUDE_TOOLS;
+    const disallowed = writeFilesTools
+      ? WRITE_FILES_DISALLOWED_CLAUDE_TOOLS
+      : DISALLOWED_CLAUDE_TOOLS;
     argv.unshift("--bare");
     argv.push(
       "json",
       "--json-schema",
       JSON.stringify(RESULT_JSON_SCHEMA),
       "--tools",
-      READ_ONLY_CLAUDE_TOOLS,
+      tools,
       "--allowedTools",
-      "Read,Grep,Glob",
+      tools,
       "--disallowedTools",
-      DISALLOWED_CLAUDE_TOOLS.join(","),
+      disallowed.join(","),
       "--permission-mode",
       "default",
     );
@@ -703,10 +919,12 @@ function buildLog(packet, fields) {
       claude_exit_code: fields.claude_exit_code,
       result_path: fields.result_path,
       mode: packet.mode,
-      would_modify_files: false,
+      would_modify_files: packet.mode === "write-files-only",
       tools_disabled: fields.tools_disabled !== false,
       read_only_tools: fields.read_only_tools === true,
+      write_files_tools: fields.write_files_tools === true,
       claude_argv_summary: fields.claude_argv_summary ?? null,
+      post_run_validation: fields.post_run_validation ?? null,
       note: fields.note ?? null,
     },
     null,
@@ -754,9 +972,9 @@ function printDryRunSummary(packet, repoRoot) {
     required_verification_count: packet.required_verification.length,
     expected_authorization_type: packet.expected_authorization_type,
     would_invoke_claude: false,
-    would_modify_files: false,
+    would_modify_files: packet.mode === "write-files-only",
     repo_root: repoRoot,
-    note: "AGENT-BRIDGE-003 dry-run only; no runtime execution.",
+    note: "AGENT-BRIDGE dry-run only; no runtime execution.",
   };
   process.stdout.write(JSON.stringify(out, null, 2) + "\n");
 }
@@ -764,7 +982,7 @@ function printDryRunSummary(packet, repoRoot) {
 function runExecute(args, packet, repoRoot) {
   if (!EXECUTE_SUPPORTED_MODES.has(packet.mode)) {
     process.stderr.write(
-      `error: Execution mode only supports design-only/read-only tasks in AGENT-BRIDGE-003. Got mode=${packet.mode}.\n`,
+      `error: Execution mode only supports design-only/read-only/write-files-only tasks. Got mode=${packet.mode}.\n`,
     );
     process.exit(2);
   }
@@ -778,6 +996,14 @@ function runExecute(args, packet, repoRoot) {
     const readOnlyCommandErr = validateReadOnlyCommands(packet);
     if (readOnlyCommandErr !== null) {
       process.stderr.write(`error: ${readOnlyCommandErr}\n`);
+      process.exit(2);
+    }
+  }
+  const writeFilesTools = packet.mode === "write-files-only";
+  if (writeFilesTools) {
+    const writeCommandErr = validateWriteFilesCommands(packet);
+    if (writeCommandErr !== null) {
+      process.stderr.write(`error: ${writeCommandErr}\n`);
       process.exit(2);
     }
   }
@@ -815,19 +1041,29 @@ function runExecute(args, packet, repoRoot) {
 
   const started_at = nowIso();
   const run_id = `${packet.task_id}-${Date.now()}`;
+  const beforeWriteState = writeFilesTools
+    ? {
+        files: snapshotRepoFiles(repoRoot),
+        refs: snapshotRefs(repoRoot),
+        hermes: snapshotHermesMtime(),
+      }
+    : null;
   const localReadOnlyContext = args.readOnlyTools
     ? buildLocalReadOnlyContext(repoRoot)
     : null;
   const prompt = buildPrompt(packet, {
     readOnlyTools: args.readOnlyTools,
+    writeFilesTools,
     localReadOnlyContext,
   });
   const argsForClaude = buildClaudeArgv(packet, prompt, {
     readOnlyTools: args.readOnlyTools,
+    writeFilesTools,
   });
   const logFields = {
-    tools_disabled: !args.readOnlyTools,
+    tools_disabled: !args.readOnlyTools && !writeFilesTools,
     read_only_tools: args.readOnlyTools,
+    write_files_tools: writeFilesTools,
     claude_argv_summary: summarizeClaudeArgv(argsForClaude),
   };
   const result = spawnSync(args.claudeBin, argsForClaude, {
@@ -905,12 +1141,12 @@ function runExecute(args, packet, repoRoot) {
 
   // Zero exit: validate JSON schema and types against AGENT-BRIDGE-005A
   // strict result contract. Default tools-disabled mode expects raw JSON on
-  // stdout. Read-only tools mode uses Claude --output-format json +
+  // stdout. Read-only/write-files tools mode uses Claude --output-format json +
   // --json-schema, then validates the envelope's structured_output locally.
   // Do not attempt to repair malformed JSON. Do not infer missing fields.
   // Do not silently coerce invalid types.
   let validation;
-  if (args.readOnlyTools) {
+  if (args.readOnlyTools || writeFilesTools) {
     const structured = extractStructuredOutput(stdout);
     if (!structured.ok) {
       validation = { ok: false, error: structured.error };
@@ -946,6 +1182,52 @@ function runExecute(args, packet, repoRoot) {
       created_at: finished_at, claude_exit_code: exitCode,
     });
     process.exit(1);
+  }
+
+  let postRunValidation = null;
+  if (writeFilesTools) {
+    const afterWriteState = {
+      files: snapshotRepoFiles(repoRoot),
+      refs: snapshotRefs(repoRoot),
+      hermes: snapshotHermesMtime(),
+    };
+    postRunValidation = validateWriteFilesPostRun(
+      packet,
+      validation.parsed,
+      beforeWriteState,
+      afterWriteState,
+    );
+    if (!postRunValidation.ok) {
+      writeFileSync(resultRawPath, stdout, "utf8");
+      const note = `BLOCKED: AGENT-BRIDGE-013 post-run validation failed: ${postRunValidation.errors.join("; ")}`;
+      writeFileSync(
+        logPath,
+        buildLog(packet, {
+          run_id,
+          started_at,
+          finished_at,
+          claude_exit_code: exitCode,
+          result_path: resultRawPath,
+          note,
+          post_run_validation: postRunValidation,
+          ...logFields,
+        }),
+        "utf8",
+      );
+      process.stderr.write(`error: ${note}\n`);
+      writeLatestPointer(latestJsonPath, {
+        task_id: packet.task_id, run_id, status: "failed",
+        result_path: resultRawPath, log_path: logPath,
+        created_at: finished_at, claude_exit_code: exitCode,
+      });
+      process.exit(1);
+    }
+    validation.parsed._agent_bridge = {
+      mode: "write-files-only",
+      run_id,
+      changed_files: postRunValidation.changedFiles,
+      post_run_validation: "passed",
+    };
   }
 
   // Valid JSON with all required fields and correct types. Write .result.json.
@@ -990,6 +1272,7 @@ function runExecute(args, packet, repoRoot) {
       finished_at,
       claude_exit_code: exitCode,
       result_path: resultJsonPath,
+      post_run_validation: postRunValidation,
       ...logFields,
     }),
     "utf8",
