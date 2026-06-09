@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // AGENT-BRIDGE-002/002A/002B/003/003A/005/005A/005B/005C/005D/009/012 — Codex ⇄ Claude Code file-bridge.
 //
-// AGENT-BRIDGE-012 changes (runner-side):
+// AGENT-BRIDGE-012/012C changes (runner-side):
 //   - adds opt-in --read-only-tools for mode=read-only task packets.
 //   - default execution still disables all Claude tools.
 //   - read-only tool mode allows Read/Grep/Glob only; Bash is not exposed.
 //   - runner injects a small local git read-only context instead of allowing
 //     Claude to run git commands.
 //   - read-only tool mode uses Claude --json-schema output and local
-//     validation of structured_output.
+//     validation of structured_output or Claude Code 2.1.141 result-string
+//     JSON envelopes.
 //   - lifecycle logs include read_only_tools and a non-secret Claude argv
 //     summary that omits the prompt body.
 //
@@ -625,12 +626,32 @@ function extractStructuredOutput(stdout) {
   if (envelope === null || typeof envelope !== "object" || Array.isArray(envelope)) {
     return { ok: false, error: "Claude JSON envelope root is not an object" };
   }
-  if (!("structured_output" in envelope)) {
-    return { ok: false, error: "Claude JSON envelope missing structured_output" };
+  if (envelope.is_error === true) {
+    return { ok: false, error: "Claude JSON envelope is_error=true" };
   }
-  const structured = envelope.structured_output;
+  if ("structured_output" in envelope) {
+    const structured = envelope.structured_output;
+    if (structured === null || typeof structured !== "object" || Array.isArray(structured)) {
+      return { ok: false, error: "Claude structured_output is not an object" };
+    }
+    return { ok: true, structured };
+  }
+
+  if (typeof envelope.result !== "string") {
+    return { ok: false, error: "Claude JSON envelope missing structured_output and string result fallback" };
+  }
+  const resultText = envelope.result.trim();
+  if (!resultText.startsWith("{") || !resultText.endsWith("}")) {
+    return { ok: false, error: "Claude JSON envelope result fallback is not a raw JSON object string" };
+  }
+  let structured;
+  try {
+    structured = JSON.parse(resultText);
+  } catch (e) {
+    return { ok: false, error: `Claude JSON envelope result fallback parse error: ${e.message}` };
+  }
   if (structured === null || typeof structured !== "object" || Array.isArray(structured)) {
-    return { ok: false, error: "Claude structured_output is not an object" };
+    return { ok: false, error: "Claude JSON envelope result fallback is not an object" };
   }
   return { ok: true, structured };
 }
