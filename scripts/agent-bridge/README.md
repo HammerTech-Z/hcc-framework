@@ -448,6 +448,48 @@ authorization report `READY FOR USER AUTHORIZATION`. The auto-mode classifier
 blocks bridge-driven real Claude invocation, so the smoke was run manually.
 Full details: `docs/agent-bridge/agent-bridge-real-claude-smoke-2026-06-09.md`.
 
+## Artifact resolution (AGENT-BRIDGE-009)
+
+Each `--execute` run writes:
+- A lifecycle log to `.agent-bridge/logs/<task_id>.log` (overwritten per run)
+- A **latest pointer** to `.agent-bridge/results/<task_id>.latest.json`
+
+The latest pointer schema:
+```json
+{
+  "task_id": "string",
+  "run_id": "<task_id>-<epoch_ms>",
+  "status": "success" | "failed",
+  "result_path": "<path to .result.json or .result.raw.txt>",
+  "log_path": "<path to .log>",
+  "created_at": "ISO 8601",
+  "claude_exit_code": 0 | number | null
+}
+```
+
+**Consumers (humans and scripts) should read `latest.json` to find the
+canonical result for the latest run.** `result_path` and `log_path` always
+point to existing files. The audit runner and authorization generator still
+require explicit `--result` / `--audit` paths — they do not automatically
+discover artifacts from `latest.json`.
+
+On a successful `.result.json` write, the runner archives any pre-existing
+`.result.raw.txt` for the same task_id. The archive filename uses the
+**previous failed run's `run_id`** (read from the previous log) rather than
+the current successful `run_id`, preserving provenance to the source failed
+run. If the previous log is missing or unreadable, the fallback name is
+`unknown-previous-run-<current_run_id>.result.raw.txt`.
+
+On a spawn error (e.g., Claude binary not found), `.result.raw.txt` is
+written with a short error note, so `latest.json.result_path` always
+points to an existing file.
+
+Run grouping:
+- `.agent-bridge/results/<task_id>.result.json` — canonical success artifact
+- `.agent-bridge/results/<task_id>.result.raw.txt` — last failure artifact (absent if last run succeeded)
+- `.agent-bridge/logs/<task_id>.log` — always overwritten; latest run wins
+- `.agent-bridge/archive/<task_id>/` — historical stale artifacts
+
 ## Phase roadmap (per design doc)
 
 | Phase | What it adds | Status |

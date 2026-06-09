@@ -1,12 +1,18 @@
 #!/usr/bin/env node
-// AGENT-BRIDGE-002/002A/002B/003/003A/005 — Codex ⇄ Claude Code file-bridge.
+// AGENT-BRIDGE-002/002A/002B/003/003A/005/005A/005B/005C/005D/009 — Codex ⇄ Claude Code file-bridge.
 //
-// AGENT-BRIDGE-005 changes (runner-side):
+// AGENT-BRIDGE-009 changes (runner-side):
+//   - adds run_id to lifecycle log for idempotent artifact resolution.
+//   - on successful .result.json write, archives stale same-task .result.raw.txt
+//     to .agent-bridge/archive/<task_id>/ so consumers never see ambiguous
+//     active artifacts.
+//   - run_id is <task_id>-<started_at_epoch_ms>.
+//
+// AGENT-BRIDGE-005/005A/005B/005C/005D changes (runner-side):
 //   - prompt now requires a strict JSON-only response (no markdown prose).
 //   - result is written to .result.json when stdout is valid JSON with
-//     all required result-schema fields; otherwise stdout is written to
-//     .result.raw.txt and the run exits non-zero with a NEED_FIX-style
-//     log note.
+//     all required result-schema fields and correct types; otherwise stdout is
+//     written to .result.raw.txt and the run exits non-zero.
 //   - .result.md is no longer produced; the .result.json (or .result.raw.txt)
 //     pair is the only result artifact for this slice.
 //
@@ -23,7 +29,7 @@
 //   - write to .agent-bridge/tasks/
 //   - allow Claude to use tools or edit files in this slice
 
-import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { join, resolve, isAbsolute, sep } from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -450,10 +456,31 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function writeLatestPointer(path, fields) {
+  writeFileSync(
+    path,
+    JSON.stringify(
+      {
+        task_id: fields.task_id,
+        run_id: fields.run_id,
+        status: fields.status,
+        result_path: fields.result_path,
+        log_path: fields.log_path,
+        created_at: fields.created_at,
+        claude_exit_code: fields.claude_exit_code,
+      },
+      null,
+      2,
+    ) + "\n",
+    "utf8",
+  );
+}
+
 function buildLog(packet, fields) {
   return JSON.stringify(
     {
       task_id: packet.task_id,
+      run_id: fields.run_id,
       started_at: fields.started_at,
       finished_at: fields.finished_at,
       claude_exit_code: fields.claude_exit_code,
@@ -548,12 +575,14 @@ function runExecute(args, packet, repoRoot) {
   const logsDir = join(bridgeRoot, "logs");
   const resultJsonPath = join(resultsDir, `${packet.task_id}.result.json`);
   const resultRawPath = join(resultsDir, `${packet.task_id}.result.raw.txt`);
+  const latestJsonPath = join(resultsDir, `${packet.task_id}.latest.json`);
   const logPath = join(logsDir, `${packet.task_id}.log`);
 
   mkdirSync(resultsDir, { recursive: true });
   mkdirSync(logsDir, { recursive: true });
 
   const started_at = nowIso();
+  const run_id = `${packet.task_id}-${Date.now()}`;
   const prompt = buildPrompt(packet);
   const argsForClaude = [
     "-p",
@@ -576,18 +605,31 @@ function runExecute(args, packet, repoRoot) {
 
   if (result.error) {
     const note = `BLOCKED: spawn error: ${result.error.message}`;
+    // Write a short error note to .result.raw.txt so latest pointer
+    // always points to an existing file.
+    writeFileSync(
+      resultRawPath,
+      `AGENT-BRIDGE spawn error: ${result.error.message}\n`,
+      "utf8",
+    );
     writeFileSync(
       logPath,
       buildLog(packet, {
+        run_id,
         started_at,
         finished_at,
         claude_exit_code: null,
-        result_path: resultJsonPath,
+        result_path: resultRawPath,
         note,
       }),
       "utf8",
     );
     process.stderr.write(`error: ${note}\n`);
+    writeLatestPointer(latestJsonPath, {
+      task_id: packet.task_id, run_id, status: "failed",
+      result_path: resultRawPath, log_path: logPath,
+      created_at: finished_at, claude_exit_code: null,
+    });
     process.exit(1);
   }
 
@@ -603,6 +645,7 @@ function runExecute(args, packet, repoRoot) {
     writeFileSync(
       logPath,
       buildLog(packet, {
+        run_id,
         started_at,
         finished_at,
         claude_exit_code: exitCode,
@@ -614,6 +657,11 @@ function runExecute(args, packet, repoRoot) {
     process.stderr.write(
       `error: claude exited with code ${exitCode}. See ${logPath} for stderr summary; raw stdout at ${resultRawPath}\n`,
     );
+    writeLatestPointer(latestJsonPath, {
+      task_id: packet.task_id, run_id, status: "failed",
+      result_path: resultRawPath, log_path: logPath,
+      created_at: finished_at, claude_exit_code: exitCode,
+    });
     process.exit(1);
   }
 
@@ -631,6 +679,7 @@ function runExecute(args, packet, repoRoot) {
     writeFileSync(
       logPath,
       buildLog(packet, {
+        run_id,
         started_at,
         finished_at,
         claude_exit_code: exitCode,
@@ -640,10 +689,43 @@ function runExecute(args, packet, repoRoot) {
       "utf8",
     );
     process.stderr.write(`error: ${note}\n`);
+    writeLatestPointer(latestJsonPath, {
+      task_id: packet.task_id, run_id, status: "failed",
+      result_path: resultRawPath, log_path: logPath,
+      created_at: finished_at, claude_exit_code: exitCode,
+    });
     process.exit(1);
   }
 
   // Valid JSON with all required fields and correct types. Write .result.json.
+  // Before writing, archive any stale same-task .result.raw.txt from a
+  // previous failed run so consumers see only this run's active artifacts.
+  if (existsSync(resultRawPath)) {
+    const archiveDir = join(bridgeRoot, "archive", packet.task_id);
+    mkdirSync(archiveDir, { recursive: true });
+    // Use the previous run's run_id for archive provenance, not the
+    // current successful run_id.
+    let previousRunId = null;
+    try {
+      if (existsSync(logPath)) {
+        const prevLog = JSON.parse(readFileSync(logPath, "utf8"));
+        if (prevLog && typeof prevLog.run_id === "string") {
+          previousRunId = prevLog.run_id;
+        }
+      }
+    } catch {
+      // Previous log is missing or malformed; fall through.
+    }
+    const archiveName = previousRunId !== null
+      ? `${previousRunId}.result.raw.txt`
+      : `unknown-previous-run-${run_id}.result.raw.txt`;
+    const archivePath = join(archiveDir, archiveName);
+    if (existsSync(archivePath)) {
+      rmSync(archivePath);
+    }
+    renameSync(resultRawPath, archivePath);
+  }
+
   writeFileSync(
     resultJsonPath,
     JSON.stringify(validation.parsed, null, 2) + "\n",
@@ -652,6 +734,7 @@ function runExecute(args, packet, repoRoot) {
   writeFileSync(
     logPath,
     buildLog(packet, {
+      run_id,
       started_at,
       finished_at,
       claude_exit_code: exitCode,
@@ -659,6 +742,12 @@ function runExecute(args, packet, repoRoot) {
     }),
     "utf8",
   );
+
+  writeLatestPointer(latestJsonPath, {
+    task_id: packet.task_id, run_id, status: "success",
+    result_path: resultJsonPath, log_path: logPath,
+    created_at: finished_at, claude_exit_code: exitCode,
+  });
 
   const summary = {
     task_id: packet.task_id,
