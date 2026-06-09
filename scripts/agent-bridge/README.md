@@ -24,6 +24,7 @@
 | `run-claude-task.mjs` | CLI: parse flags, read task packet, validate, dry-run summary OR invoke Claude. |
 | `audit-claude-result.mjs` | CLI: deterministic local audit of a Claude result report against local repo reality. |
 | `generate-authorization-report.mjs` | CLI: reads task/result/audit JSON and produces a user-facing authorization report. |
+| `publish-task-packet.mjs` | CLI: creates standardized AGENT-BRIDGE task JSON packets under `.agent-bridge/tasks/pending/`. |
 | repo-root `.gitignore` (one line) | `.agent-bridge/` — runtime state is never committed. |
 | `docs/agent-bridge/codex-claude-file-bridge-2026-06-08.md` | Design doc. |
 
@@ -489,6 +490,61 @@ Run grouping:
 - `.agent-bridge/results/<task_id>.result.raw.txt` — last failure artifact (absent if last run succeeded)
 - `.agent-bridge/logs/<task_id>.log` — always overwritten; latest run wins
 - `.agent-bridge/archive/<task_id>/` — historical stale artifacts
+
+## Task packet publisher (AGENT-BRIDGE-010)
+
+`publish-task-packet.mjs` creates standardized AGENT-BRIDGE task JSON packets
+under ignored `.agent-bridge/tasks/pending/`. This lets Codex/user create
+Claude tasks without hand-copying prompts.
+
+- It does **not** execute Claude or Codex.
+- It does **not** commit, push, or write outside `.agent-bridge/tasks/pending/`.
+- Hard forbidden actions (`git commit`, `git push`, `git commit --amend`, `git rebase`, `git reset --hard`, `live apply`, `HCC Auto Executor`) are always included automatically.
+- Hard forbidden files (`~/.hermes/*`, `docs/roadmap-locked-2026-05-28.md`) are merged with user-supplied forbidden files.
+- `write-files-only` mode is rejected in AGENT-BRIDGE-010.
+- Existing task files are not overwritten; use a different `--task-id` or remove the old file first.
+
+### CLI flags
+
+| Flag | Required | Description |
+|---|---|---|
+| `--repo <path>` | yes | repo root (absolute) |
+| `--task-id <id>` | yes | `[A-Za-z0-9._-]+` |
+| `--mode <mode>` | yes | `design-only` or `read-only` |
+| `--objective <text>` | yes | 1-3 sentence description |
+| `--allowed-file <path>` | no | repeatable |
+| `--forbidden-file <path>` | no | repeatable |
+| `--allowed-command <cmd>` | no | repeatable |
+| `--required-verification <v>` | no | repeatable |
+| `--expected-authorization-type <type>` | no | default: `none` |
+| `--dry-run` | one of | print JSON to stdout |
+| `--write-task` | one of | write `.agent-bridge/tasks/pending/<id>.task.json` |
+| `--bridge-root <path>` | no | default `<repo>/.agent-bridge` |
+
+### Usage
+
+```sh
+# Dry-run
+node scripts/agent-bridge/publish-task-packet.mjs \
+  --repo /Users/midoudou/hermes-pro \
+  --task-id MY-TASK-001 \
+  --mode read-only \
+  --objective "Audit the latest commit for correctness." \
+  --dry-run
+
+# Write task, then run the runner against it
+node scripts/agent-bridge/publish-task-packet.mjs \
+  --repo /Users/midoudou/hermes-pro \
+  --task-id MY-TASK-001 \
+  --mode read-only \
+  --objective "Audit the latest commit." \
+  --write-task
+
+node scripts/agent-bridge/run-claude-task.mjs \
+  --repo /Users/midoudou/hermes-pro \
+  --task .agent-bridge/tasks/pending/MY-TASK-001.task.json \
+  --execute
+```
 
 ## Phase roadmap (per design doc)
 
