@@ -1,12 +1,13 @@
 # AGENT-BRIDGE — Codex ⇄ Claude Code File-Bridge
 
-> Slices: **AGENT-BRIDGE-002** (skeleton + task-packet validator) + **AGENT-BRIDGE-002A** (hardened allowlist) + **AGENT-BRIDGE-002B** (cleanup) + **AGENT-BRIDGE-003** (Claude invocation runner) + **AGENT-BRIDGE-003A** (bridge-root sandboxing) + **AGENT-BRIDGE-004** (deterministic local audit runner).
+> Slices: **AGENT-BRIDGE-002** (skeleton + task-packet validator) + **AGENT-BRIDGE-002A** (hardened allowlist) + **AGENT-BRIDGE-002B** (cleanup) + **AGENT-BRIDGE-003** (Claude invocation runner) + **AGENT-BRIDGE-003A** (bridge-root sandboxing) + **AGENT-BRIDGE-004** (deterministic local audit runner) + **AGENT-BRIDGE-012** (read-only Claude tool mode).
 > Design doc: `docs/agent-bridge/codex-claude-file-bridge-2026-06-08.md`.
 
 ## What this slice family is
 
 - Skeleton + dry-run validator (002/002A/002B).
-- `run-claude-task.mjs` with `--execute` (003) parses a task packet, validates its shape, and (in `mode=design-only` or `mode=read-only`) invokes Claude in non-interactive print mode with **tools disabled**.
+- `run-claude-task.mjs` with `--execute` (003) parses a task packet, validates its shape, and (in `mode=design-only` or `mode=read-only`) invokes Claude in non-interactive print mode with **tools disabled by default**.
+- `--read-only-tools` (012) is an opt-in mode for `mode=read-only` packets only. It allows Claude to inspect the repo with Read/Grep/Glob while preserving the strict JSON result contract. Bash is disabled.
 - It does **not** invoke Codex. It does **not** write to `.agent-bridge/tasks/`. It does **not** modify repo files.
 
 ## What this slice family is NOT
@@ -35,6 +36,7 @@
 --repo <path>          Path to repo root
 --dry-run              Validate only; do not execute
 --execute              Invoke Claude (design-only / read-only tasks only)
+--read-only-tools      Opt-in read-only Claude tools for mode=read-only only
 --bridge-root <path>   Optional; default = <repo>/.agent-bridge
 --claude-bin <path>     Optional; default = claude
 --timeout-ms <number>  Optional; default = 300000
@@ -46,6 +48,7 @@ Rules:
 - Exactly one of `--dry-run` or `--execute` must be provided.
 - `--dry-run` and `--execute` together exit 2.
 - Omitting both exits 2.
+- `--read-only-tools` with any packet mode other than `read-only` exits 2.
 
 ## Usage (AGENT-BRIDGE-003)
 
@@ -70,8 +73,9 @@ node scripts/agent-bridge/run-claude-task.mjs \
 
 - `--execute` is **only** supported for `mode=design-only` or `mode=read-only`.
 - Other modes (including `mode=write-files-only`) exit 2 with a clear message.
-- Claude is invoked in non-interactive print mode (`claude -p`) with tools disabled (`--tools ""`).
-- Output goes to `.agent-bridge/results/<task_id>.result.md`.
+- By default, Claude is invoked in non-interactive print mode (`claude -p`) with tools disabled (`--tools ""`).
+- With `--read-only-tools`, Claude is invoked with repo read/search tools only. The runner passes `--bare`, `--output-format json`, `--json-schema`, `--tools Read,Grep,Glob`, `--allowedTools Read,Grep,Glob`, and explicitly denies Bash/edit/write/network/task tools. The runner injects a small local git context into the prompt instead of allowing Claude to run git.
+- Output goes to `.agent-bridge/results/<task_id>.result.json` on strict schema success or `.agent-bridge/results/<task_id>.result.raw.txt` on failure.
 - Lifecycle log goes to `.agent-bridge/logs/<task_id>.log`.
 - The script **never** writes to `.agent-bridge/tasks/`.
 
@@ -120,6 +124,23 @@ The validator enforces the following invariants on a task packet:
 - A JSON lifecycle log is written to `.agent-bridge/logs/<task_id>.log` with: `task_id`, `started_at`, `finished_at`, `claude_exit_code`, `result_path`, `mode`, `would_modify_files=false`, `tools_disabled=true`.
 - If Claude exits non-zero, the log includes a stderr summary, and the script exits non-zero.
 - The script does **not** retry. It does **not** bypass permissions. It does **not** use `--dangerously-skip-permissions`.
+
+## Read-only Claude tool mode (AGENT-BRIDGE-012)
+
+`--read-only-tools` is intentionally narrow:
+
+- It is accepted only when the task packet has `mode: "read-only"`.
+- Default behavior remains unchanged: without the flag, the runner still passes `--tools ""`.
+- With the flag, Claude argv is:
+  `claude --bare -p "<prompt>" --output-format json --json-schema "<12-field schema>" --tools Read,Grep,Glob --allowedTools "Read,Grep,Glob" --disallowedTools "Bash,Edit,MultiEdit,Write,NotebookEdit,WebFetch,WebSearch,Task" --permission-mode default`
+- `allowed_commands` must be empty in `--read-only-tools` mode. The runner no longer exposes Bash; command execution is not delegated to Claude.
+- `required_verification` is descriptive only and does not grant command access.
+- The runner injects local git context collected with its own read-only `git` calls: `rev-parse HEAD`, `rev-parse origin/hermes-pro-main`, ahead/behind counts, `git status --short -uall`, and recent `git log --oneline --decorate --max-count=12`.
+- The prompt states that tools are available only for repo-local read-only inspection, Bash is disabled, `allowed_commands` / `required_verification` do not grant command access, and the final response must satisfy the provided JSON schema.
+- The lifecycle log records `tools_disabled=false`, `read_only_tools=true`, and `claude_argv_summary`, where the prompt body is replaced by `<prompt omitted>`.
+- Strict local result validation is unchanged. In read-only tools mode, Claude's JSON envelope must contain `structured_output`, and that object is locally revalidated against the AGENT-BRIDGE 12-field contract. No JSON repair or code-fence extraction is performed.
+- The mode still does not implement write-files-only, live apply, LOOP-010.A, HCC Auto Executor, commit, push, amend, rebase, squash, or writes outside ignored `.agent-bridge/`.
+- P0 before rerunning AGENT-BRIDGE-011 on the real repo: verify with real Claude that Read/Grep/Glob cannot read `~/.hermes/*`, `~/.ssh/*`, `.env*`, absolute paths, `~` paths, or `..` paths. Deterministic auditing of actual tool-use events remains a follow-up if future slices reintroduce command execution.
 
 ## AGENT-BRIDGE-005 strict Claude result JSON schema
 

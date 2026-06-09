@@ -1,5 +1,16 @@
 #!/usr/bin/env node
-// AGENT-BRIDGE-002/002A/002B/003/003A/005/005A/005B/005C/005D/009 — Codex ⇄ Claude Code file-bridge.
+// AGENT-BRIDGE-002/002A/002B/003/003A/005/005A/005B/005C/005D/009/012 — Codex ⇄ Claude Code file-bridge.
+//
+// AGENT-BRIDGE-012 changes (runner-side):
+//   - adds opt-in --read-only-tools for mode=read-only task packets.
+//   - default execution still disables all Claude tools.
+//   - read-only tool mode allows Read/Grep/Glob only; Bash is not exposed.
+//   - runner injects a small local git read-only context instead of allowing
+//     Claude to run git commands.
+//   - read-only tool mode uses Claude --json-schema output and local
+//     validation of structured_output.
+//   - lifecycle logs include read_only_tools and a non-secret Claude argv
+//     summary that omits the prompt body.
 //
 // AGENT-BRIDGE-009 changes (runner-side):
 //   - adds run_id to lifecycle log for idempotent artifact resolution.
@@ -27,7 +38,7 @@
 //   - write to ~/.hermes/*
 //   - write to docs/roadmap-locked-2026-05-28.md
 //   - write to .agent-bridge/tasks/
-//   - allow Claude to use tools or edit files in this slice
+//   - allow Claude to edit files in this slice
 
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { join, resolve, isAbsolute, sep } from "node:path";
@@ -45,6 +56,18 @@ const REQUIRED_FORBIDDEN_ACTIONS = [
   "git reset --hard",
   "live apply",
   "HCC Auto Executor",
+];
+
+const READ_ONLY_CLAUDE_TOOLS = "Read,Grep,Glob";
+const DISALLOWED_CLAUDE_TOOLS = [
+  "Bash",
+  "Edit",
+  "MultiEdit",
+  "Write",
+  "NotebookEdit",
+  "WebFetch",
+  "WebSearch",
+  "Task",
 ];
 
 // -----------------------------------------------------------------
@@ -67,6 +90,39 @@ const REQUIRED_FIELDS = [
 
 // Modes supported in AGENT-BRIDGE-003 --execute.
 const EXECUTE_SUPPORTED_MODES = new Set(["design-only", "read-only"]);
+
+const RESULT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    schema_version: { type: "string" },
+    task_id: { type: "string" },
+    final_verdict: { type: "string" },
+    claimed_changes: { type: "string" },
+    files_modified: { type: "array", items: { type: "string" } },
+    commands_run: { type: "array", items: { type: "string" } },
+    raw_outputs_summary: { type: "string" },
+    not_done: { type: "string" },
+    known_unknowns: { type: "array", items: { type: "string" } },
+    claimed_commit: { type: ["string", "null"] },
+    claimed_pushed: { type: "boolean" },
+    claimed_push_state: { type: ["object", "null"] },
+  },
+  required: [
+    "schema_version",
+    "task_id",
+    "final_verdict",
+    "claimed_changes",
+    "files_modified",
+    "commands_run",
+    "raw_outputs_summary",
+    "not_done",
+    "known_unknowns",
+    "claimed_commit",
+    "claimed_pushed",
+    "claimed_push_state",
+  ],
+  additionalProperties: true,
+};
 
 // -----------------------------------------------------------------
 // Hard-forbidden paths
@@ -153,6 +209,7 @@ function parseArgs(argv) {
     bridgeRoot: null,
     claudeBin: "claude",
     timeoutMs: 300000,
+    readOnlyTools: false,
     help: false,
   };
   for (let i = 2; i < argv.length; i++) {
@@ -165,6 +222,8 @@ function parseArgs(argv) {
       out.dryRun = true;
     } else if (a === "--execute") {
       out.execute = true;
+    } else if (a === "--read-only-tools") {
+      out.readOnlyTools = true;
     } else if (a === "--bridge-root") {
       out.bridgeRoot = argv[++i] ?? null;
     } else if (a === "--claude-bin") {
@@ -195,6 +254,7 @@ function printUsage() {
       "  --repo <path>          Path to repo root",
       "  --dry-run              Validate only; do not execute",
       "  --execute              Invoke Claude (design-only / read-only tasks only)",
+      "  --read-only-tools      Opt-in read-only Claude tools for mode=read-only only",
       "  --bridge-root <path>    Optional; default = <repo>/.agent-bridge",
       "  --claude-bin <path>     Optional; default = claude",
       "  --timeout-ms <number>   Optional; default = 300000",
@@ -202,7 +262,7 @@ function printUsage() {
       "",
       "Exactly one of --dry-run or --execute must be provided.",
       "AGENT-BRIDGE-003 --execute only supports mode = design-only or read-only.",
-      "Tools are disabled; Claude will not edit files in this slice.",
+      "Tools are disabled by default; --read-only-tools enables read-only inspection only.",
       "No commit / push / live apply automation; user authorization remains required.",
       "",
     ].join("\n"),
@@ -270,9 +330,13 @@ function validateTaskPacket(packet) {
 // Prompt construction
 // -----------------------------------------------------------------
 
-function buildPrompt(packet) {
+function buildPrompt(packet, opts = {}) {
+  const readOnlyTools = opts.readOnlyTools === true;
+  const localReadOnlyContext = opts.localReadOnlyContext ?? null;
   const lines = [];
-  lines.push("AGENT-BRIDGE-005D task execution.");
+  lines.push(readOnlyTools
+    ? "AGENT-BRIDGE-012 read-only task execution."
+    : "AGENT-BRIDGE-005D task execution.");
   lines.push("");
   lines.push(`task_id: ${packet.task_id}`);
   lines.push(`mode: ${packet.mode}`);
@@ -318,13 +382,37 @@ function buildPrompt(packet) {
   lines.push("- Never use empty string \"\" as a substitute for null, false, or [].");
   lines.push("");
   lines.push("ANTI-OVERCLAIM RULES:");
-  lines.push("- Tools are DISABLED. You cannot run git status, stat, rg, or any shell");
-  lines.push("  command. Do not claim you verified local git status, file mtimes,");
-  lines.push("  roadmap diff, or working tree state.");
-  lines.push("- If you did not actually run a command, you MUST NOT say you verified that");
-  lines.push("  fact. Use known_unknowns or not_done for facts you could not verify.");
-  lines.push("- files_modified and commands_run must be empty arrays [] because you cannot");
-  lines.push("  modify files or run commands in this mode.");
+  if (readOnlyTools) {
+    lines.push("- Read-only tools are available ONLY for inspection inside the repo.");
+    lines.push("- Use Read/Grep/Glob for repo-local file inspection. Bash is disabled.");
+    lines.push("- allowed_commands and required_verification are descriptive only; they do");
+    lines.push("  not grant command access.");
+    lines.push("- Do not read absolute paths, ~ paths, .. paths, ~/.hermes, ~/.ssh, .env,");
+    lines.push("  secret files, credentials, or files outside the repo.");
+    lines.push("- Do not run exploratory write, install, network, commit, push, amend,");
+    lines.push("  rebase, reset, checkout, clean, live apply, or HCC Auto Executor commands.");
+    lines.push("- Do not modify any file. Do not write source, runtime, test, docs, .gitignore,");
+    lines.push("  package, lockfile, or ~/.hermes files. Do not create temp files.");
+    lines.push("- commands_run must list only commands you actually ran. files_modified must");
+    lines.push("  be [] because this task is read-only.");
+    lines.push("- The final response must satisfy the provided JSON schema. No prose,");
+    lines.push("  markdown, code fences, or explanation outside the structured result.");
+    if (localReadOnlyContext !== null) {
+      lines.push("");
+      lines.push("runner_collected_local_context:");
+      lines.push("```json");
+      lines.push(JSON.stringify(localReadOnlyContext, null, 2));
+      lines.push("```");
+    }
+  } else {
+    lines.push("- Tools are DISABLED. You cannot run git status, stat, rg, or any shell");
+    lines.push("  command. Do not claim you verified local git status, file mtimes,");
+    lines.push("  roadmap diff, or working tree state.");
+    lines.push("- If you did not actually run a command, you MUST NOT say you verified that");
+    lines.push("  fact. Use known_unknowns or not_done for facts you could not verify.");
+    lines.push("- files_modified and commands_run must be empty arrays [] because you cannot");
+    lines.push("  modify files or run commands in this mode.");
+  }
   return lines.join("\n");
 }
 
@@ -456,6 +544,114 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function validateReadOnlyCommands(packet) {
+  if (packet.allowed_commands.length > 0) {
+    return "--read-only-tools does not expose Bash; allowed_commands must be empty";
+  }
+  return null;
+}
+
+function runLocalGitContext(repoRoot, args) {
+  const r = spawnSync("git", args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    timeout: 10000,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  return {
+    command: `git ${args.join(" ")}`,
+    exit_code: r.status ?? (r.error ? 1 : 0),
+    stdout: (r.stdout ?? "").slice(0, 12000),
+    stderr: (r.stderr ?? "").slice(0, 4000),
+    error: r.error ? r.error.message : null,
+  };
+}
+
+function buildLocalReadOnlyContext(repoRoot) {
+  return {
+    repo_root: repoRoot,
+    head: runLocalGitContext(repoRoot, ["rev-parse", "HEAD"]),
+    origin_head: runLocalGitContext(repoRoot, ["rev-parse", "origin/hermes-pro-main"]),
+    ahead: runLocalGitContext(repoRoot, ["rev-list", "--count", "origin/hermes-pro-main..HEAD"]),
+    behind: runLocalGitContext(repoRoot, ["rev-list", "--count", "HEAD..origin/hermes-pro-main"]),
+    status_short: runLocalGitContext(repoRoot, ["status", "--short", "-uall"]),
+    recent_log: runLocalGitContext(repoRoot, ["log", "--oneline", "--decorate", "--max-count=12"]),
+  };
+}
+
+function buildClaudeArgv(packet, prompt, opts = {}) {
+  const readOnlyTools = opts.readOnlyTools === true;
+  const argv = [
+    "-p",
+    prompt,
+    "--output-format",
+  ];
+
+  if (readOnlyTools) {
+    argv.unshift("--bare");
+    argv.push(
+      "json",
+      "--json-schema",
+      JSON.stringify(RESULT_JSON_SCHEMA),
+      "--tools",
+      READ_ONLY_CLAUDE_TOOLS,
+      "--allowedTools",
+      "Read,Grep,Glob",
+      "--disallowedTools",
+      DISALLOWED_CLAUDE_TOOLS.join(","),
+      "--permission-mode",
+      "default",
+    );
+  } else {
+    argv.push(
+      "text",
+      "--tools",
+      "",
+      "--permission-mode",
+      "default",
+    );
+  }
+
+  return argv;
+}
+
+function extractStructuredOutput(stdout) {
+  let envelope;
+  try {
+    envelope = JSON.parse(stdout.trim());
+  } catch (e) {
+    return { ok: false, error: `Claude JSON envelope parse error: ${e.message}` };
+  }
+  if (envelope === null || typeof envelope !== "object" || Array.isArray(envelope)) {
+    return { ok: false, error: "Claude JSON envelope root is not an object" };
+  }
+  if (!("structured_output" in envelope)) {
+    return { ok: false, error: "Claude JSON envelope missing structured_output" };
+  }
+  const structured = envelope.structured_output;
+  if (structured === null || typeof structured !== "object" || Array.isArray(structured)) {
+    return { ok: false, error: "Claude structured_output is not an object" };
+  }
+  return { ok: true, structured };
+}
+
+function summarizeClaudeArgv(argv) {
+  const summary = [];
+  for (let i = 0; i < argv.length; i++) {
+    const value = argv[i];
+    if (value === "-p" || value === "--print" || value === "--json-schema") {
+      summary.push(value);
+      if (i + 1 < argv.length) {
+        summary.push(value === "--json-schema" ? "<json schema omitted>" : "<prompt omitted>");
+        i++;
+      }
+    } else {
+      summary.push(value);
+    }
+  }
+  return summary;
+}
+
 function writeLatestPointer(path, fields) {
   writeFileSync(
     path,
@@ -487,7 +683,9 @@ function buildLog(packet, fields) {
       result_path: fields.result_path,
       mode: packet.mode,
       would_modify_files: false,
-      tools_disabled: true,
+      tools_disabled: fields.tools_disabled !== false,
+      read_only_tools: fields.read_only_tools === true,
+      claude_argv_summary: fields.claude_argv_summary ?? null,
       note: fields.note ?? null,
     },
     null,
@@ -549,6 +747,19 @@ function runExecute(args, packet, repoRoot) {
     );
     process.exit(2);
   }
+  if (args.readOnlyTools && packet.mode !== "read-only") {
+    process.stderr.write(
+      `error: --read-only-tools is only supported for mode=read-only. Got mode=${packet.mode}.\n`,
+    );
+    process.exit(2);
+  }
+  if (args.readOnlyTools) {
+    const readOnlyCommandErr = validateReadOnlyCommands(packet);
+    if (readOnlyCommandErr !== null) {
+      process.stderr.write(`error: ${readOnlyCommandErr}\n`);
+      process.exit(2);
+    }
+  }
 
   // Bridge-root sandboxing: the bridge may only write inside the
   // repo-local `.agent-bridge/` directory. The default is
@@ -583,17 +794,21 @@ function runExecute(args, packet, repoRoot) {
 
   const started_at = nowIso();
   const run_id = `${packet.task_id}-${Date.now()}`;
-  const prompt = buildPrompt(packet);
-  const argsForClaude = [
-    "-p",
-    prompt,
-    "--output-format",
-    "text",
-    "--tools",
-    "",
-    "--permission-mode",
-    "default",
-  ];
+  const localReadOnlyContext = args.readOnlyTools
+    ? buildLocalReadOnlyContext(repoRoot)
+    : null;
+  const prompt = buildPrompt(packet, {
+    readOnlyTools: args.readOnlyTools,
+    localReadOnlyContext,
+  });
+  const argsForClaude = buildClaudeArgv(packet, prompt, {
+    readOnlyTools: args.readOnlyTools,
+  });
+  const logFields = {
+    tools_disabled: !args.readOnlyTools,
+    read_only_tools: args.readOnlyTools,
+    claude_argv_summary: summarizeClaudeArgv(argsForClaude),
+  };
   const result = spawnSync(args.claudeBin, argsForClaude, {
     encoding: "utf8",
     timeout: args.timeoutMs,
@@ -621,6 +836,7 @@ function runExecute(args, packet, repoRoot) {
         claude_exit_code: null,
         result_path: resultRawPath,
         note,
+        ...logFields,
       }),
       "utf8",
     );
@@ -651,6 +867,7 @@ function runExecute(args, packet, repoRoot) {
         claude_exit_code: exitCode,
         result_path: resultRawPath,
         note,
+        ...logFields,
       }) + "\n--- stderr summary ---\n" + stderr.slice(0, 4000) + "\n",
       "utf8",
     );
@@ -666,13 +883,25 @@ function runExecute(args, packet, repoRoot) {
   }
 
   // Zero exit: validate JSON schema and types against AGENT-BRIDGE-005A
-  // strict result contract. Two outcomes:
-  //   (a) stdout is not valid JSON, not an object, empty, or has missing
-  //       fields, wrong types => write .result.raw.txt, log note, exit 1.
-  //   (b) all fields present with correct types => write .result.json, exit 0.
+  // strict result contract. Default tools-disabled mode expects raw JSON on
+  // stdout. Read-only tools mode uses Claude --output-format json +
+  // --json-schema, then validates the envelope's structured_output locally.
   // Do not attempt to repair malformed JSON. Do not infer missing fields.
   // Do not silently coerce invalid types.
-  const validation = validateResultJson(stdout, packet.task_id);
+  let validation;
+  if (args.readOnlyTools) {
+    const structured = extractStructuredOutput(stdout);
+    if (!structured.ok) {
+      validation = { ok: false, error: structured.error };
+    } else {
+      validation = validateResultJson(
+        JSON.stringify(structured.structured),
+        packet.task_id,
+      );
+    }
+  } else {
+    validation = validateResultJson(stdout, packet.task_id);
+  }
   if (!validation.ok) {
     writeFileSync(resultRawPath, stdout, "utf8");
     const note = `BLOCKED: AGENT-BRIDGE-005 schema validation failed: ${validation.error}`;
@@ -685,6 +914,7 @@ function runExecute(args, packet, repoRoot) {
         claude_exit_code: exitCode,
         result_path: resultRawPath,
         note,
+        ...logFields,
       }),
       "utf8",
     );
@@ -739,6 +969,7 @@ function runExecute(args, packet, repoRoot) {
       finished_at,
       claude_exit_code: exitCode,
       result_path: resultJsonPath,
+      ...logFields,
     }),
     "utf8",
   );
@@ -807,6 +1038,19 @@ function main() {
   }
 
   const packet = loadTaskPacket(args);
+  if (args.readOnlyTools && packet.mode !== "read-only") {
+    process.stderr.write(
+      `error: --read-only-tools is only supported for mode=read-only. Got mode=${packet.mode}.\n`,
+    );
+    process.exit(2);
+  }
+  if (args.readOnlyTools) {
+    const readOnlyCommandErr = validateReadOnlyCommands(packet);
+    if (readOnlyCommandErr !== null) {
+      process.stderr.write(`error: ${readOnlyCommandErr}\n`);
+      process.exit(2);
+    }
+  }
 
   if (args.dryRun) {
     printDryRunSummary(packet, repoRoot);
