@@ -23,6 +23,7 @@
 |---|---|
 | `run-claude-task.mjs` | CLI: parse flags, read task packet, validate, dry-run summary OR invoke Claude. |
 | `audit-claude-result.mjs` | CLI: deterministic local audit of a Claude result report against local repo reality. |
+| `generate-authorization-report.mjs` | CLI: reads task/result/audit JSON and produces a user-facing authorization report. |
 | repo-root `.gitignore` (one line) | `.agent-bridge/` — runtime state is never committed. |
 | `docs/agent-bridge/codex-claude-file-bridge-2026-06-08.md` | Design doc. |
 
@@ -338,6 +339,88 @@ The verification expectation is **not** `test ! -d .agent-bridge` (that would be
 - **No audit of `raw_outputs_summary` content.** The runner checks the field's presence but does not parse or re-verify its contents.
 - **No cross-task memory.** Every audit is independent; the runner does not consult prior audit verdicts.
 - **No commit / push automation.** The audit produces a verdict; the user runs any follow-up actions manually.
+
+## Authorization report generator (AGENT-BRIDGE-007)
+
+`generate-authorization-report.mjs` reads a task packet, result JSON, and
+audit JSON, and produces a user-facing markdown authorization report.
+
+- It is **not** a dashboard. It is **not** an executor.
+- It **does not** commit, push, amend, rebase, or squash.
+- It **does not** call Claude or Codex.
+- It **does not** authorize anything by itself — the user remains the final gate.
+
+### CLI flags
+
+```
+--repo <path>             Path to repo root
+--task <path>             Path to task packet JSON
+--result <path>           Path to Claude result JSON
+--audit <path>            Path to audit JSON
+--authorization-id <id>   Report identifier (required for --write-report)
+--dry-run                 Print report to stdout; do not write
+--write-report            Write under <bridge-root>/authorizations/
+--bridge-root <path>      Optional; default = <repo>/.agent-bridge
+--help, -h                Print this message
+```
+
+### Output
+
+`--dry-run`: prints markdown to stdout. `--write-report`: writes
+`.agent-bridge/authorizations/<authorization-id>.authorization.md`
+(ignored via `.gitignore:51:.agent-bridge/`).
+
+### Report sections
+
+1. Task (task_id, mode, objective)
+2. Executor Result (final_verdict, claimed_changes, files_modified, commands_run)
+3. Audit Result (audit_id, final_decision, verified_correct, mismatches, hallucinations, bugs, unknowns, forbidden_path_findings)
+4. Local Reality Summary (branch, HEAD, origin, ahead/behind, working tree)
+5. Recommendation:
+   - `READY_FOR_USER_AUTHORIZATION` if audit says so
+   - `DO NOT AUTHORIZE; REQUEST FIX` for NEED_FIX
+   - `NO-GO` for NO_GO
+6. User Authorization Required:
+   - `yes, authorize this result`
+   - `no, request fix`
+   - `abort task`
+
+### Input consistency checks
+
+Before generating the report, the generator validates:
+- `task.task_id === result.task_id`
+- `task.task_id === audit.task_id`
+- `audit.claimed_facts` exists and is an object
+- `audit.claimed_facts.result_task_id` is a non-null string AND equals `task.task_id` (mandatory; missing result_task_id is a consistency error)
+- `audit.final_decision` exists
+- `audit.verified_correct` is boolean
+- `--authorization-id` matches `^[A-Za-z0-9._-]+$` (rejects `/`, `\`, `..`, spaces, absolute paths)
+
+Any inconsistency → `AUTHORIZATION REPORT INVALID: INPUTS DO NOT MATCH` heading.
+The report **must not** say `READY FOR USER AUTHORIZATION` when inconsistency errors exist.
+Invalid consistency report inputs cannot produce a READY recommendation.
+
+If any check fails, the report heading becomes
+`AUTHORIZATION REPORT INVALID: INPUTS DO NOT MATCH` and `--write-report`
+exits nonzero.
+
+### Example
+
+```sh
+node scripts/agent-bridge/generate-authorization-report.mjs \
+  --repo /Users/midoudou/hermes-pro \
+  --task /tmp/agent-bridge-006-task.json \
+  --result .agent-bridge/results/AGENT-BRIDGE-006-E2E-SMOKE.result.json \
+  --audit .agent-bridge/audits/AGENT-BRIDGE-006-E2E-SMOKE.audit.json \
+  --dry-run
+
+node scripts/agent-bridge/generate-authorization-report.mjs \
+  --repo /Users/midoudou/hermes-pro \
+  --task /tmp/agent-bridge-006-task.json \
+  --result .agent-bridge/results/AGENT-BRIDGE-006-E2E-SMOKE.result.json \
+  --audit .agent-bridge/audits/AGENT-BRIDGE-006-E2E-SMOKE.audit.json \
+  --write-report --authorization-id AGENT-BRIDGE-006-E2E-SMOKE
+```
 
 ## Hard boundaries (every slice, including future ones)
 
