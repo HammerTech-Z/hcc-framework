@@ -172,8 +172,14 @@ Audit runner behavior:
 
 Backward compatibility:
 
-- AGENT-BRIDGE-005A still produces `.result.json` (preferred) and falls back
-  to `.result.raw.txt` when Claude cannot return structured JSON or types.
+- AGENT-BRIDGE-005D hardens the prompt with a canonical JSON example, strict
+  type rules (\`known_unknowns\` must be array, \`claimed_pushed\` must be boolean,
+  \`claimed_push_state\` must be object or null), and an anti-overclaim rule:
+  because tools are disabled Claude must not claim it verified local git
+  status, file mtimes, or working tree state. Previously observed wrong-type
+  JSON (\`known_unknowns: ""\`, \`claimed_pushed: ""\`, \`claimed_push_state: ""\`)
+  is now prevented by both the prompt and the strict type validator; real
+  Claude smoke failure was caught safely by the 005A validator.
 - Missing-field JSON is **not** written to `.result.json` (the runner writes
   the raw stdout to `.result.raw.txt` regardless of failure reason).
 - The audit runner (AGENT-BRIDGE-004/005A) still accepts markdown via `.md`

@@ -266,7 +266,7 @@ function validateTaskPacket(packet) {
 
 function buildPrompt(packet) {
   const lines = [];
-  lines.push("AGENT-BRIDGE-005 task execution.");
+  lines.push("AGENT-BRIDGE-005D task execution.");
   lines.push("");
   lines.push(`task_id: ${packet.task_id}`);
   lines.push(`mode: ${packet.mode}`);
@@ -284,35 +284,46 @@ function buildPrompt(packet) {
   lines.push("required_verification:");
   for (const v of packet.required_verification) lines.push(`  - ${v}`);
   lines.push("");
-  lines.push(`report_schema: ${JSON.stringify(packet.report_schema)}`);
+  lines.push("Return ONLY a single JSON object. No markdown, no code fences, no commentary.");
+  lines.push("The response MUST start with { and end with }.");
   lines.push("");
-  lines.push(
-    "Do not call tools. Do not edit files. Do not write any markdown or prose. " +
-      "Return ONLY a single JSON object that conforms to the AGENT-BRIDGE-005 Claude result schema. " +
-      "Required top-level fields (all must be present, no defaults, no missing): " +
-      "schema_version, task_id, final_verdict, claimed_changes, files_modified, " +
-      "commands_run, raw_outputs_summary, not_done, known_unknowns, " +
-      "claimed_commit, claimed_pushed, claimed_push_state. " +
-      "The response MUST start with `{` and end with `}`. No code fences, no commentary.",
-  );
+  lines.push("CANONICAL EXAMPLE (use these exact types, fill in values):");
+  lines.push("{");
+  lines.push('  "schema_version": "1.0.0",');
+  lines.push(`  "task_id": "${packet.task_id}",`);
+  lines.push('  "final_verdict": "complete",');
+  lines.push('  "claimed_changes": "",');
+  lines.push('  "files_modified": [],');
+  lines.push('  "commands_run": [],');
+  lines.push('  "raw_outputs_summary": "",');
+  lines.push('  "not_done": "",');
+  lines.push('  "known_unknowns": [],');
+  lines.push('  "claimed_commit": null,');
+  lines.push('  "claimed_pushed": false,');
+  lines.push('  "claimed_push_state": null');
+  lines.push("}");
+  lines.push("");
+  lines.push("TYPE RULES (strict, no shortcuts):");
+  lines.push("- known_unknowns MUST be an array, use [] if none.");
+  lines.push("- claimed_pushed MUST be boolean true/false, use false if no push happened.");
+  lines.push("- claimed_push_state MUST be object or null, use null if no push happened.");
+  lines.push("- claimed_commit MUST be string or null, use null if no commit happened.");
+  lines.push("- files_modified and commands_run MUST be arrays, use [] if none.");
+  lines.push("- Never use empty string \"\" as a substitute for null, false, or [].");
+  lines.push("");
+  lines.push("ANTI-OVERCLAIM RULES:");
+  lines.push("- Tools are DISABLED. You cannot run git status, stat, rg, or any shell");
+  lines.push("  command. Do not claim you verified local git status, file mtimes,");
+  lines.push("  roadmap diff, or working tree state.");
+  lines.push("- If you did not actually run a command, you MUST NOT say you verified that");
+  lines.push("  fact. Use known_unknowns or not_done for facts you could not verify.");
+  lines.push("- files_modified and commands_run must be empty arrays [] because you cannot");
+  lines.push("  modify files or run commands in this mode.");
   return lines.join("\n");
 }
 
-// AGENT-BRIDGE-005 strict Claude result schema (runner-side validation).
-const REQUIRED_RESULT_FIELDS = [
-  "schema_version",
-  "task_id",
-  "final_verdict",
-  "claimed_changes",
-  "files_modified",
-  "commands_run",
-  "raw_outputs_summary",
-  "not_done",
-  "known_unknowns",
-  "claimed_commit",
-  "claimed_pushed",
-  "claimed_push_state",
-];
+// AGENT-BRIDGE-005A strict result type validation — all checks are in
+// validateResultJson(). REQUIRED_RESULT_FIELDS is retained for docs only.
 
 function validateResultJson(stdout, expectedTaskId) {
   // Returns { ok: true, parsed } on success; { ok: false, error } on parse or type error.
