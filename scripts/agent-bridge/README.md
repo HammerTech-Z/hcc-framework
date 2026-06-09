@@ -1,6 +1,6 @@
 # AGENT-BRIDGE — Codex ⇄ Claude Code File-Bridge
 
-> Slices: **AGENT-BRIDGE-002** (skeleton + task-packet validator) + **AGENT-BRIDGE-002A** (hardened allowlist) + **AGENT-BRIDGE-002B** (cleanup) + **AGENT-BRIDGE-003** (Claude invocation runner).
+> Slices: **AGENT-BRIDGE-002** (skeleton + task-packet validator) + **AGENT-BRIDGE-002A** (hardened allowlist) + **AGENT-BRIDGE-002B** (cleanup) + **AGENT-BRIDGE-003** (Claude invocation runner) + **AGENT-BRIDGE-003A** (bridge-root sandboxing) + **AGENT-BRIDGE-004** (deterministic local audit runner).
 > Design doc: `docs/agent-bridge/codex-claude-file-bridge-2026-06-08.md`.
 
 ## What this slice family is
@@ -12,7 +12,7 @@
 ## What this slice family is NOT
 
 - It is **not** a runner for write-mode tasks. `--execute` rejects `mode=write-files-only` and any other mode that would require file edits.
-- It is **not** a Codex audit runner.
+- It is **not** a Codex invocation runner. (AGENT-BRIDGE-004 adds a deterministic *local* audit runner that re-verifies the Claude result against local repo reality; it does **not** invoke Codex.)
 - It is **not** a daemon. It is invoked manually per task.
 - It is **not** HCC Auto Executor. It does not enable live apply.
 - It does **not** authorize LOOP-010.A.
@@ -22,6 +22,7 @@
 | File | Purpose |
 |---|---|
 | `run-claude-task.mjs` | CLI: parse flags, read task packet, validate, dry-run summary OR invoke Claude. |
+| `audit-claude-result.mjs` | CLI: deterministic local audit of a Claude result report against local repo reality. |
 | repo-root `.gitignore` (one line) | `.agent-bridge/` — runtime state is never committed. |
 | `docs/agent-bridge/codex-claude-file-bridge-2026-06-08.md` | Design doc. |
 
@@ -134,6 +135,120 @@ The validator enforces the following invariants on a task packet:
 
 The bridge **never** writes to `~/.hermes/*`, repo tracked source dirs, or any path outside `.agent-bridge/`.
 
+## Deterministic local audit runner (AGENT-BRIDGE-004)
+
+`audit-claude-result.mjs` reads a task packet and a Claude result report, and produces a deterministic audit verdict based on local repo reality. It does **not** call Codex, **not** call Claude, **not** perform commit/push, and **not** execute commands from the task packet or the result.
+
+### CLI flags
+
+```
+--repo <path>          Path to repo root
+--task <path>          Path to task packet JSON
+--result <path>        Path to Claude result JSON or .md
+--dry-run              Validate and print JSON; do not write
+--write-audit          Write audit under <bridge-root>/audits/
+--audit-id <id>        Audit identifier (required for --write-audit)
+--bridge-root <path>   Optional; default = <repo>/.agent-bridge
+--help, -h             Print this message
+```
+
+Rules:
+
+- Exactly one of `--dry-run` or `--write-audit` must be provided.
+- `--bridge-root` is constrained to `<repo>/.agent-bridge` (same rule as `run-claude-task.mjs`).
+- `--write-audit` writes only under `<bridge-root>/audits/`.
+- The result file is treated as untrusted text/data.
+
+### Output schema
+
+```json
+{
+  "audit_id": "string",
+  "generated_at": "ISO 8601",
+  "task_id": "string",
+  "claimed_facts": {
+    "final_verdict": "string|null",
+    "claimed_changes": "string|null",
+    "files_modified": ["string"],
+    "commands_run": ["string"],
+    "raw_outputs_summary": "string|null",
+    "not_done": "string|null",
+    "known_unknowns": ["string"],
+    "claimed_commit": "string|null",
+    "claimed_pushed": false,
+    "claimed_push_state": "object|null"
+  },
+  "local_reality_snapshot": {
+    "repo_root": "string",
+    "branch": "string",
+    "head": "string",
+    "head_short": "string",
+    "origin_head_short": "string",
+    "origin_head": "string",
+    "ahead": 0,
+    "behind": 0,
+    "working_tree_status": "string",
+    "working_tree_dirty": false,
+    "diff_check_empty": true,
+    "roadmap_diff_empty": true,
+    "gitignore_diff_empty": true,
+    "hermes_mtime": {"config_yaml": 0, "handoff_packs": 0, "audit": 0}
+  },
+  "verified_facts": ["string"],
+  "verified_correct": true,
+  "mismatches": ["string"],
+  "ai_hallucinations_or_overclaims": ["string"],
+  "bugs_or_risks": ["string"],
+  "unknowns": ["string"],
+  "forbidden_path_findings": ["string"],
+  "final_decision": "ACCEPT | NEED_FIX | NO_GO | READY_FOR_USER_AUTHORIZATION"
+}
+```
+
+`final_decision` rules (deterministic, in order):
+
+- `forbidden_path_findings` non-empty ⇒ `NO_GO`
+- `bugs_or_risks` or `mismatches` or `ai_hallucinations_or_overclaims` or `unknowns` non-empty ⇒ `NEED_FIX`
+- otherwise ⇒ `READY_FOR_USER_AUTHORIZATION`
+
+In AGENT-BRIDGE-004, `unknowns` blocks `READY_FOR_USER_AUTHORIZATION`. Examples of unknowns:
+
+- `result.claimed_pushed=true` with no `claimed_commit` and missing or insufficient `claimed_push_state.origin_head` proof.
+- `result.raw_outputs_summary` missing (cannot verify raw outputs).
+- Local `~/.hermes` baseline mtime not all readable.
+
+### Verification checks
+
+The audit runner compares Claude claims against local reality:
+
+- **Working tree comparison**: if dirty, `files_modified` claim must be a subset of `git status --short -uall`; if clean, must match `git show --name-only HEAD`.
+- **Hard-forbidden paths**: any claim in `files_modified` matching `~/.hermes/*` or `docs/roadmap-locked-2026-05-28.md` ⇒ `forbidden_path_findings`.
+- **Claimed commit hash**: must exist locally via `git cat-file -t <hash>`; if the result also claims `claimed_pushed=true`, the commit must additionally equal local HEAD, local HEAD must equal `origin/hermes-pro-main`, and `ahead=0, behind=0`.
+- **Claimed pushed**: the post-push state is consistent when `claimed_commit` exists locally and equals local HEAD, and local `ahead=0, behind=0`. Otherwise the claim is mismatched (with `ahead>0` indicating unpushed local commits, `behind>0` indicating origin is ahead of local, or a non-existent / wrong commit hash). If `claimed_pushed=true` and `claimed_commit` is missing, the audit requires `claimed_push_state` to prove `head`, `origin_head`, `head === origin_head`, `ahead`, `behind`, and `ahead === 0, behind === 0`. A missing `claimed_push_state.origin_head` is **UNKNOWN** (blocks `READY_FOR_USER_AUTHORIZATION` in AGENT-BRIDGE-004) and the verdict becomes `NEED_FIX`.
+- **Claimed push state**: `ahead` / `behind` / `head` fields must match local reality if provided.
+- **Local hygiene**: `git diff --check` empty, `roadmap` diff empty, `.gitignore` diff empty, `~/.hermes` baseline mtime readable.
+- **Raw outputs**: if `result.raw_outputs_summary` is missing ⇒ `unknowns`.
+- **Not implemented in AGENT-BRIDGE-004**: actual content of `raw_outputs_summary`, semantic verification of `claimed_changes`, execution of `commands_run` (the runner does **not** run any of the commands listed in the result).
+
+### Usage
+
+```sh
+node scripts/agent-bridge/audit-claude-result.mjs \
+  --repo /Users/midoudou/hermes-pro \
+  --task /tmp/agent-bridge-004-task.json \
+  --result /tmp/agent-bridge-004-result.json \
+  --dry-run
+```
+
+```sh
+node scripts/agent-bridge/audit-claude-result.mjs \
+  --repo /Users/midoudou/hermes-pro \
+  --task /tmp/agent-bridge-004-task.json \
+  --result /tmp/agent-bridge-004-result.json \
+  --write-audit \
+  --audit-id CODEX-004-001
+```
+
 ### Verification expectation
 
 After a successful `--execute`, the verification expectation is:
@@ -146,11 +261,20 @@ The verification expectation is **not** `test ! -d .agent-bridge` (that would be
 
 ## Out of scope (AGENT-BRIDGE-003)
 
-- **No Codex audit runner yet.** Phase 3 (Codex audit) is a separate future slice with a separate user authorization.
+- **No Codex invocation runner / no LLM semantic audit invocation.** Phase 3 (Codex audit) is a separate future slice with a separate user authorization.
 - **No commit / push / live apply automation.** User authorization remains required for every commit / push / abort.
 - **No write-files-only execution.** Tasks that require file edits are rejected by the validator (exit 2).
 - **No live apply / HCC Auto Executor / model runtime.**
 - **No `--dangerously-skip-permissions`.**
+
+## Not implemented in AGENT-BRIDGE-004
+
+- **No Codex invocation.** The audit runner is local-only; it compares Claude result claims against `git`, `git status`, `stat`, etc. — it does **not** call Codex.
+- **No semantic verification of `claimed_changes` text.** The runner treats the result as untrusted data; it checks structured fields (`files_modified`, `claimed_commit`, `claimed_pushed`, etc.) but does not interpret free-text claims.
+- **No execution of `commands_run` claims.** The runner does **not** run any shell command listed in the Claude result; it only verifies local reality.
+- **No audit of `raw_outputs_summary` content.** The runner checks the field's presence but does not parse or re-verify its contents.
+- **No cross-task memory.** Every audit is independent; the runner does not consult prior audit verdicts.
+- **No commit / push automation.** The audit produces a verdict; the user runs any follow-up actions manually.
 
 ## Hard boundaries (every slice, including future ones)
 
