@@ -1,12 +1,19 @@
 #!/usr/bin/env node
-// AGENT-BRIDGE-002/002A/002B/003 — Codex ⇄ Claude Code file-bridge.
+// AGENT-BRIDGE-002/002A/002B/003/003A/005 — Codex ⇄ Claude Code file-bridge.
 //
-// AGENT-BRIDGE-003 adds:
+// AGENT-BRIDGE-005 changes (runner-side):
+//   - prompt now requires a strict JSON-only response (no markdown prose).
+//   - result is written to .result.json when stdout is valid JSON with
+//     all required result-schema fields; otherwise stdout is written to
+//     .result.raw.txt and the run exits non-zero with a NEED_FIX-style
+//     log note.
+//   - .result.md is no longer produced; the .result.json (or .result.raw.txt)
+//     pair is the only result artifact for this slice.
+//
+// AGENT-BRIDGE-003 still adds:
 //   - --execute mode (design-only / read-only task packets)
 //   - Claude invocation via spawnSync in non-interactive print mode
 //   - tools disabled, no file edits by Claude
-//   - writes Claude stdout to .agent-bridge/results/<task_id>.result.md
-//   - writes lifecycle log to .agent-bridge/logs/<task_id>.log
 //
 // This script does NOT:
 //   - call codex
@@ -259,7 +266,7 @@ function validateTaskPacket(packet) {
 
 function buildPrompt(packet) {
   const lines = [];
-  lines.push("AGENT-BRIDGE-003 task execution.");
+  lines.push("AGENT-BRIDGE-005 task execution.");
   lines.push("");
   lines.push(`task_id: ${packet.task_id}`);
   lines.push(`mode: ${packet.mode}`);
@@ -280,9 +287,148 @@ function buildPrompt(packet) {
   lines.push(`report_schema: ${JSON.stringify(packet.report_schema)}`);
   lines.push("");
   lines.push(
-    "Do not call tools. Do not edit files. Return a concise execution report only.",
+    "Do not call tools. Do not edit files. Do not write any markdown or prose. " +
+      "Return ONLY a single JSON object that conforms to the AGENT-BRIDGE-005 Claude result schema. " +
+      "Required top-level fields (all must be present, no defaults, no missing): " +
+      "schema_version, task_id, final_verdict, claimed_changes, files_modified, " +
+      "commands_run, raw_outputs_summary, not_done, known_unknowns, " +
+      "claimed_commit, claimed_pushed, claimed_push_state. " +
+      "The response MUST start with `{` and end with `}`. No code fences, no commentary.",
   );
   return lines.join("\n");
+}
+
+// AGENT-BRIDGE-005 strict Claude result schema (runner-side validation).
+const REQUIRED_RESULT_FIELDS = [
+  "schema_version",
+  "task_id",
+  "final_verdict",
+  "claimed_changes",
+  "files_modified",
+  "commands_run",
+  "raw_outputs_summary",
+  "not_done",
+  "known_unknowns",
+  "claimed_commit",
+  "claimed_pushed",
+  "claimed_push_state",
+];
+
+function validateResultJson(stdout, expectedTaskId) {
+  // Returns { ok: true, parsed } on success; { ok: false, error } on parse or type error.
+  if (typeof stdout !== "string") {
+    return { ok: false, error: "stdout is not a string" };
+  }
+  const trimmed = stdout.trim();
+  if (trimmed.length === 0) {
+    return { ok: false, error: "stdout is empty" };
+  }
+  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
+    return { ok: false, error: "stdout is not a JSON object (must start with '{' and end with '}')" };
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch (e) {
+    return { ok: false, error: `JSON parse error: ${e.message}` };
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { ok: false, error: "JSON root is not an object" };
+  }
+
+  const typeErrors = [];
+
+  // schema_version: string, non-empty
+  if (!("schema_version" in parsed)) typeErrors.push("missing schema_version");
+  else if (typeof parsed.schema_version !== "string" || parsed.schema_version.length === 0)
+    typeErrors.push("schema_version must be a non-empty string");
+
+  // task_id: string, non-empty, must equal expected task_id
+  if (!("task_id" in parsed)) typeErrors.push("missing task_id");
+  else if (typeof parsed.task_id !== "string" || parsed.task_id.length === 0)
+    typeErrors.push("task_id must be a non-empty string");
+  else if (parsed.task_id !== expectedTaskId)
+    typeErrors.push(`task_id mismatch: result has "${parsed.task_id}", expected "${expectedTaskId}"`);
+
+  // final_verdict: string, non-empty
+  if (!("final_verdict" in parsed)) typeErrors.push("missing final_verdict");
+  else if (typeof parsed.final_verdict !== "string" || parsed.final_verdict.length === 0)
+    typeErrors.push("final_verdict must be a non-empty string");
+
+  // claimed_changes: string
+  if (!("claimed_changes" in parsed)) typeErrors.push("missing claimed_changes");
+  else if (typeof parsed.claimed_changes !== "string")
+    typeErrors.push("claimed_changes must be a string");
+
+  // files_modified: string[]
+  if (!("files_modified" in parsed)) typeErrors.push("missing files_modified");
+  else if (!Array.isArray(parsed.files_modified))
+    typeErrors.push("files_modified must be an array");
+  else if (parsed.files_modified.some((x) => typeof x !== "string"))
+    typeErrors.push("files_modified must contain only strings (no null/object/number)");
+
+  // commands_run: string[]
+  if (!("commands_run" in parsed)) typeErrors.push("missing commands_run");
+  else if (!Array.isArray(parsed.commands_run))
+    typeErrors.push("commands_run must be an array");
+  else if (parsed.commands_run.some((x) => typeof x !== "string"))
+    typeErrors.push("commands_run must contain only strings (no null/object/number)");
+
+  // raw_outputs_summary: string
+  if (!("raw_outputs_summary" in parsed)) typeErrors.push("missing raw_outputs_summary");
+  else if (typeof parsed.raw_outputs_summary !== "string")
+    typeErrors.push("raw_outputs_summary must be a string");
+
+  // not_done: string
+  if (!("not_done" in parsed)) typeErrors.push("missing not_done");
+  else if (typeof parsed.not_done !== "string")
+    typeErrors.push("not_done must be a string");
+
+  // known_unknowns: string[]
+  if (!("known_unknowns" in parsed)) typeErrors.push("missing known_unknowns");
+  else if (!Array.isArray(parsed.known_unknowns))
+    typeErrors.push("known_unknowns must be an array");
+  else if (parsed.known_unknowns.some((x) => typeof x !== "string"))
+    typeErrors.push("known_unknowns must contain only strings (no null/object/number)");
+
+  // claimed_commit: string | null
+  if (!("claimed_commit" in parsed)) typeErrors.push("missing claimed_commit");
+  else {
+    const t = typeof parsed.claimed_commit;
+    if (parsed.claimed_commit !== null && t !== "string")
+      typeErrors.push("claimed_commit must be a string or null");
+  }
+
+  // claimed_pushed: boolean
+  if (!("claimed_pushed" in parsed)) typeErrors.push("missing claimed_pushed");
+  else if (typeof parsed.claimed_pushed !== "boolean")
+    typeErrors.push("claimed_pushed must be a boolean");
+
+  // claimed_push_state: object | null
+  if (!("claimed_push_state" in parsed)) typeErrors.push("missing claimed_push_state");
+  else {
+    const ps = parsed.claimed_push_state;
+    if (ps !== null) {
+      if (typeof ps !== "object" || Array.isArray(ps))
+        typeErrors.push("claimed_push_state must be an object or null");
+      else {
+        // Validate push_state sub-fields if present.
+        if ("head" in ps && typeof ps.head !== "string")
+          typeErrors.push("claimed_push_state.head must be a string");
+        if ("origin_head" in ps && typeof ps.origin_head !== "string")
+          typeErrors.push("claimed_push_state.origin_head must be a string");
+        if ("ahead" in ps && typeof ps.ahead !== "number")
+          typeErrors.push("claimed_push_state.ahead must be a number");
+        if ("behind" in ps && typeof ps.behind !== "number")
+          typeErrors.push("claimed_push_state.behind must be a number");
+      }
+    }
+  }
+
+  if (typeErrors.length > 0) {
+    return { ok: false, error: `schema validation failed: ${typeErrors.join("; ")}`, parsed };
+  }
+  return { ok: true, parsed };
 }
 
 // -----------------------------------------------------------------
@@ -389,7 +535,8 @@ function runExecute(args, packet, repoRoot) {
   }
   const resultsDir = join(bridgeRoot, "results");
   const logsDir = join(bridgeRoot, "logs");
-  const resultPath = join(resultsDir, `${packet.task_id}.result.md`);
+  const resultJsonPath = join(resultsDir, `${packet.task_id}.result.json`);
+  const resultRawPath = join(resultsDir, `${packet.task_id}.result.raw.txt`);
   const logPath = join(logsDir, `${packet.task_id}.log`);
 
   mkdirSync(resultsDir, { recursive: true });
@@ -424,7 +571,7 @@ function runExecute(args, packet, repoRoot) {
         started_at,
         finished_at,
         claude_exit_code: null,
-        result_path: resultPath,
+        result_path: resultJsonPath,
         note,
       }),
       "utf8",
@@ -437,9 +584,10 @@ function runExecute(args, packet, repoRoot) {
   const stderr = result.stderr ?? "";
   const exitCode = result.status ?? -1;
 
-  writeFileSync(resultPath, stdout, "utf8");
-
+  // Non-zero exit: persist raw stdout to .result.raw.txt for debugging,
+  // write log, exit non-zero. Do not attempt to validate.
   if (exitCode !== 0) {
+    writeFileSync(resultRawPath, stdout, "utf8");
     const note = `BLOCKED: claude non-zero exit; stderr summary follows.`;
     writeFileSync(
       logPath,
@@ -447,24 +595,56 @@ function runExecute(args, packet, repoRoot) {
         started_at,
         finished_at,
         claude_exit_code: exitCode,
-        result_path: resultPath,
+        result_path: resultRawPath,
         note,
       }) + "\n--- stderr summary ---\n" + stderr.slice(0, 4000) + "\n",
       "utf8",
     );
     process.stderr.write(
-      `error: claude exited with code ${exitCode}. See ${logPath} for stderr summary.\n`,
+      `error: claude exited with code ${exitCode}. See ${logPath} for stderr summary; raw stdout at ${resultRawPath}\n`,
     );
     process.exit(1);
   }
 
+  // Zero exit: validate JSON schema and types against AGENT-BRIDGE-005A
+  // strict result contract. Two outcomes:
+  //   (a) stdout is not valid JSON, not an object, empty, or has missing
+  //       fields, wrong types => write .result.raw.txt, log note, exit 1.
+  //   (b) all fields present with correct types => write .result.json, exit 0.
+  // Do not attempt to repair malformed JSON. Do not infer missing fields.
+  // Do not silently coerce invalid types.
+  const validation = validateResultJson(stdout, packet.task_id);
+  if (!validation.ok) {
+    writeFileSync(resultRawPath, stdout, "utf8");
+    const note = `BLOCKED: AGENT-BRIDGE-005 schema validation failed: ${validation.error}`;
+    writeFileSync(
+      logPath,
+      buildLog(packet, {
+        started_at,
+        finished_at,
+        claude_exit_code: exitCode,
+        result_path: resultRawPath,
+        note,
+      }),
+      "utf8",
+    );
+    process.stderr.write(`error: ${note}\n`);
+    process.exit(1);
+  }
+
+  // Valid JSON with all required fields and correct types. Write .result.json.
+  writeFileSync(
+    resultJsonPath,
+    JSON.stringify(validation.parsed, null, 2) + "\n",
+    "utf8",
+  );
   writeFileSync(
     logPath,
     buildLog(packet, {
       started_at,
       finished_at,
       claude_exit_code: exitCode,
-      result_path: resultPath,
+      result_path: resultJsonPath,
     }),
     "utf8",
   );
@@ -472,7 +652,7 @@ function runExecute(args, packet, repoRoot) {
   const summary = {
     task_id: packet.task_id,
     exit_code: exitCode,
-    result_path: resultPath,
+    result_path: resultJsonPath,
     log_path: logPath,
     stdout_bytes: stdout.length,
   };

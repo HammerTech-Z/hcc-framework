@@ -112,11 +112,74 @@ The validator enforces the following invariants on a task packet:
 
 - Non-interactive print mode: `claude -p "<prompt>" --output-format text --tools "" --permission-mode default`.
 - Tools are **disabled** (`--tools ""`). Claude will not call any tool, will not edit any file, will not run any shell command.
-- The prompt is built from the task packet (`task_id`, `mode`, `objective`, `allowed_files`, `forbidden_files`, `forbidden_actions`, `required_verification`, `report_schema`) and ends with a hard instruction: "Do not call tools. Do not edit files. Return a concise execution report only."
-- Stdout is written to `.agent-bridge/results/<task_id>.result.md`.
+- The prompt instructs Claude to return a single JSON object conforming to the AGENT-BRIDGE-005 strict result schema (see below). No markdown, no code fences, no commentary.
+- If stdout is valid JSON with all 12 required fields, it is written to `.agent-bridge/results/<task_id>.result.json`.
+- If stdout is not valid JSON, not a JSON object, or missing required fields, the raw stdout is written to `.agent-bridge/results/<task_id>.result.raw.txt`, the lifecycle log records the failure, and the runner exits non-zero.
 - A JSON lifecycle log is written to `.agent-bridge/logs/<task_id>.log` with: `task_id`, `started_at`, `finished_at`, `claude_exit_code`, `result_path`, `mode`, `would_modify_files=false`, `tools_disabled=true`.
 - If Claude exits non-zero, the log includes a stderr summary, and the script exits non-zero.
 - The script does **not** retry. It does **not** bypass permissions. It does **not** use `--dangerously-skip-permissions`.
+
+## AGENT-BRIDGE-005 strict Claude result JSON schema
+
+The runner (AGENT-BRIDGE-003/005) instructs Claude to return, and the audit
+runner (AGENT-BRIDGE-004/005) expects, a single JSON object with these 12
+required top-level fields and exact types.
+
+| Field | Type | Notes |
+|---|---|---|
+| `schema_version` | string, non-empty | e.g. `"1.0.0"` |
+| `task_id` | string, non-empty | must equal task packet `task_id` |
+| `final_verdict` | string, non-empty | `complete` / `partial` / `failed` |
+| `claimed_changes` | string | may be empty |
+| `files_modified` | string[] | every item must be a string; empty array if none |
+| `commands_run` | string[] | every item must be a string; empty array if none |
+| `raw_outputs_summary` | string | max 8 KB; must state truncation if truncated |
+| `not_done` | string | may be empty |
+| `known_unknowns` | string[] | every item must be a string; empty array if none |
+| `claimed_commit` | string \| null | claimed commit hash, or `null` |
+| `claimed_pushed` | boolean | `true` or `false` |
+| `claimed_push_state` | object \| null | allowed sub-fields: `head` (string), `origin_head` (string), `ahead` (number), `behind` (number); `null` if not claimed |
+
+AGENT-BRIDGE-005A adds **strict field type validation** to both the runner
+and the audit runner. Every field is checked for correct type (string,
+boolean, number, object, null). Type mismatches (e.g., `files_modified` is a
+string instead of an array, `claimed_pushed` is a string instead of boolean,
+`claimed_push_state` is an array instead of object) cause:
+
+- Runner: exit 1, stderr/log describe specific type errors, stdout written to `.result.raw.txt`
+- Audit runner: `unknowns` populated with type error descriptions, `final_decision ≥ NEED_FIX`
+
+Runner behavior for `--execute`:
+
+| stdout | action | exit |
+|---|---|---|
+| valid JSON, all 12 fields, correct types, task_id matches packet | write `.result.json` | 0 |
+| valid JSON, all fields, correct types, task_id mismatch | write `.result.raw.txt`, log note | 1 |
+| valid JSON, missing ≥1 field | write `.result.raw.txt`, log note | 1 |
+| valid JSON, ≥1 field wrong type | write `.result.raw.txt`, log note | 1 |
+| not JSON / not an object | write `.result.raw.txt`, log note | 1 |
+| empty | write `.result.raw.txt`, log note | 1 |
+| claude exit ≠ 0 | write `.result.raw.txt`, log note + stderr summary | 1 |
+
+Audit runner behavior:
+
+| result type | behavior |
+|---|---|
+| `.result.json` with all 12 fields, correct types | `result_format: "json"`; claims extracted; no penalty |
+| `.result.json` with missing fields or wrong types | `result_format: "json"`; `unknowns` includes schema validation failure details; verdict ≥ `NEED_FIX`; invalid types are NOT coerced to empty claims |
+| `.result.raw.txt` / `.md` (markdown) | `result_format: "markdown"`; `unknowns` includes "result is markdown" penalty; verdict ≥ `NEED_FIX` |
+
+Backward compatibility:
+
+- AGENT-BRIDGE-005A still produces `.result.json` (preferred) and falls back
+  to `.result.raw.txt` when Claude cannot return structured JSON or types.
+- Missing-field JSON is **not** written to `.result.json` (the runner writes
+  the raw stdout to `.result.raw.txt` regardless of failure reason).
+- The audit runner (AGENT-BRIDGE-004/005A) still accepts markdown via `.md`
+  and text via `.txt` as a backward-compatible path, but imposes the
+  markdown penalty so `final_decision` is always ≥ `NEED_FIX`.
+- No `.result.md` is produced by the 005/005A runner; pre-005 `.result.md`
+  files on disk are handled as markdown by the audit runner.
 
 ## Bridge-root sandboxing (AGENT-BRIDGE-003A)
 

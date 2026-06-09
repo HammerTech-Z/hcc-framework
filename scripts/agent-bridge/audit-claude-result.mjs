@@ -203,6 +203,102 @@ function asArray(v) {
   return Array.isArray(v) ? v : [];
 }
 
+// AGENT-BRIDGE-005A: strict type validation of the Claude result JSON.
+// Returns an array of type errors (empty = valid).
+function validateResultTypes(parsed) {
+  const errors = [];
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    errors.push("result root is not a JSON object");
+    return errors;
+  }
+
+  if ("schema_version" in parsed) {
+    if (typeof parsed.schema_version !== "string" || parsed.schema_version.length === 0)
+      errors.push("schema_version must be a non-empty string");
+  }
+  if ("task_id" in parsed) {
+    if (typeof parsed.task_id !== "string" || parsed.task_id.length === 0)
+      errors.push("task_id must be a non-empty string");
+  }
+  if ("final_verdict" in parsed) {
+    if (typeof parsed.final_verdict !== "string" || parsed.final_verdict.length === 0)
+      errors.push("final_verdict must be a non-empty string");
+  }
+  if ("claimed_changes" in parsed) {
+    if (typeof parsed.claimed_changes !== "string")
+      errors.push("claimed_changes must be a string");
+  }
+  if ("files_modified" in parsed) {
+    if (!Array.isArray(parsed.files_modified))
+      errors.push("files_modified must be an array");
+    else if (parsed.files_modified.some((x) => typeof x !== "string"))
+      errors.push("files_modified must contain only strings");
+  }
+  if ("commands_run" in parsed) {
+    if (!Array.isArray(parsed.commands_run))
+      errors.push("commands_run must be an array");
+    else if (parsed.commands_run.some((x) => typeof x !== "string"))
+      errors.push("commands_run must contain only strings");
+  }
+  if ("raw_outputs_summary" in parsed) {
+    if (typeof parsed.raw_outputs_summary !== "string")
+      errors.push("raw_outputs_summary must be a string");
+  }
+  if ("not_done" in parsed) {
+    if (typeof parsed.not_done !== "string")
+      errors.push("not_done must be a string");
+  }
+  if ("known_unknowns" in parsed) {
+    if (!Array.isArray(parsed.known_unknowns))
+      errors.push("known_unknowns must be an array");
+    else if (parsed.known_unknowns.some((x) => typeof x !== "string"))
+      errors.push("known_unknowns must contain only strings");
+  }
+  if ("claimed_commit" in parsed) {
+    const t = typeof parsed.claimed_commit;
+    if (parsed.claimed_commit !== null && t !== "string")
+      errors.push("claimed_commit must be a string or null");
+  }
+  if ("claimed_pushed" in parsed) {
+    if (typeof parsed.claimed_pushed !== "boolean")
+      errors.push("claimed_pushed must be a boolean");
+  }
+  if ("claimed_push_state" in parsed) {
+    const ps = parsed.claimed_push_state;
+    if (ps !== null) {
+      if (typeof ps !== "object" || Array.isArray(ps))
+        errors.push("claimed_push_state must be an object or null");
+      else {
+        if ("head" in ps && typeof ps.head !== "string")
+          errors.push("claimed_push_state.head must be a string");
+        if ("origin_head" in ps && typeof ps.origin_head !== "string")
+          errors.push("claimed_push_state.origin_head must be a string");
+        if ("ahead" in ps && typeof ps.ahead !== "number")
+          errors.push("claimed_push_state.ahead must be a number");
+        if ("behind" in ps && typeof ps.behind !== "number")
+          errors.push("claimed_push_state.behind must be a number");
+      }
+    }
+  }
+
+  return errors;
+}
+
+// AGENT-BRIDGE-005A: detect missing required fields in parsed result JSON.
+// Returns an array of missing field names (empty = all present).
+function detectMissingFields(parsed) {
+  const required = [
+    "schema_version", "task_id", "final_verdict", "claimed_changes",
+    "files_modified", "commands_run", "raw_outputs_summary", "not_done",
+    "known_unknowns", "claimed_commit", "claimed_pushed", "claimed_push_state",
+  ];
+  const missing = [];
+  for (const f of required) {
+    if (!(f in parsed)) missing.push(f);
+  }
+  return missing;
+}
+
 function extractClaims(result) {
   // result may be:
   //   (a) { final_verdict, files_modified:[], commands_run:[], claimed_changes, ... }
@@ -696,6 +792,7 @@ function main() {
 
   // Load result.
   let resultRaw, resultParsed = null, resultParseError = null;
+  let resultFormat = "unknown";
   try {
     resultRaw = readFileSync(args.result, "utf8");
   } catch (e) {
@@ -704,22 +801,96 @@ function main() {
   }
   try {
     resultParsed = JSON.parse(resultRaw);
+    resultFormat = "json";
   } catch {
     // Result is not JSON; treat as markdown text.
     resultParsed = null;
     resultParseError = "result is not valid JSON; treating as markdown text";
+    resultFormat = "markdown";
+  }
+  // Hint from file extension if --result points to .result.json explicitly.
+  if (args.result.endsWith(".result.json") && resultFormat === "unknown") {
+    resultFormat = "json";
+  }
+  if (args.result.endsWith(".md") || args.result.endsWith(".txt")) {
+    resultFormat = "markdown";
   }
   const claims = extractClaims(resultParsed);
 
+  // AGENT-BRIDGE-005B: extract result_task_id from parsed JSON for
+  // cross-referencing against the task packet.
+  let resultTaskId = null;
+  if (resultParsed && typeof resultParsed === "object" && !Array.isArray(resultParsed)) {
+    resultTaskId =
+      typeof resultParsed.task_id === "string" ? resultParsed.task_id : null;
+  }
+
   const snapshot = snapshotLocalReality(repoRoot);
-  const audit = compare(repoRoot, snapshot, claims);
+  let audit = compare(repoRoot, snapshot, claims);
+
+  // AGENT-BRIDGE-005A: for structured JSON results, validate field presence
+  // and field types. Missing fields and wrong types are added to unknowns
+  // so the verdict is at least NEED_FIX. Invalid fields are NOT silently
+  // coerced to empty claims (extractClaims already does extraction; type
+  // errors are detected here and flagged).
+  if (resultFormat === "json" && resultParsed !== null) {
+    const typeErrors = validateResultTypes(resultParsed);
+    const missingFields = detectMissingFields(resultParsed);
+    const schemaIssues = [];
+    if (typeErrors.length > 0) {
+      schemaIssues.push(
+        `schema type validation: ${typeErrors.join("; ")}`,
+      );
+    }
+    if (missingFields.length > 0) {
+      schemaIssues.push(
+        `missing required result fields: ${missingFields.join(", ")}`,
+      );
+    }
+    if (schemaIssues.length > 0) {
+      audit = {
+        ...audit,
+        unknowns: [...schemaIssues, ...audit.unknowns],
+      };
+    }
+    // AGENT-BRIDGE-005B: verify result task_id matches task packet.
+    // Trigger even if files_modified matches the working tree.
+    if (resultTaskId !== null && resultTaskId !== taskPacket.task_id) {
+      audit = {
+        ...audit,
+        mismatches: [
+          `result.task_id mismatch: result has "${resultTaskId}", task packet has "${taskPacket.task_id}"`,
+          ...audit.mismatches,
+        ],
+      };
+    }
+  }
+
+  // Build audit report with markdown / unstructured flag.
+  // Markdown results are NEED_FIX by default because structured claims
+  // are absent or inferred from free-text (unreliable).
+  if (resultFormat === "markdown") {
+    // Prepend a note to unknowns so the audit runner blocks
+    // READY_FOR_USER_AUTHORIZATION when the Claude result is unstructured.
+    audit = {
+      ...audit,
+      unknowns: [
+        "result is markdown (unstructured); structured claims are absent or inferred from free-text. AGENT-BRIDGE-005 requires .result.json with all 12 required fields.",
+        ...audit.unknowns,
+      ],
+    };
+  }
+
   const final_decision = decide(audit);
 
   const auditReport = {
     audit_id: args.auditId ?? `audit-${snapshot.head_short}-${Date.now()}`,
     generated_at: nowIso(),
     task_id: taskPacket.task_id,
-    claimed_facts: claims,
+    claimed_facts: {
+      ...claims,
+      result_task_id: resultTaskId,
+    },
     local_reality_snapshot: snapshot,
     verified_facts: audit.verified_correct,
     verified_correct:
@@ -733,6 +904,7 @@ function main() {
     final_decision,
     parse_notes: {
       result_parse_error: resultParseError,
+      result_format: resultFormat,
     },
     note: "AGENT-BRIDGE-004 deterministic local audit; no Codex; no Claude; no commit/push.",
   };
