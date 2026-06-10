@@ -1,4 +1,9 @@
 import { describe, it, expect } from "vitest";
+import {
+  NEXT_TASK_CONTEXT_LIVE_INGRESS_SCAN_GATE,
+  assertNextTaskContextIngressScanDecisionNoRuntime,
+  scanNextTaskContextLiveIngress,
+} from "@shared/lib/safety/next-task-context-ingress-scan-gate";
 import { scanForSensitiveContent } from "@shared/lib/safety/redaction-scanner";
 import type { RedactionFinding } from "@shared/lib/safety/redaction-scanner";
 
@@ -49,7 +54,8 @@ const B2_SCAN_MATRIX: ScanEntry[] = [
   {
     id: "next_task_context_live_ingress",
     description: "Next task context live ingress from external sources",
-    status: "gap",
+    status: "covered",
+    evidenceRef: NEXT_TASK_CONTEXT_LIVE_INGRESS_SCAN_GATE.evidence_ref,
     requiredIngress: true,
   },
   {
@@ -65,6 +71,7 @@ const coveredEntries = () => B2_SCAN_MATRIX.filter((e) => e.status === "covered"
 const blockedEntries = () => B2_SCAN_MATRIX.filter((e) => e.status === "blocked");
 const gapEntries = () => B2_SCAN_MATRIX.filter((e) => e.status === "gap");
 const requiredGapEntries = () => gapEntries().filter((e) => e.requiredIngress);
+const matrixEntry = (id: string) => B2_SCAN_MATRIX.find((e) => e.id === id);
 
 describe("B2 external input scan coverage matrix", () => {
   it("covered entries must have evidence refs", () => {
@@ -90,9 +97,59 @@ describe("B2 external input scan coverage matrix", () => {
     const requiredGaps = requiredGapEntries();
     const admissionGo = requiredGaps.length === 0;
     expect(admissionGo).toBe(false);
+    expect(requiredGaps.map((gap) => gap.id)).toEqual([
+      "live_knowledge_ingest_external_content",
+    ]);
     for (const gap of requiredGaps) {
       expect(gap.status).toBe("gap");
     }
+  });
+
+  it("marks next_task_context_live_ingress as mechanically covered by a pure scan gate", () => {
+    const entry = matrixEntry("next_task_context_live_ingress");
+    expect(entry).toMatchObject({
+      status: "covered",
+      evidenceRef: NEXT_TASK_CONTEXT_LIVE_INGRESS_SCAN_GATE.evidence_ref,
+      requiredIngress: true,
+    });
+    expect(NEXT_TASK_CONTEXT_LIVE_INGRESS_SCAN_GATE).toMatchObject({
+      coverage_status: "covered",
+      scanner_mode: "cloud_payload",
+      dry_run_only: true,
+      next_task_context_write_allowed: false,
+      runtime_mutation_allowed: false,
+      backend_daemon_allowed: false,
+      cron_allowed: false,
+      weixin_allowed: false,
+      channel_runtime_allowed: false,
+      live_apply_allowed: false,
+      hcc_auto_executor_allowed: false,
+    });
+  });
+
+  it("allows clean next-task context live ingress only after a cloud_payload scan pass", () => {
+    const decision = scanNextTaskContextLiveIngress({
+      source: "post_task_reflection",
+      sourceRef: "post-task-reflection://unit-test/clean",
+      content: "Reflection summary: focused tests passed; no secrets included.",
+    });
+    assertNextTaskContextIngressScanDecisionNoRuntime(decision);
+    expect(decision.allowed).toBe(true);
+    expect(decision.scan.status).toBe("pass");
+    expect(decision.scan.findings).toHaveLength(0);
+  });
+
+  it("blocks next-task context live ingress when the cloud_payload scan fails", () => {
+    const decision = scanNextTaskContextLiveIngress({
+      source: "post_task_reflection",
+      sourceRef: "post-task-reflection://unit-test/secret",
+      content: "Reflection summary accidentally includes sk_abcdef1234567890abcdef123456",
+    });
+    assertNextTaskContextIngressScanDecisionNoRuntime(decision);
+    expect(decision.allowed).toBe(false);
+    expect(decision.scan.status).toBe("fail");
+    expect(decision.reason).toContain("blocked by scan");
+    expect(decision.scan.redactedContent).toContain("[REDACTED:api_key]");
   });
 
   describe("redaction scanner — cloud_payload mode", () => {
