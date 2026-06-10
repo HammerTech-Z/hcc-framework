@@ -1,11 +1,11 @@
 // Post-task Learning Loop - Slice LOOP-006A
 // Human Approval Anchor + Consumer Guard Routing — design-only tests.
 //
-// The routing layer is pure. It never verifies a human approval
-// (verified stays false), never mutates a consumer, never writes to
-// Next Task Context, never mutates retrieval ranking, never calls
-// knowledgeIngest / knowledgeSearch, never live flushes, never
-// writes audit / config / persistence.
+// The routing layer is pure. It verifies human approval anchors from
+// explicit in-memory records, never mutates a consumer, never writes
+// to Next Task Context, never mutates retrieval ranking, never calls
+// knowledgeIngest / knowledgeSearch, never live flushes, never writes
+// audit / config / persistence.
 //
 // Hard boundary: no fs, no IPC, no knowledgeIngest / knowledgeSearch,
 // no live flush, no audit write, no live retrieval ranking mutation,
@@ -19,6 +19,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertPostTaskReflectionNoRuntime,
+  assertReflectionAllowedForNextTaskContext,
+  assertReflectionAllowedForRankingInput,
   type PostTaskReflection,
 } from "../src/shared/lib/post-task-reflection-contract";
 
@@ -27,6 +29,7 @@ import {
   CONSUMER_ROUTE_MATRIX,
   HUMAN_APPROVAL_ANCHOR_ROUTING_DESIGN,
   assertConsumerRouteDecisionNoRuntime,
+  buildHumanApprovalRefVerifier,
   buildConsumerRouteDecisionId,
   collapseConsumerRouteDecisionDuplicates,
   decideConsumerRoutesFromBridgeFixture,
@@ -36,6 +39,8 @@ import {
   decideReflectionConsumerRoute,
   decideSkillCandidateConsumerRoute,
   decideUsageFeedbackConsumerRoute,
+  verifyHumanApprovalRefAgainstAnchors,
+  type HumanApprovalAnchorRecord,
   type ConsumerRouteDecision,
 } from "../src/shared/lib/post-task-reflection-human-approval-anchor-design";
 
@@ -93,14 +98,34 @@ function loadDryRun(name: string): PostTaskReflection {
   );
 }
 
+function anchorForReflection(
+  reflection: PostTaskReflection,
+  overrides: Partial<HumanApprovalAnchorRecord> = {},
+): HumanApprovalAnchorRecord {
+  if (reflection.provenance.human_approval_ref === null) {
+    throw new Error("test reflection requires human_approval_ref");
+  }
+  return {
+    anchor_ref: "anchor-record://unit-test/manual-review",
+    human_approval_ref: reflection.provenance.human_approval_ref,
+    reflection_task_id: reflection.task_id,
+    artifact_ref: reflection.artifact_ref,
+    approved_at: "2026-06-07T12:01:00.000Z",
+    expires_at: "2026-06-08T00:00:00.000Z",
+    allowed_gates: ["next_task_context", "ranking_input"],
+    revoked: false,
+    ...overrides,
+  };
+}
+
 describe("Post-task Learning Loop LOOP-006A human approval anchor + consumer guard routing", () => {
-  it("design descriptor forbids anchor verification, consumer mutation, context write, ranking write, ingest, search, flush, audit, persistence", () => {
+  it("design descriptor allows pure anchor verification but forbids consumer mutation, context write, ranking write, ingest, search, flush, audit, persistence", () => {
     expect(HUMAN_APPROVAL_ANCHOR_ROUTING_DESIGN.routing_status).toBe(
-      "design_only",
+      "pure_verifier_available",
     );
     expect(
       HUMAN_APPROVAL_ANCHOR_ROUTING_DESIGN.anchor_verification_allowed,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       HUMAN_APPROVAL_ANCHOR_ROUTING_DESIGN.consumer_routing_mutation_allowed,
     ).toBe(false);
@@ -135,6 +160,156 @@ describe("Post-task Learning Loop LOOP-006A human approval anchor + consumer gua
     for (const pattern of FORBIDDEN_RUNTIME_PATTERNS) {
       expect(DESIGN_SRC.includes(pattern)).toBe(false);
     }
+  });
+
+  it("valid human approval anchor verifies and admits next-task context plus ranking gates", () => {
+    const reflection = loadDryRun("ll002-hcc-manual-review-dry-run.json");
+    expect(() => assertPostTaskReflectionNoRuntime(reflection)).not.toThrow();
+    const anchor = anchorForReflection(reflection);
+    const verifier = buildHumanApprovalRefVerifier([anchor]);
+
+    const result = verifyHumanApprovalRefAgainstAnchors(
+      {
+        gate: "next_task_context",
+        reflection_task_id: reflection.task_id,
+        artifact_ref: reflection.artifact_ref,
+        created_at: reflection.created_at,
+        human_approval_ref: reflection.provenance.human_approval_ref!,
+      },
+      [anchor],
+    );
+    expect(result).toEqual({
+      verified: true,
+      reason: "human_approval_ref matched active consumer anchor",
+      anchor_ref: anchor.anchor_ref,
+    });
+
+    expect(() =>
+      assertReflectionAllowedForNextTaskContext(reflection, {
+        verifyHumanApprovalRef: verifier,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertReflectionAllowedForRankingInput(reflection, {
+        verifyHumanApprovalRef: verifier,
+      }),
+    ).not.toThrow();
+    expect(reflection.provenance.human_approval_ref!.verified).toBe(false);
+  });
+
+  it("missing human approval anchor refuses consumer gates", () => {
+    const reflection = loadDryRun("ll002-hcc-manual-review-dry-run.json");
+    const verifier = buildHumanApprovalRefVerifier([]);
+
+    expect(() =>
+      assertReflectionAllowedForNextTaskContext(reflection, {
+        verifyHumanApprovalRef: verifier,
+      }),
+    ).toThrow(/no matching human approval anchor found/);
+  });
+
+  it("forged verified=true is rejected by the contract layer before anchor verification", () => {
+    const reflection = JSON.parse(
+      JSON.stringify(loadDryRun("ll002-hcc-manual-review-dry-run.json")),
+    ) as PostTaskReflection;
+    reflection.provenance.human_approval_ref!.verified = true as false;
+
+    expect(() => assertPostTaskReflectionNoRuntime(reflection)).toThrow(
+      /verified must be false in contract layer/,
+    );
+    expect(() =>
+      assertReflectionAllowedForNextTaskContext(reflection, {
+        verifyHumanApprovalRef: buildHumanApprovalRefVerifier([]),
+      }),
+    ).toThrow(/verified must be false in contract layer/);
+  });
+
+  it("verifier directly rejects input human_approval_ref.verified=true before anchor lookup", () => {
+    const reflection = loadDryRun("ll002-hcc-manual-review-dry-run.json");
+    const anchor = anchorForReflection(reflection);
+    const result = verifyHumanApprovalRefAgainstAnchors(
+      {
+        gate: "next_task_context",
+        reflection_task_id: reflection.task_id,
+        artifact_ref: reflection.artifact_ref,
+        created_at: reflection.created_at,
+        human_approval_ref: {
+          ...reflection.provenance.human_approval_ref!,
+          verified: true as unknown as false,
+        },
+      },
+      [anchor],
+    );
+    expect(result).toEqual({
+      verified: false,
+      reason: "contract-layer human_approval_ref.verified must remain false",
+      anchor_ref: null,
+    });
+  });
+
+  it("stale or mismatched human approval anchors refuse consumer gates", () => {
+    const reflection = loadDryRun("ll002-hcc-manual-review-dry-run.json");
+    const staleVerifier = buildHumanApprovalRefVerifier([
+      anchorForReflection(reflection, {
+        expires_at: "2026-06-07T12:01:30.000Z",
+      }),
+    ]);
+    const mismatchVerifier = buildHumanApprovalRefVerifier([
+      anchorForReflection(reflection, {
+        reflection_task_id: "hcc-dry-run://learning-loop/002/other",
+      }),
+    ]);
+
+    expect(() =>
+      assertReflectionAllowedForNextTaskContext(reflection, {
+        verifyHumanApprovalRef: staleVerifier,
+      }),
+    ).toThrow(/human approval anchor is stale/);
+    expect(() =>
+      assertReflectionAllowedForRankingInput(reflection, {
+        verifyHumanApprovalRef: mismatchVerifier,
+      }),
+    ).toThrow(/human approval anchor task id mismatch/);
+  });
+
+  it("anchor approved_at newer than reflection created_at is rejected by verifier", () => {
+    const reflection = loadDryRun("ll002-hcc-manual-review-dry-run.json");
+    const anchor = anchorForReflection(reflection, {
+      approved_at: "2026-06-07T12:03:00.000Z",
+    });
+    const result = verifyHumanApprovalRefAgainstAnchors(
+      {
+        gate: "next_task_context",
+        reflection_task_id: reflection.task_id,
+        artifact_ref: reflection.artifact_ref,
+        created_at: reflection.created_at,
+        human_approval_ref: reflection.provenance.human_approval_ref!,
+      },
+      [anchor],
+    );
+    expect(result.verified).toBe(false);
+    expect(result.reason).toBe("human approval anchor is newer than reflection");
+    expect(result.anchor_ref).toBeNull();
+  });
+
+  it("anchor with invalid expires_at is rejected by verifier", () => {
+    const reflection = loadDryRun("ll002-hcc-manual-review-dry-run.json");
+    const anchor = anchorForReflection(reflection, {
+      expires_at: "not-a-date",
+    });
+    const result = verifyHumanApprovalRefAgainstAnchors(
+      {
+        gate: "next_task_context",
+        reflection_task_id: reflection.task_id,
+        artifact_ref: reflection.artifact_ref,
+        created_at: reflection.created_at,
+        human_approval_ref: reflection.provenance.human_approval_ref!,
+      },
+      [anchor],
+    );
+    expect(result.verified).toBe(false);
+    expect(result.reason).toBe("human approval anchor expires_at is invalid");
+    expect(result.anchor_ref).toBeNull();
   });
 
   it("buildConsumerRouteDecisionId is stable and distinct on any input change", () => {
@@ -289,6 +464,29 @@ describe("Post-task Learning Loop LOOP-006A human approval anchor + consumer gua
       expect(dec.anchor_verification_allowed).toBe(false);
       expect(() => assertConsumerRouteDecisionNoRuntime(dec)).not.toThrow();
     }
+  });
+
+  it("decideReflectionConsumerRoute returns context_dry_run_candidate when human-approved but at least one draft remains quarantined", () => {
+    const reflection = JSON.parse(
+      JSON.stringify(loadDryRun("ll002-hcc-manual-review-dry-run.json")),
+    ) as PostTaskReflection;
+    // Force one knowledge_ingest_draft into quarantine.
+    reflection.knowledge_ingest_draft[0]!.quarantine = true;
+    expect(() => assertPostTaskReflectionNoRuntime(reflection)).not.toThrow();
+
+    const d = decideReflectionConsumerRoute(reflection);
+    expect(d.route).toBe("context_dry_run_candidate");
+    expect(d.human_approval_ref).not.toBeNull();
+    expect(d.human_approval_ref!.verified).toBe(false);
+    expect(d.quarantine).toBe(false);
+    expect(d.reason).toMatch(/context-only dry-run candidate/);
+    expect(d.approval_gate.status).toBe("closed");
+    expect(d.approval_gate.approved).toBe(false);
+    expect(d.dry_run_only).toBe(true);
+    expect(d.consumer_routing_mutation_allowed).toBe(false);
+    expect(d.next_task_context_write_allowed).toBe(false);
+    expect(d.ranking_input_write_allowed).toBe(false);
+    expect(() => assertConsumerRouteDecisionNoRuntime(d)).not.toThrow();
   });
 
   it("knowledge_ingest_draft with human_approval_ref=null routes to reject_pre_review", () => {

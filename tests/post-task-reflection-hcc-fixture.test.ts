@@ -4,8 +4,8 @@
 // PostTaskReflection drafts that:
 //   - pass the runtime guard
 //   - are quarantined when agent-submitted
-//   - are accepted by the consumer guard only when human-reviewed AND
-//     carry a HumanApprovalRef
+//   - are accepted by the consumer guard only when human-reviewed,
+//     carry a HumanApprovalRef, and pass anchor verification
 //   - round-trip through JSON without losing invariant
 //   - contain no forbidden runtime call forms
 //
@@ -22,8 +22,11 @@ import {
   assertReflectionAllowedForNextTaskContext,
   assertReflectionAllowedForRankingInput,
   POST_TASK_REFLECTION_SCHEMA_VERSION,
+  type HumanApprovalRefVerifier,
   type PostTaskReflection,
 } from "../src/shared/lib/post-task-reflection-contract";
+
+import { buildHumanApprovalRefVerifier } from "../src/shared/lib/post-task-reflection-human-approval-anchor-design";
 
 import {
   projectHccDryRunToReflection,
@@ -60,6 +63,26 @@ function loadFixture(name: string): HccDryRunReflectionInput {
   return JSON.parse(
     readFileSync(join(FIXTURE_DIR, name), "utf-8"),
   ) as HccDryRunReflectionInput;
+}
+
+function verifierForReflection(
+  reflection: PostTaskReflection,
+): HumanApprovalRefVerifier {
+  if (reflection.provenance.human_approval_ref === null) {
+    throw new Error("test fixture requires human_approval_ref");
+  }
+  return buildHumanApprovalRefVerifier([
+    {
+      anchor_ref: "anchor-record://unit-test/manual-review",
+      human_approval_ref: reflection.provenance.human_approval_ref,
+      reflection_task_id: reflection.task_id,
+      artifact_ref: reflection.artifact_ref,
+      approved_at: "2026-06-07T12:01:00.000Z",
+      expires_at: "2026-06-08T00:00:00.000Z",
+      allowed_gates: ["next_task_context", "ranking_input"],
+      revoked: false,
+    },
+  ]);
 }
 
 describe("Post-task Learning Loop LOOP-002 HCC dry-run fixture", () => {
@@ -154,9 +177,10 @@ describe("Post-task Learning Loop LOOP-002 HCC dry-run fixture", () => {
     ).toThrow(/ranking input requires human-reviewed/);
   });
 
-  it("manual_review fixture: consumer guards accept; runtime_flush_allowed stays false", () => {
+  it("manual_review fixture: consumer guards require anchor verification; runtime_flush_allowed stays false", () => {
     const input = loadFixture("ll002-hcc-manual-review-dry-run.json");
     const reflection = projectHccDryRunToReflection(input);
+    const verifyHumanApprovalRef = verifierForReflection(reflection);
 
     expect(() => assertPostTaskReflectionNoRuntime(reflection)).not.toThrow();
     expect(reflection.verification_result).toBe("manual_review");
@@ -177,13 +201,25 @@ describe("Post-task Learning Loop LOOP-002 HCC dry-run fixture", () => {
     // Approval gate is still closed — the contract never auto-approves.
     expect(reflection.approval_gate.approved).toBe(false);
 
-    // Consumer guards accept the human-reviewed, approval-ref-present
-    // reflection.
+    // Structural human_reviewed + approval_ref is not enough. The
+    // consumer must provide an anchor-layer verifier.
     expect(() =>
       assertReflectionAllowedForNextTaskContext(reflection),
-    ).not.toThrow();
+    ).toThrow(/requires a consumer\/anchor-layer human_approval_ref verifier/);
     expect(() =>
       assertReflectionAllowedForRankingInput(reflection),
+    ).toThrow(/requires a consumer\/anchor-layer human_approval_ref verifier/);
+
+    // Consumer guards accept only after anchor verification succeeds.
+    expect(() =>
+      assertReflectionAllowedForNextTaskContext(reflection, {
+        verifyHumanApprovalRef,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertReflectionAllowedForRankingInput(reflection, {
+        verifyHumanApprovalRef,
+      }),
     ).not.toThrow();
   });
 

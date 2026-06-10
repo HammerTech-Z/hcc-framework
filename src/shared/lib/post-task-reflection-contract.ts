@@ -57,6 +57,32 @@ export interface HumanApprovalRef {
   verified: false;
 }
 
+export type HumanApprovalConsumerGate =
+  | "next_task_context"
+  | "ranking_input";
+
+export interface HumanApprovalVerificationInput {
+  gate: HumanApprovalConsumerGate;
+  reflection_task_id: string;
+  artifact_ref: string | null;
+  created_at: string;
+  human_approval_ref: HumanApprovalRef;
+}
+
+export interface HumanApprovalVerificationResult {
+  verified: boolean;
+  reason: string;
+  anchor_ref: string | null;
+}
+
+export type HumanApprovalRefVerifier = (
+  input: HumanApprovalVerificationInput,
+) => HumanApprovalVerificationResult;
+
+export interface ReflectionConsumerGateOptions {
+  verifyHumanApprovalRef: HumanApprovalRefVerifier;
+}
+
 export type PostTaskVerificationResult =
   | "pass"
   | "fail"
@@ -1112,6 +1138,7 @@ export function assertPostTaskReflectionNoRuntime(
 
 export function assertReflectionAllowedForNextTaskContext(
   reflection: PostTaskReflection,
+  options?: Partial<ReflectionConsumerGateOptions>,
 ): void {
   assertPostTaskReflectionNoRuntime(reflection);
   assertCondition(
@@ -1122,10 +1149,20 @@ export function assertReflectionAllowedForNextTaskContext(
     reflection.provenance.human_approval_ref !== null,
     "next-task context requires human_approval_ref to be present",
   );
+  assertHumanApprovalRefMechanicallyVerified(
+    reflection,
+    "next_task_context",
+    options,
+  );
   for (const [index, draft] of reflection.knowledge_ingest_draft.entries()) {
     assertCondition(
       draft.provenance.human_approval_ref !== null,
       `next-task context requires human_approval_ref on draft at index ${index}`,
+    );
+    assertHumanApprovalRefMatches(
+      draft.provenance.human_approval_ref,
+      reflection.provenance.human_approval_ref,
+      `next-task context requires draft human_approval_ref to match reflection at index ${index}`,
     );
     assertCondition(
       draft.provenance.human_reviewed === true,
@@ -1140,6 +1177,7 @@ export function assertReflectionAllowedForNextTaskContext(
 
 export function assertReflectionAllowedForRankingInput(
   reflection: PostTaskReflection,
+  options?: Partial<ReflectionConsumerGateOptions>,
 ): void {
   assertPostTaskReflectionNoRuntime(reflection);
   assertCondition(
@@ -1150,10 +1188,20 @@ export function assertReflectionAllowedForRankingInput(
     reflection.provenance.human_approval_ref !== null,
     "ranking input requires human_approval_ref to be present",
   );
+  assertHumanApprovalRefMechanicallyVerified(
+    reflection,
+    "ranking_input",
+    options,
+  );
   for (const [index, draft] of reflection.knowledge_ingest_draft.entries()) {
     assertCondition(
       draft.provenance.human_approval_ref !== null,
       `ranking input requires human_approval_ref on draft at index ${index}`,
+    );
+    assertHumanApprovalRefMatches(
+      draft.provenance.human_approval_ref,
+      reflection.provenance.human_approval_ref,
+      `ranking input requires draft human_approval_ref to match reflection at index ${index}`,
     );
     assertCondition(
       draft.provenance.human_reviewed === true,
@@ -1164,6 +1212,57 @@ export function assertReflectionAllowedForRankingInput(
       `ranking input rejects quarantined draft at index ${index}`,
     );
   }
+}
+
+function assertHumanApprovalRefMechanicallyVerified(
+  reflection: PostTaskReflection,
+  gate: HumanApprovalConsumerGate,
+  options?: Partial<ReflectionConsumerGateOptions>,
+): void {
+  const gateLabel =
+    gate === "next_task_context" ? "next-task context" : "ranking input";
+  const verifier = options?.verifyHumanApprovalRef;
+  assertCondition(
+    typeof verifier === "function",
+    `${gateLabel} requires a consumer/anchor-layer human_approval_ref verifier`,
+  );
+  assertCondition(
+    reflection.provenance.human_approval_ref !== null,
+    `${gateLabel} requires human_approval_ref to be present`,
+  );
+  const result = verifier({
+    gate,
+    reflection_task_id: reflection.task_id,
+    artifact_ref: reflection.artifact_ref,
+    created_at: reflection.created_at,
+    human_approval_ref: reflection.provenance.human_approval_ref,
+  });
+  assertCondition(
+    hasObjectShape(result),
+    `${gateLabel} human_approval_ref verifier must return an object`,
+  );
+  assertCondition(
+    typeof result.reason === "string" && result.reason.length > 0,
+    `${gateLabel} human_approval_ref verifier result requires reason`,
+  );
+  assertCondition(
+    result.verified === true,
+    `${gateLabel} requires mechanically verified human_approval_ref: ${result.reason}`,
+  );
+}
+
+function assertHumanApprovalRefMatches(
+  actual: HumanApprovalRef,
+  expected: HumanApprovalRef,
+  message: string,
+): void {
+  assertCondition(
+    actual.ref === expected.ref &&
+      actual.content_hash === expected.content_hash &&
+      actual.approval_kind === expected.approval_kind &&
+      actual.verified === expected.verified,
+    message,
+  );
 }
 
 export interface PostTaskReflectionFixtures {

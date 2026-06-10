@@ -25,6 +25,7 @@ import {
   POST_TASK_REFLECTION_SCHEMA_VERSION,
   type EvidenceRef,
   type HumanApprovalRef,
+  type HumanApprovalRefVerifier,
   type PostTaskReflection,
   type Provenance,
   type InstructionScanResult,
@@ -66,6 +67,12 @@ const SAMPLE_APPROVAL_REF: HumanApprovalRef = {
   approval_kind: "manual_review",
   verified: false,
 };
+
+const acceptingApprovalVerifier: HumanApprovalRefVerifier = (input) => ({
+  verified: input.human_approval_ref.verified === false,
+  reason: "unit-test approval anchor accepted",
+  anchor_ref: input.human_approval_ref.ref,
+});
 
 const provenance: Provenance = {
   generated_by: "hermes",
@@ -551,13 +558,24 @@ describe("Post-task Learning Loop LOOP-001 reflection contract", () => {
     );
   });
 
-  it("consumer guards allow only human-reviewed non-quarantined reflections", () => {
+  it("consumer guards require mechanical human approval verification", () => {
     const fx = buildPostTaskReflectionFixtures();
     expect(() =>
       assertReflectionAllowedForNextTaskContext(fx.manualReview),
-    ).not.toThrow();
+    ).toThrow(/requires a consumer\/anchor-layer human_approval_ref verifier/);
     expect(() =>
       assertReflectionAllowedForRankingInput(fx.manualReview),
+    ).toThrow(/requires a consumer\/anchor-layer human_approval_ref verifier/);
+
+    expect(() =>
+      assertReflectionAllowedForNextTaskContext(fx.manualReview, {
+        verifyHumanApprovalRef: acceptingApprovalVerifier,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertReflectionAllowedForRankingInput(fx.manualReview, {
+        verifyHumanApprovalRef: acceptingApprovalVerifier,
+      }),
     ).not.toThrow();
   });
 
@@ -1020,8 +1038,16 @@ describe("Post-task Learning Loop LOOP-001 reflection contract", () => {
 
   it("consumer guards require human_approval_ref present on reflection and drafts", () => {
     const fx = buildPostTaskReflectionFixtures();
-    expect(() => assertReflectionAllowedForNextTaskContext(fx.manualReview)).not.toThrow();
-    expect(() => assertReflectionAllowedForRankingInput(fx.manualReview)).not.toThrow();
+    expect(() =>
+      assertReflectionAllowedForNextTaskContext(fx.manualReview, {
+        verifyHumanApprovalRef: acceptingApprovalVerifier,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertReflectionAllowedForRankingInput(fx.manualReview, {
+        verifyHumanApprovalRef: acceptingApprovalVerifier,
+      }),
+    ).not.toThrow();
 
     // Forge: human_reviewed=true but no human_approval_ref at the
     // reflection level. The runtime guard rejects this first, but the
@@ -1051,7 +1077,9 @@ describe("Post-task Learning Loop LOOP-001 reflection contract", () => {
     forgedDraft.knowledge_ingest_draft[0]!.provenance.trust_level = "single_run";
     forgedDraft.knowledge_ingest_draft[0]!.quarantine = true;
     expect(() =>
-      assertReflectionAllowedForNextTaskContext(forgedDraft),
+      assertReflectionAllowedForNextTaskContext(forgedDraft, {
+        verifyHumanApprovalRef: acceptingApprovalVerifier,
+      }),
     ).toThrow(/requires human_approval_ref on draft/);
   });
 

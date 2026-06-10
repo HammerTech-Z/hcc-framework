@@ -1,14 +1,14 @@
 // Post-task Learning Loop - Slice LOOP-006A
 // Pure design descriptor for the Human Approval Anchor + Consumer
 // Guard Routing. This slice UN-freezes the LOOP-007 retrieval
-// feedback simulation pre-condition: it describes which reflection /
+// feedback simulation pre-condition and provides a pure consumer-layer
+// human approval verifier. It describes which reflection /
 // knowledge_ingest_draft / usage_feedback / skill_candidate /
 // dead_end / local_llm_wiki draft may, in the future, enter Next
 // Task Context or retrieval ranking simulation. The slice never
-// wires a real consumer, never writes to Next Task Context, never
-// mutates retrieval ranking, never calls knowledgeIngest /
-// knowledgeSearch, never live flushes, never writes audit / config /
-// persistence.
+// writes to Next Task Context, never mutates retrieval ranking, never
+// calls knowledgeIngest / knowledgeSearch, never live flushes, never
+// writes audit / config / persistence.
 //
 // Hard boundary: no fs, no IPC, no knowledgeIngest / knowledgeSearch,
 // no live flush, no audit write, no live retrieval ranking mutation,
@@ -18,7 +18,10 @@
 
 import {
   POST_TASK_REFLECTION_APPROVAL_GATE,
+  type HumanApprovalConsumerGate,
   type HumanApprovalRef,
+  type HumanApprovalRefVerifier,
+  type HumanApprovalVerificationResult,
   type PostTaskReflection,
 } from "./post-task-reflection-contract";
 
@@ -37,8 +40,8 @@ import type { LocalLLMWikiDraft } from "./post-task-reflection-local-llm-wiki-de
 // -----------------------------------------------------------------
 
 export const HUMAN_APPROVAL_ANCHOR_ROUTING_DESIGN = {
-  routing_status: "design_only" as const,
-  anchor_verification_allowed: false as const,
+  routing_status: "pure_verifier_available" as const,
+  anchor_verification_allowed: true as const,
   consumer_routing_mutation_allowed: false as const,
   next_task_context_write_allowed: false as const,
   ranking_input_write_allowed: false as const,
@@ -109,6 +112,17 @@ export interface ConsumerRouteDecision {
   persistence_allowed: false;
 }
 
+export interface HumanApprovalAnchorRecord {
+  anchor_ref: string;
+  human_approval_ref: HumanApprovalRef;
+  reflection_task_id: string;
+  artifact_ref: string | null;
+  approved_at: string;
+  expires_at: string | null;
+  allowed_gates: readonly HumanApprovalConsumerGate[];
+  revoked: boolean;
+}
+
 // -----------------------------------------------------------------
 // Decision id
 // -----------------------------------------------------------------
@@ -135,6 +149,96 @@ function isHumanApproved(
   approvalRef: HumanApprovalRef | null,
 ): boolean {
   return humanReviewed === true && approvalRef !== null;
+}
+
+function sameHumanApprovalRef(
+  left: HumanApprovalRef,
+  right: HumanApprovalRef,
+): boolean {
+  return (
+    left.ref === right.ref &&
+    left.content_hash === right.content_hash &&
+    left.approval_kind === right.approval_kind &&
+    left.verified === false &&
+    right.verified === false
+  );
+}
+
+function isIsoInstant(value: string): boolean {
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) && new Date(ms).toISOString() === value;
+}
+
+function rejectVerification(reason: string): HumanApprovalVerificationResult {
+  return {
+    verified: false,
+    reason,
+    anchor_ref: null,
+  };
+}
+
+function acceptVerification(
+  anchor: HumanApprovalAnchorRecord,
+): HumanApprovalVerificationResult {
+  return {
+    verified: true,
+    reason: "human_approval_ref matched active consumer anchor",
+    anchor_ref: anchor.anchor_ref,
+  };
+}
+
+export function verifyHumanApprovalRefAgainstAnchors(
+  input: Parameters<HumanApprovalRefVerifier>[0],
+  anchors: readonly HumanApprovalAnchorRecord[],
+): HumanApprovalVerificationResult {
+  if (input.human_approval_ref.verified !== false) {
+    return rejectVerification(
+      "contract-layer human_approval_ref.verified must remain false",
+    );
+  }
+  if (!isIsoInstant(input.created_at)) {
+    return rejectVerification("reflection created_at is not an ISO instant");
+  }
+  const reflectionCreatedAtMs = Date.parse(input.created_at);
+  const match = anchors.find((anchor) =>
+    sameHumanApprovalRef(anchor.human_approval_ref, input.human_approval_ref),
+  );
+  if (!match) {
+    return rejectVerification("no matching human approval anchor found");
+  }
+  if (match.revoked) {
+    return rejectVerification("matching human approval anchor is revoked");
+  }
+  if (match.reflection_task_id !== input.reflection_task_id) {
+    return rejectVerification("human approval anchor task id mismatch");
+  }
+  if (match.artifact_ref !== input.artifact_ref) {
+    return rejectVerification("human approval anchor artifact ref mismatch");
+  }
+  if (!match.allowed_gates.includes(input.gate)) {
+    return rejectVerification("human approval anchor does not authorize gate");
+  }
+  if (!isIsoInstant(match.approved_at)) {
+    return rejectVerification("human approval anchor approved_at is invalid");
+  }
+  if (Date.parse(match.approved_at) > reflectionCreatedAtMs) {
+    return rejectVerification("human approval anchor is newer than reflection");
+  }
+  if (match.expires_at !== null) {
+    if (!isIsoInstant(match.expires_at)) {
+      return rejectVerification("human approval anchor expires_at is invalid");
+    }
+    if (Date.parse(match.expires_at) <= reflectionCreatedAtMs) {
+      return rejectVerification("human approval anchor is stale");
+    }
+  }
+  return acceptVerification(match);
+}
+
+export function buildHumanApprovalRefVerifier(
+  anchors: readonly HumanApprovalAnchorRecord[],
+): HumanApprovalRefVerifier {
+  return (input) => verifyHumanApprovalRefAgainstAnchors(input, anchors);
 }
 
 function buildDecision(
