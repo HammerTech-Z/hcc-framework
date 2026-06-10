@@ -1,6 +1,6 @@
 # AGENT-BRIDGE — Codex ⇄ Claude Code File-Bridge
 
-> Slices: **AGENT-BRIDGE-002** (skeleton + task-packet validator) + **AGENT-BRIDGE-002A** (hardened allowlist) + **AGENT-BRIDGE-002B** (cleanup) + **AGENT-BRIDGE-003** (Claude invocation runner) + **AGENT-BRIDGE-003A** (bridge-root sandboxing) + **AGENT-BRIDGE-004** (deterministic local audit runner) + **AGENT-BRIDGE-012** (read-only Claude tool mode) + **AGENT-BRIDGE-013** (controlled write-files-only mode).
+> Slices: **AGENT-BRIDGE-002** (skeleton + task-packet validator) + **AGENT-BRIDGE-002A** (hardened allowlist) + **AGENT-BRIDGE-002B** (cleanup) + **AGENT-BRIDGE-003** (Claude invocation runner) + **AGENT-BRIDGE-003A** (bridge-root sandboxing) + **AGENT-BRIDGE-004** (deterministic local audit runner) + **AGENT-BRIDGE-012** (read-only Claude tool mode) + **AGENT-BRIDGE-013** (controlled write-files-only mode) + **AGENT-BRIDGE-014** (timeout partial-change reporting).
 > Design doc: `docs/agent-bridge/codex-claude-file-bridge-2026-06-08.md`.
 
 ## What this slice family is
@@ -9,6 +9,7 @@
 - `run-claude-task.mjs` with `--execute` parses a task packet, validates its shape, and invokes Claude in non-interactive print mode. Tools are **disabled by default** for `design-only` and default `read-only`.
 - `--read-only-tools` (012) is an opt-in mode for `mode=read-only` packets only. It allows Claude to inspect the repo with Read/Grep/Glob while preserving the strict JSON result contract. Bash is disabled.
 - `mode=write-files-only` (013) allows Claude to edit only explicit `allowed_files` with Read/Grep/Glob/Edit/MultiEdit/Write. Bash, Task, web tools, commit, push, amend, rebase, squash, live apply, and HCC Auto Executor remain disabled.
+- If `write-files-only` times out or hits a spawn error after partial edits, the runner still snapshots the repo after the failed process and records partial changed files in `.result.raw.txt`, the lifecycle log, and `latest.json`; the run remains failed.
 - It does **not** invoke Codex. It does **not** write to `.agent-bridge/tasks/`. It does **not** commit, push, or approve Claude's own work.
 
 ## What this slice family is NOT
@@ -377,6 +378,7 @@ Write-mode runner rules:
 - `.result.json` is written only if changed files are exactly represented by `files_modified` and every actual changed file is inside `allowed_files`.
 - A forbidden write, missing claimed file, extra claimed file, commit/push claim, HEAD/origin change, or `~/.hermes` mtime change writes `.result.raw.txt` and exits 1.
 - The runner adds `_agent_bridge.changed_files` to successful `.result.json`; the audit runner uses that runner-collected fact to catch mismatched file claims.
+- On `spawnSync` errors, including `ETIMEDOUT`, the runner still performs the write-mode after snapshot and records `partial_changed_files` plus `partial_post_run_validation` in the lifecycle log and latest pointer. Partial allowed writes are reported as changed files, partial forbidden writes are reported with validation errors, and the process still exits 1 with `.result.raw.txt`.
 
 Current residual risk:
 
@@ -521,7 +523,9 @@ The latest pointer schema:
   "result_path": "<path to .result.json or .result.raw.txt>",
   "log_path": "<path to .log>",
   "created_at": "ISO 8601",
-  "claude_exit_code": 0 | number | null
+  "claude_exit_code": 0 | number | null,
+  "partial_changed_files": ["path"] | null,
+  "partial_post_run_validation": {"ok": "boolean", "partial": true, "errors": ["string"], "changedFiles": ["path"]} | null
 }
 ```
 
@@ -541,6 +545,10 @@ run. If the previous log is missing or unreadable, the fallback name is
 On a spawn error (e.g., Claude binary not found), `.result.raw.txt` is
 written with a short error note, so `latest.json.result_path` always
 points to an existing file.
+
+For `write-files-only` spawn errors/timeouts, `latest.json` also includes
+`partial_changed_files` and `partial_post_run_validation`. Those fields are
+`null` when no partial write-mode validation was applicable.
 
 Run grouping:
 - `.agent-bridge/results/<task_id>.result.json` — canonical success artifact
@@ -563,6 +571,10 @@ Claude tasks without hand-copying prompts.
   repo-external writes: the runner can detect repo-local forbidden changes but
   cannot currently prove absence of arbitrary writes outside the repo beyond
   the explicit `~/.hermes` mtime sentinels.
+- The smoke suite covers timeout partial-change handling for both an allowed
+  file write and a forbidden file write; both runs must fail while reporting
+  the partial changed file through `.result.raw.txt`, lifecycle log, and
+  `latest.json`.
 - Existing task files are not overwritten; use a different `--task-id` or remove the old file first.
 
 ### CLI flags

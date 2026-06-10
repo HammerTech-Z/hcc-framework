@@ -1,5 +1,10 @@
 #!/usr/bin/env node
-// AGENT-BRIDGE-002/002A/002B/003/003A/005/005A/005B/005C/005D/009/012/013 — Codex ⇄ Claude Code file-bridge.
+// AGENT-BRIDGE-002/002A/002B/003/003A/005/005A/005B/005C/005D/009/012/013/014 — Codex ⇄ Claude Code file-bridge.
+//
+// AGENT-BRIDGE-014 changes (runner-side):
+//   - write-files-only spawn errors/timeouts still take an after snapshot.
+//   - partial changed files are recorded in lifecycle log, latest pointer,
+//     and .result.raw.txt while the run remains failed.
 //
 // AGENT-BRIDGE-013 changes (runner-side):
 //   - adds controlled mode=write-files-only execution.
@@ -791,6 +796,41 @@ function validateWriteFilesPostRun(packet, parsed, beforeState, afterState) {
   };
 }
 
+function validateWriteFilesPartialPostRun(packet, beforeState, afterState) {
+  const errors = [];
+  const changedFiles = diffRepoSnapshots(beforeState.files, afterState.files);
+  const allowed = new Set(packet.allowed_files);
+  const forbidden = new Set(packet.forbidden_files);
+
+  for (const file of changedFiles) {
+    if (!allowed.has(file)) {
+      errors.push(`partial changed file outside allowed_files: ${file}`);
+    }
+    if (forbidden.has(file) || isHardForbiddenPath(file)) {
+      errors.push(`partial changed forbidden file: ${file}`);
+    }
+  }
+  if (!sameJson(beforeState.hermes, afterState.hermes)) {
+    errors.push("~/.hermes mtimes changed during partial write-files-only run");
+  }
+  if (beforeState.refs.head !== afterState.refs.head) {
+    errors.push("HEAD changed during partial write-files-only run; commits are forbidden");
+  }
+  if (beforeState.refs.origin_head !== afterState.refs.origin_head) {
+    errors.push("origin/hermes-pro-main changed during partial write-files-only run; pushes/fetches are forbidden");
+  }
+  if (beforeState.refs.ahead !== afterState.refs.ahead || beforeState.refs.behind !== afterState.refs.behind) {
+    errors.push("ahead/behind changed during partial write-files-only run");
+  }
+
+  return {
+    ok: errors.length === 0,
+    partial: true,
+    errors,
+    changedFiles,
+  };
+}
+
 function buildClaudeArgv(packet, prompt, opts = {}) {
   const readOnlyTools = opts.readOnlyTools === true;
   const writeFilesTools = opts.writeFilesTools === true;
@@ -901,6 +941,8 @@ function writeLatestPointer(path, fields) {
         log_path: fields.log_path,
         created_at: fields.created_at,
         claude_exit_code: fields.claude_exit_code,
+        partial_changed_files: fields.partial_changed_files ?? null,
+        partial_post_run_validation: fields.partial_post_run_validation ?? null,
       },
       null,
       2,
@@ -925,6 +967,8 @@ function buildLog(packet, fields) {
       write_files_tools: fields.write_files_tools === true,
       claude_argv_summary: fields.claude_argv_summary ?? null,
       post_run_validation: fields.post_run_validation ?? null,
+      partial_changed_files: fields.partial_changed_files ?? null,
+      partial_post_run_validation: fields.partial_post_run_validation ?? null,
       note: fields.note ?? null,
     },
     null,
@@ -1076,12 +1120,53 @@ function runExecute(args, packet, repoRoot) {
   const finished_at = nowIso();
 
   if (result.error) {
-    const note = `BLOCKED: spawn error: ${result.error.message}`;
+    let partialPostRunValidation = null;
+    if (writeFilesTools) {
+      try {
+        const afterWriteState = {
+          files: snapshotRepoFiles(repoRoot),
+          refs: snapshotRefs(repoRoot),
+          hermes: snapshotHermesMtime(),
+        };
+        partialPostRunValidation = validateWriteFilesPartialPostRun(
+          packet,
+          beforeWriteState,
+          afterWriteState,
+        );
+      } catch (e) {
+        partialPostRunValidation = {
+          ok: false,
+          partial: true,
+          errors: [`failed to snapshot partial write-files-only run: ${e.message}`],
+          changedFiles: [],
+        };
+      }
+    }
+    const partialChangedFiles = partialPostRunValidation?.changedFiles ?? null;
+    const partialNote = partialChangedFiles && partialChangedFiles.length > 0
+      ? `; partial_changed_files=${partialChangedFiles.join(", ")}`
+      : "";
+    const partialErrors = partialPostRunValidation?.errors?.length > 0
+      ? `; partial_errors=${partialPostRunValidation.errors.join("; ")}`
+      : "";
+    const note = `BLOCKED: spawn error: ${result.error.message}${partialNote}${partialErrors}`;
     // Write a short error note to .result.raw.txt so latest pointer
     // always points to an existing file.
     writeFileSync(
       resultRawPath,
-      `AGENT-BRIDGE spawn error: ${result.error.message}\n`,
+      [
+        `AGENT-BRIDGE spawn error: ${result.error.message}`,
+        partialChangedFiles
+          ? `partial_changed_files: ${JSON.stringify(partialChangedFiles)}`
+          : null,
+        partialPostRunValidation
+          ? `partial_post_run_validation: ${JSON.stringify(partialPostRunValidation)}`
+          : null,
+        "--- stdout ---",
+        result.stdout ?? "",
+        "--- stderr ---",
+        result.stderr ?? "",
+      ].filter((line) => line !== null).join("\n") + "\n",
       "utf8",
     );
     writeFileSync(
@@ -1093,6 +1178,8 @@ function runExecute(args, packet, repoRoot) {
         claude_exit_code: null,
         result_path: resultRawPath,
         note,
+        partial_changed_files: partialChangedFiles,
+        partial_post_run_validation: partialPostRunValidation,
         ...logFields,
       }),
       "utf8",
@@ -1102,6 +1189,8 @@ function runExecute(args, packet, repoRoot) {
       task_id: packet.task_id, run_id, status: "failed",
       result_path: resultRawPath, log_path: logPath,
       created_at: finished_at, claude_exit_code: null,
+      partial_changed_files: partialChangedFiles,
+      partial_post_run_validation: partialPostRunValidation,
     });
     process.exit(1);
   }

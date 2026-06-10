@@ -4,7 +4,7 @@
 // Runs only against disposable git repos under .agent-bridge/smoke/.
 // Does not touch Hermes Pro product files, ~/.hermes, commit, or push.
 
-import { chmodSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -53,6 +53,9 @@ const taskId = process.env.AGENT_BRIDGE_SMOKE_TASK_ID;
 function emit(obj) {
   process.stdout.write(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: JSON.stringify(obj) }) + "\\n");
 }
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 function base(overrides = {}) {
   return {
     schema_version: "1.0.0",
@@ -78,6 +81,12 @@ if (mode === "invalid-json") {
 } else if (mode === "forbidden") {
   writeFileSync("forbidden.txt", "forbidden write\\n", "utf8");
   emit(base({ files_modified: ["forbidden.txt"] }));
+} else if (mode === "timeout-allowed") {
+  writeFileSync("allowed.txt", "allowed partial before timeout\\n", "utf8");
+  await sleep(5000);
+} else if (mode === "timeout-forbidden") {
+  writeFileSync("forbidden.txt", "forbidden partial before timeout\\n", "utf8");
+  await sleep(5000);
 } else if (mode === "external") {
   const externalPath = process.env.AGENT_BRIDGE_SMOKE_EXTERNAL_PATH;
   if (!externalPath) {
@@ -161,6 +170,10 @@ function writeTask(repo, taskId, allowedFiles = ["allowed.txt"]) {
 }
 
 function runTask(repo, taskPath, taskId, smokeCase) {
+  return runTaskWithTimeout(repo, taskPath, taskId, smokeCase, 30000);
+}
+
+function runTaskWithTimeout(repo, taskPath, taskId, smokeCase, timeoutMs) {
   return sh(
     "node",
     [
@@ -173,7 +186,7 @@ function runTask(repo, taskPath, taskId, smokeCase) {
       "--claude-bin",
       STUB,
       "--timeout-ms",
-      "30000",
+      String(timeoutMs),
     ],
     {
       cwd: repo,
@@ -181,6 +194,7 @@ function runTask(repo, taskPath, taskId, smokeCase) {
         AGENT_BRIDGE_SMOKE_CASE: smokeCase,
         AGENT_BRIDGE_SMOKE_TASK_ID: taskId,
       },
+      timeout: Math.max(30000, timeoutMs + 10000),
     },
   );
 }
@@ -228,6 +242,51 @@ function main() {
     const r = runTask(repo, task, taskId, "forbidden");
     const rawPath = join(repo, ".agent-bridge/results", `${taskId}.result.raw.txt`);
     results.push(assertCase("forbidden file write detected", r.status === 1 && existsSync(rawPath), r.stderr || r.stdout));
+  }
+
+  {
+    const taskId = "SMOKE-WRITE-TIMEOUT-ALLOWED-PARTIAL";
+    const repo = initRepo("timeout-allowed-partial");
+    const task = writeTask(repo, taskId);
+    const r = runTaskWithTimeout(repo, task, taskId, "timeout-allowed", 1000);
+    const rawPath = join(repo, ".agent-bridge/results", `${taskId}.result.raw.txt`);
+    const latestPath = join(repo, ".agent-bridge/results", `${taskId}.latest.json`);
+    const logPath = join(repo, ".agent-bridge/logs", `${taskId}.log`);
+    const latest = existsSync(latestPath) ? JSON.parse(readFileSync(latestPath, "utf8")) : null;
+    const log = existsSync(logPath) ? JSON.parse(readFileSync(logPath, "utf8")) : null;
+    results.push(assertCase(
+      "timeout after allowed write reports partial change",
+      r.status === 1 &&
+        existsSync(rawPath) &&
+        latest?.status === "failed" &&
+        latest?.partial_changed_files?.includes("allowed.txt") &&
+        log?.partial_changed_files?.includes("allowed.txt") &&
+        log?.partial_post_run_validation?.ok === true,
+      r.stderr || r.stdout,
+    ));
+  }
+
+  {
+    const taskId = "SMOKE-WRITE-TIMEOUT-FORBIDDEN-PARTIAL";
+    const repo = initRepo("timeout-forbidden-partial");
+    const task = writeTask(repo, taskId);
+    const r = runTaskWithTimeout(repo, task, taskId, "timeout-forbidden", 1000);
+    const rawPath = join(repo, ".agent-bridge/results", `${taskId}.result.raw.txt`);
+    const latestPath = join(repo, ".agent-bridge/results", `${taskId}.latest.json`);
+    const logPath = join(repo, ".agent-bridge/logs", `${taskId}.log`);
+    const latest = existsSync(latestPath) ? JSON.parse(readFileSync(latestPath, "utf8")) : null;
+    const log = existsSync(logPath) ? JSON.parse(readFileSync(logPath, "utf8")) : null;
+    results.push(assertCase(
+      "timeout after forbidden write reports forbidden partial change",
+      r.status === 1 &&
+        existsSync(rawPath) &&
+        latest?.status === "failed" &&
+        latest?.partial_changed_files?.includes("forbidden.txt") &&
+        log?.partial_changed_files?.includes("forbidden.txt") &&
+        log?.partial_post_run_validation?.ok === false &&
+        log?.partial_post_run_validation?.errors?.some((e) => e.includes("partial changed forbidden file: forbidden.txt")),
+      r.stderr || r.stdout,
+    ));
   }
 
   {
