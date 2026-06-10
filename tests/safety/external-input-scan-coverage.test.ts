@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
+  LIVE_KNOWLEDGE_INGEST_EXTERNAL_CONTENT_SCAN_GATE,
+  assertLiveKnowledgeIngestScanDecisionNoRuntime,
+  scanLiveKnowledgeIngestExternalContent,
+} from "@shared/lib/safety/live-knowledge-ingest-scan-gate";
+import {
   NEXT_TASK_CONTEXT_LIVE_INGRESS_SCAN_GATE,
   assertNextTaskContextIngressScanDecisionNoRuntime,
   scanNextTaskContextLiveIngress,
@@ -48,7 +53,8 @@ const B2_SCAN_MATRIX: ScanEntry[] = [
   {
     id: "live_knowledge_ingest_external_content",
     description: "Live knowledge ingest of external content (untrusted)",
-    status: "gap",
+    status: "covered",
+    evidenceRef: LIVE_KNOWLEDGE_INGEST_EXTERNAL_CONTENT_SCAN_GATE.evidence_ref,
     requiredIngress: true,
   },
   {
@@ -93,16 +99,68 @@ describe("B2 external input scan coverage matrix", () => {
     }
   });
 
-  it("LOOP-010.A admission is NOT-GO while any required ingress entry is gap", () => {
+  it("B2 admission has no remaining required ingress gaps after HERMES-GOV-004", () => {
     const requiredGaps = requiredGapEntries();
-    const admissionGo = requiredGaps.length === 0;
-    expect(admissionGo).toBe(false);
-    expect(requiredGaps.map((gap) => gap.id)).toEqual([
-      "live_knowledge_ingest_external_content",
-    ]);
-    for (const gap of requiredGaps) {
-      expect(gap.status).toBe("gap");
-    }
+    const b2AdmissionGo = requiredGaps.length === 0;
+    expect(b2AdmissionGo).toBe(true);
+    expect(requiredGaps).toEqual([]);
+  });
+
+  it("LOOP-010.A admission can remain NOT-GO due to B1 even when B2 is covered", () => {
+    const b2AdmissionGo = requiredGapEntries().length === 0;
+    const b1Blocked = blockedEntries().some(
+      (entry) => entry.id === "cron_weixin_channel_runtime_ingress",
+    );
+    expect(b2AdmissionGo).toBe(true);
+    expect(b1Blocked).toBe(true);
+  });
+
+  it("marks live_knowledge_ingest_external_content as mechanically covered by a pure scan gate", () => {
+    const entry = matrixEntry("live_knowledge_ingest_external_content");
+    expect(entry).toMatchObject({
+      status: "covered",
+      evidenceRef: LIVE_KNOWLEDGE_INGEST_EXTERNAL_CONTENT_SCAN_GATE.evidence_ref,
+      requiredIngress: true,
+    });
+    expect(LIVE_KNOWLEDGE_INGEST_EXTERNAL_CONTENT_SCAN_GATE).toMatchObject({
+      coverage_status: "covered",
+      scanner_mode: "cloud_payload",
+      dry_run_only: true,
+      knowledge_ingest_call_allowed: false,
+      persistence_allowed: false,
+      runtime_mutation_allowed: false,
+      backend_daemon_allowed: false,
+      cron_allowed: false,
+      weixin_allowed: false,
+      channel_runtime_allowed: false,
+      live_apply_allowed: false,
+      hcc_auto_executor_allowed: false,
+    });
+  });
+
+  it("allows clean live knowledge ingest external content only after a cloud_payload scan pass", () => {
+    const decision = scanLiveKnowledgeIngestExternalContent({
+      source: "web",
+      sourceRef: "https://example.test/release-notes",
+      content: "Release notes: fixed a parser issue. No secrets included.",
+    });
+    assertLiveKnowledgeIngestScanDecisionNoRuntime(decision);
+    expect(decision.allowed).toBe(true);
+    expect(decision.scan.status).toBe("pass");
+    expect(decision.scan.findings).toHaveLength(0);
+  });
+
+  it("blocks live knowledge ingest external content when the cloud_payload scan fails", () => {
+    const decision = scanLiveKnowledgeIngestExternalContent({
+      source: "github",
+      sourceRef: "https://github.com/example/repo/issues/1",
+      content: "Issue body leaked ghp_abcdef1234567890ABCDEF",
+    });
+    assertLiveKnowledgeIngestScanDecisionNoRuntime(decision);
+    expect(decision.allowed).toBe(false);
+    expect(decision.scan.status).toBe("fail");
+    expect(decision.reason).toContain("blocked by scan");
+    expect(decision.scan.redactedContent).toContain("[REDACTED:api_key]");
   });
 
   it("marks next_task_context_live_ingress as mechanically covered by a pure scan gate", () => {
