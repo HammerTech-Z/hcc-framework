@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 
 import {
   buildScreenBoundaryContract,
@@ -12,6 +12,10 @@ import {
   type ScreenBoundaryKind,
   type ScreenViewId,
 } from "../src/shared/lib/screen-boundary-contract";
+import {
+  getTransitiveImports,
+  FORBIDDEN_RE,
+} from "./_helpers/import-graph";
 
 const ROOT = join(__dirname, "..");
 const helperSrc = readFileSync(
@@ -335,5 +339,312 @@ describe("UI Slice 1 purity and safety literals", () => {
     expect(helperSrc).not.toMatch(/from\s+["'][^"']*preload[^"']*["']/);
     expect(helperSrc).not.toMatch(/from\s+["'][^"']*main[^"']*["']/);
     expect(helperSrc).not.toContain("electron");
+  });
+});
+
+describe("UI-SAFETY-001 import-graph hardened boundaries", () => {
+  const contract = buildScreenBoundaryContract();
+
+  // Unique entry modules for read-only views with import-graph enforcement.
+  // Deduplicated: bailongma / hccCockpit share the Mission component.
+  const COMPONENT_ENTRIES: Record<string, string> = {
+    mission: resolve(ROOT, "src/renderer/src/screens/Mission/Mission.tsx"),
+    bailongma: resolve(ROOT, "src/renderer/src/screens/Mission/Mission.tsx"),
+    hccCockpit: resolve(ROOT, "src/renderer/src/screens/Mission/Mission.tsx"),
+    knowledgeControl: resolve(
+      ROOT,
+      "src/renderer/src/screens/KnowledgeControl/KnowledgeControl.tsx",
+    ),
+  };
+
+  const importGraphViews = contract.contracts.filter(
+    (c) => c.enforcement === "import-graph",
+  );
+
+  const uniqueEntries = [
+    ...new Set(
+      importGraphViews
+        .map((c) => COMPONENT_ENTRIES[c.view])
+        .filter(Boolean),
+    ),
+  ];
+
+  it("every import-graph view has a mapped component entry", () => {
+    for (const c of importGraphViews) {
+      expect(
+        COMPONENT_ENTRIES[c.view],
+        `${c.view} has enforcement=import-graph but no COMPONENT_ENTRIES mapping`,
+      ).toBeDefined();
+    }
+  });
+
+  it("all read_only views are import-graph enforced (monitor documented exemption)", () => {
+    // monitor has boundary_kind=read_only but enforcement="static-string" by
+    // explicit decision (see contract notes: no dedicated monitor boundary
+    // test exists yet — tests/monitor-control-readonly.test.ts is the gate
+    // to upgrade it). This assertion enforces the invariant for every other
+    // read_only view AND asserts that monitor is the ONLY allowed exemption,
+    // and that the exemption is documented in the contract.
+    let monitorFound = false;
+    for (const c of contract.contracts) {
+      if (c.boundary_kind !== "read_only") continue;
+
+      if (c.view === "monitor") {
+        monitorFound = true;
+        expect(c.enforcement, "monitor must be explicitly static-string").toBe(
+          "static-string",
+        );
+        expect(
+          c.notes.join("\n"),
+          "monitor must carry the documented exemption note",
+        ).toMatch(/no dedicated monitor boundary test/);
+        continue;
+      }
+
+      expect(
+        c.enforcement,
+        `${c.view} is read_only but enforcement is "${c.enforcement}"`,
+      ).toBe("import-graph");
+    }
+    expect(monitorFound, "monitor view must be present in contracts").toBe(true);
+  });
+
+  it("non-read_only views use static-string enforcement (no downgrade)", () => {
+    for (const c of contract.contracts) {
+      if (c.boundary_kind !== "read_only") {
+        expect(
+          c.enforcement,
+          `${c.view} is non-read_only and must stay at static-string for now`,
+        ).toBe("static-string");
+      }
+    }
+  });
+
+  describe("import-graph clean for each read-only screen", () => {
+    for (const entry of uniqueEntries) {
+      const label = entry.split("src/renderer/src/screens/")[1] ?? entry;
+
+      it(`transitive imports of ${label} contain no forbidden API calls`, () => {
+        const modules = getTransitiveImports(entry);
+
+        expect(modules.size).toBeGreaterThan(0);
+
+        for (const mod of modules) {
+          // Skip .d.ts declaration files
+          if (mod.endsWith(".d.ts")) continue;
+
+          const src = readFileSync(mod, "utf-8");
+
+          // The entry module itself is already checked by existing string-based
+          // assertions; the import-graph test focuses on transitive dependencies
+          // that the string-based test would miss (wrappers, helpers, etc.).
+          if (mod === entry) continue;
+
+          if (FORBIDDEN_RE.test(src)) {
+            const match = src.match(FORBIDDEN_RE);
+            throw new Error(
+              `Import-graph violation in ${mod}: ` +
+                `contains forbidden API call \`${match?.[0]?.trim()}\`. ` +
+                `This module is transitively imported by ${entry}.`,
+            );
+          }
+        }
+      });
+    }
+  });
+
+  // Negative-fixture: prove import-graph catches what string-based test misses.
+  // Creates a real temp entry -> wrapper -> forbidden module chain, then
+  // asserts both that getTransitiveImports walks the chain AND that the
+  // FORBIDDEN_RE scan flags the forbidden module.
+  it("negative fixture: import-graph catches wrapper-then-forbidden chain", () => {
+    const { mkdirSync, writeFileSync, rmSync, mkdtempSync } = require("fs");
+    const { tmpdir } = require("os");
+    const { join, dirname } = require("path");
+
+    // Create isolated temp dir so this test cannot affect real source.
+    const tmpDir = mkdtempSync(join(tmpdir(), "ui-safety-negfx-"));
+
+    try {
+      // forbidden.ts: a module that calls a forbidden API (ipcRenderer.invoke).
+      // This file is NOT in the project source — created fresh for this test.
+      const forbidden = join(tmpDir, "forbidden.ts");
+      writeFileSync(
+        forbidden,
+        `// Negative-fixture module: contains a forbidden API call.\n` +
+          `// The import-graph + FORBIDDEN_RE scan must flag this file.\n` +
+          `export async function run() {\n` +
+          `  return await window.hermesAPI.runPlaybook({}) ;\n` +
+          `}\n`,
+      );
+
+      // wrapper.ts: re-exports from forbidden.ts (the trap).
+      // The wrapper itself does NOT contain the literal "window.hermesAPI"
+      // call — it only re-exports. String-based scans on `entry.ts` would
+      // miss the violation; the import-graph scan must follow the chain.
+      const wrapper = join(tmpDir, "wrapper.ts");
+      writeFileSync(
+        wrapper,
+        `// Re-export from forbidden module. Wrapper hides the call.\n` +
+          `export { run } from "./forbidden";\n`,
+      );
+
+      // entry.ts: the screen entry that imports the wrapper (not forbidden).
+      // Same pattern as a real read-only screen: imports a clean-looking
+      // component that quietly chains into a forbidden module.
+      const entry = join(tmpDir, "entry.ts");
+      writeFileSync(
+        entry,
+        `// Entry screen — appears clean on the surface.\n` +
+          `import { run } from "./wrapper";\n` +
+          `export function go() { return run(); }\n`,
+      );
+
+      // 1. The import graph MUST walk entry -> wrapper -> forbidden.
+      const modules = getTransitiveImports(entry);
+      expect(modules.has(forbidden), "import-graph must reach forbidden.ts").toBe(
+        true,
+      );
+      expect(modules.has(wrapper), "import-graph must reach wrapper.ts").toBe(
+        true,
+      );
+      expect(modules.has(entry), "import-graph must include entry itself").toBe(
+        true,
+      );
+
+      // 2. The forbidden module's source MUST match FORBIDDEN_RE.
+      const forbiddenSrc = readFileSync(forbidden, "utf-8");
+      expect(FORBIDDEN_RE.test(forbiddenSrc)).toBe(true);
+
+      // 3. The wrapper's source MUST NOT match FORBIDDEN_RE (it only re-exports).
+      //    This proves string-based scanning on the entry alone would miss
+      //    the violation — the wrapper shields the call syntactically.
+      const wrapperSrc = readFileSync(wrapper, "utf-8");
+      expect(
+        FORBIDDEN_RE.test(wrapperSrc),
+        "wrapper itself must not contain forbidden literal " +
+          "(this proves the test setup hides the call behind re-export)",
+      ).toBe(false);
+
+      // 4. The entry's source MUST NOT match FORBIDDEN_RE.
+      //    Same reasoning — entry appears clean.
+      const entrySrc = readFileSync(entry, "utf-8");
+      expect(
+        FORBIDDEN_RE.test(entrySrc),
+        "entry itself must not contain forbidden literal " +
+          "(this proves the test setup hides the call behind a wrapper)",
+      ).toBe(false);
+
+      // 5. The wrapper resolves to a tmp path under the configured
+      //    SRC-root filter, so a real call would scan it too.
+      //    (Confirm the helper only includes existing files.)
+      expect(modules.size).toBeGreaterThanOrEqual(3);
+    } finally {
+      // Clean up the temp dir regardless of pass/fail.
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  // Negative-fixture (deeply nested): the import graph MUST follow
+  // require() and dynamic import() calls that are wrapped in functions,
+  // methods, or IIFEs — not just top-level statements. This is the case
+  // a top-level-only AST walk would silently miss.
+  it("negative fixture: import-graph follows wrapped require() and dynamic import()", () => {
+    const { mkdirSync, writeFileSync, rmSync, mkdtempSync } = require("fs");
+    const { tmpdir } = require("os");
+    const { join } = require("path");
+
+    const tmpDir = mkdtempSync(join(tmpdir(), "ui-safety-negfx-nested-"));
+
+    try {
+      // forbidden.ts — same as previous fixture.
+      const forbidden = join(tmpDir, "forbidden.ts");
+      writeFileSync(
+        forbidden,
+        `// Nested-call fixture: contains a forbidden API call.\n` +
+          `export async function run() {\n` +
+          `  return await window.hermesAPI.runPlaybook({}) ;\n` +
+          `}\n`,
+      );
+
+      // forbidden-2.ts — second module loaded via dynamic import.
+      const forbidden2 = join(tmpDir, "forbidden-2.ts");
+      writeFileSync(
+        forbidden2,
+        `// Dynamic-import fixture: contains a forbidden API call.\n` +
+          `export async function trigger() {\n` +
+          `  return await window.hermesAPI.sendMessage({}) ;\n` +
+          `}\n`,
+      );
+
+      // wrapper.ts — calls require() inside a function (NOT at top level).
+      // A top-level-only AST walk would never visit this require().
+      const wrapper = join(tmpDir, "wrapper.ts");
+      writeFileSync(
+        wrapper,
+        `// Function-wrapped require: the call sits inside load(),\n` +
+          `// never at the top level of this file.\n` +
+          `export function load() {\n` +
+          `  // eslint-disable-next-line @typescript-eslint/no-require-imports\n` +
+          `  const mod = require("./forbidden");\n` +
+          `  return mod;\n` +
+          `}\n` +
+          `\n` +
+          `export async function loadAsync() {\n` +
+          `  // Dynamic import inside an async function — also nested.\n` +
+          `  const mod = await import("./forbidden-2");\n` +
+          `  return mod;\n` +
+          `}\n`,
+      );
+
+      // entry.ts — clean-looking surface, imports the wrapper.
+      const entry = join(tmpDir, "entry.ts");
+      writeFileSync(
+        entry,
+        `// Clean entry: only the wrapper is visible at the top level.\n` +
+          `import { load, loadAsync } from "./wrapper";\n` +
+          `export async function go() {\n` +
+          `  await load();\n` +
+          `  await loadAsync();\n` +
+          `}\n`,
+      );
+
+      // 1. The import graph MUST follow the wrapped require() and
+      //    dynamic import() calls — even though they are not at the
+      //    top level of wrapper.ts.
+      const modules = getTransitiveImports(entry);
+      expect(
+        modules.has(forbidden),
+        "import-graph must reach forbidden.ts via require() inside a function",
+      ).toBe(true);
+      expect(
+        modules.has(forbidden2),
+        "import-graph must reach forbidden-2.ts via dynamic import() inside an async function",
+      ).toBe(true);
+      expect(
+        modules.has(wrapper),
+        "import-graph must reach wrapper.ts",
+      ).toBe(true);
+
+      // 2. Both forbidden modules' sources MUST match FORBIDDEN_RE.
+      //    (The whole point: the import-graph walks them, so a caller
+      //    using assertImportGraphClean() would catch the violation.)
+      expect(FORBIDDEN_RE.test(readFileSync(forbidden, "utf-8"))).toBe(true);
+      expect(FORBIDDEN_RE.test(readFileSync(forbidden2, "utf-8"))).toBe(true);
+
+      // 3. The wrapper source contains the call to require("./forbidden")
+      //    and import("./forbidden-2") syntactically, but those are
+      //    import statements, not the FORBIDDEN_RE pattern itself. The
+      //    wrapper MUST NOT contain a direct forbidden API call —
+      //    otherwise the fixture doesn't actually test the deep walk.
+      const wrapperSrc = readFileSync(wrapper, "utf-8");
+      expect(
+        FORBIDDEN_RE.test(wrapperSrc),
+        "wrapper must not contain a direct forbidden API call " +
+          "(it only references forbidden modules via require/import)",
+      ).toBe(false);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });

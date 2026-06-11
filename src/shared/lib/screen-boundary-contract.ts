@@ -1,5 +1,32 @@
 // UI Slice 1 screen boundary contract descriptor.
 // Pure data projection only. No renderer wiring, no IPC, no network.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+// Shell-level surface registry (DOCUMENTATION ONLY, 2026-06-11)
+// audit ref: docs/design/audit/Hermes-Pro-UI-Audit-And-Redesign-2026-06-11.md P2-5
+//
+// The 21-view CONTRACTS array below intentionally does NOT cover the four
+// pre-existing Layout.tsx shell APIs. They are shell-level (always reachable
+// while any route is active) and therefore live outside the per-view contract
+// surface. Logged here for traceability:
+//   - downloadUpdate        : external-action  (auto-update flow, S-23)
+//   - installUpdate         : external-action  (replaces app binary; VERIFIED 2026-06-11:
+//     NO native confirm dialog before the call — gated only by user clicking
+//     the update button. This is a high-risk shell API. UI-SAFETY-001 checked.)
+//   - abortChat             : chat-runtime     (paired with sendMessage)
+//   - getSessionMessages    : read-only        (session resume helper)
+//
+// The Layout route-table test asserts that Layout.tsx contains no NEW
+// renderer-bridge or HTTP calls beyond the four pre-existing shell APIs
+// listed above; net new IPC bridges in Layout.tsx remain forbidden. Any
+// future addition of a fifth shell-level API MUST be logged here AND in
+// that test before it is allowed.
+//
+// This block is a comment-only registry. No runtime behaviour, no type, no
+// export, no contract entry is changed by it. Adding a real `shell` pseudo-
+// view to CONTRACTS is tracked under preflight UI-SHELL-CONTRACT-001 (see
+// Stage 3 preflight list) and requires user approval per audit I-6.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const SCREEN_BOUNDARY_CONTRACT_SCHEMA_VERSION = "1.0.0" as const;
 export const SCREEN_BOUNDARY_CONTRACT_VIEW_COUNT = 21 as const;
@@ -44,6 +71,11 @@ export type ScreenBoundaryKind =
 
 export type ScreenBoundaryRiskLevel = "P0" | "P1" | "P2" | "P3";
 
+export type EnforcementLevel =
+  | "static-string"
+  | "import-graph"
+  | "runtime-assert";
+
 export type ScreenApiChannel =
   | "ipc_bridge"
   | "renderer_event"
@@ -77,6 +109,7 @@ export interface ScreenBoundaryContract {
   remote_mode_restricted: boolean;
   model_strategy_relevant: boolean;
   notes: string[];
+  enforcement: EnforcementLevel;
   safety_invariants: {
     new_ipc_allowed: false;
     runtime_activation_allowed: false;
@@ -188,6 +221,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
       "Primary runtime LLM path; future UI work must preserve explicit action boundaries.",
       "Contains config writes for chat defaults and model selection.",
     ],
+    enforcement: "static-string",
   }),
   contract({
     view: "sessions",
@@ -207,6 +241,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Session browser is mostly read path, with cache sync side effect."],
+    enforcement: "static-string",
   }),
   contract({
     view: "office",
@@ -232,6 +267,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: false,
     model_strategy_relevant: false,
     notes: ["Can start or stop local office/Claw3D services and open URLs."],
+    enforcement: "static-string",
   }),
   contract({
     view: "mission",
@@ -256,6 +292,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Display cockpit surface; no write method is part of this view contract."],
+    enforcement: "import-graph",
   }),
   contract({
     view: "playbooks",
@@ -277,6 +314,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Current component can run a playbook when a playbook is selected."],
+    enforcement: "static-string",
   }),
   contract({
     view: "understand",
@@ -297,6 +335,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: false,
     model_strategy_relevant: false,
     notes: ["Can trigger understanding work and optionally dispatch a playbook."],
+    enforcement: "static-string",
   }),
   contract({
     view: "skills",
@@ -318,6 +357,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Mutates local skill installation state."],
+    enforcement: "static-string",
   }),
   contract({
     view: "knowledgeControl",
@@ -342,6 +382,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
       "knowledgeSearch and getGbrainStats are routed through the main-process IPC bridge; preload raw gateway access has been removed.",
       "IPC bridge active; no direct-gateway methods remain in this view.",
     ],
+    enforcement: "import-graph",
   }),
   contract({
     view: "knowledge",
@@ -372,6 +413,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
       "knowledgeIngest remains a write path and must only be triggered by explicit user action.",
       "IPC bridge active; no direct-gateway methods remain in this view.",
     ],
+    enforcement: "static-string",
   }),
   contract({
     view: "soul",
@@ -387,6 +429,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Reads and writes persona state."],
+    enforcement: "static-string",
   }),
   contract({
     view: "memory",
@@ -414,6 +457,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Combines memory edits, profile writes, config writes, and external links."],
+    enforcement: "static-string",
   }),
   contract({
     view: "agents",
@@ -434,6 +478,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Profile lifecycle and active-profile mutation."],
+    enforcement: "static-string",
   }),
   contract({
     view: "bailongma",
@@ -455,6 +500,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Read-only cockpit route used as a legacy mission source."],
+    enforcement: "import-graph",
   }),
   contract({
     view: "hccCockpit",
@@ -480,6 +526,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
       "ModelStrategyDryRunPanel is embedded under HccCockpit and has zero IPC calls.",
       "Cockpit read polling remains a read-only concern for later UI slices.",
     ],
+    enforcement: "import-graph",
   }),
   contract({
     view: "monitor",
@@ -505,7 +552,11 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     migrated_ipc_methods: [],
     remote_mode_restricted: true,
     model_strategy_relevant: true,
-    notes: ["Read-only monitoring plus renderer event subscriptions."],
+    notes: [
+      "Read-only monitoring plus renderer event subscriptions.",
+      "Enforcement: static-string (not import-graph) — no dedicated monitor boundary test exists yet. Upgrade to import-graph requires tests/monitor-control-readonly.test.ts or equivalent.",
+    ],
+    enforcement: "static-string",
   }),
   contract({
     view: "models",
@@ -527,6 +578,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Mutates saved model catalog and related environment configuration."],
+    enforcement: "static-string",
   }),
   contract({
     view: "providers",
@@ -552,6 +604,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     notes: [
       "Primary user-provided API key and model provider configuration surface.",
     ],
+    enforcement: "static-string",
   }),
   contract({
     view: "tools",
@@ -571,6 +624,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Toolset enablement toggle is a low-blast-radius config write."],
+    enforcement: "static-string",
   }),
   contract({
     view: "schedules",
@@ -593,6 +647,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: false,
     model_strategy_relevant: false,
     notes: ["Can create, remove, pause, resume, and trigger jobs."],
+    enforcement: "static-string",
   }),
   contract({
     view: "gateway",
@@ -616,6 +671,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: true,
     model_strategy_relevant: false,
     notes: ["Daemon lifecycle and platform enablement controls."],
+    enforcement: "static-string",
   }),
   contract({
     view: "settings",
@@ -666,6 +722,7 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Broad system settings surface with config, MCP, backup, and update actions."],
+    enforcement: "static-string",
   }),
 ] as const;
 
