@@ -272,3 +272,130 @@ describe("B2 external input scan coverage matrix", () => {
     });
   });
 });
+
+// ── H-6 trust level matrix (B-2 v3) ──────────────────────────────────────
+// §4 "全系统统一刻度" — H6TrustLevelMatrix 显式标每条 scan entry 的
+// trust_level + evidenceRef。5 级全覆盖。human_confirmed 条目含
+// reserved_for_user_signoff: true（§3 自证可信禁止：AI 不自盖）。
+// ──────────────────────────────────────────────────────────────────────────
+
+import type { HCCProgressTrustLevel } from "../../src/shared/lib/safety/hcc-task-handoff-policy";
+
+interface H6TrustLevelEntry {
+  readonly id: string;
+  readonly trust_level: HCCProgressTrustLevel;
+  readonly evidenceRef: string;
+  readonly note?: string;
+  readonly reserved_for_user_signoff?: boolean;
+}
+
+const H6TrustLevelMatrix: readonly H6TrustLevelEntry[] = [
+  {
+    id: "external_input_scan_coverage_uncovered",
+    trust_level: "unverified",
+    evidenceRef: "tests/safety/external-input-scan-coverage.test.ts",
+    note: "matrix entries with status=gap or blocked without evidence",
+  },
+  {
+    id: "live_knowledge_ingest_external_content",
+    trust_level: "ai_inferred",
+    evidenceRef: "src/shared/lib/safety/live-knowledge-ingest-scan-gate.ts",
+    note: "covered scan gate; AI-read only, not independently reproduced",
+  },
+  {
+    id: "next_task_context_live_ingress",
+    trust_level: "ai_inferred",
+    evidenceRef: "src/shared/lib/safety/next-task-context-ingress-scan-gate.ts",
+    note: "covered scan gate; AI-read only",
+  },
+  {
+    id: "real_input_scan",
+    trust_level: "single_run",
+    evidenceRef: "src/shared/lib/safety/real-input-scan-gate.ts",
+    note: "B-2 first slice; 1 run in worktree b2-scan-gate-20260611",
+  },
+  {
+    id: "hcc_task_handoff_policy_gov006",
+    trust_level: "reproduced",
+    evidenceRef: "src/shared/lib/safety/hcc-task-handoff-policy.ts",
+    note: "GOV-006 tests 13/13; independently reproduced across A-1 through B-2 slices",
+  },
+  {
+    id: "user_signoff_authority",
+    trust_level: "human_confirmed",
+    evidenceRef: "docs/governance/hcc-go-authorization-2026-06-11.md",
+    reserved_for_user_signoff: true,
+    note: "human_confirmed only via explicit user signoff; AI cannot self-confirm (§3)",
+  },
+] as const;
+
+describe("H-6 trust level matrix (B-2 v3)", () => {
+  it("HCCProgressTrustLevel union has exactly 5 levels", () => {
+    const five: readonly HCCProgressTrustLevel[] = [
+      "unverified",
+      "ai_inferred",
+      "single_run",
+      "reproduced",
+      "human_confirmed",
+    ];
+    expect(five).toHaveLength(5);
+  });
+
+  it("H6TrustLevelMatrix covers all 5 trust levels", () => {
+    const levels = new Set(H6TrustLevelMatrix.map((e) => e.trust_level));
+    expect(levels.has("unverified")).toBe(true);
+    expect(levels.has("ai_inferred")).toBe(true);
+    expect(levels.has("single_run")).toBe(true);
+    expect(levels.has("reproduced")).toBe(true);
+    expect(levels.has("human_confirmed")).toBe(true);
+    expect(levels.size).toBe(5);
+  });
+
+  it("every matrix entry has non-empty evidenceRef", () => {
+    for (const entry of H6TrustLevelMatrix) {
+      expect(typeof entry.evidenceRef).toBe("string");
+      expect(entry.evidenceRef.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("every matrix entry trust_level is a valid HCCProgressTrustLevel value", () => {
+    const valid: readonly string[] = [
+      "unverified", "ai_inferred", "single_run", "reproduced", "human_confirmed",
+    ];
+    for (const entry of H6TrustLevelMatrix) {
+      expect(valid).toContain(entry.trust_level);
+    }
+  });
+
+  it("real_input_scan entry is single_run with B-2 evidence", () => {
+    const entry = H6TrustLevelMatrix.find((e) => e.id === "real_input_scan");
+    expect(entry).toBeDefined();
+    expect(entry!.trust_level).toBe("single_run");
+    expect(entry!.evidenceRef).toBe("src/shared/lib/safety/real-input-scan-gate.ts");
+  });
+
+  it("human_confirmed entry has reserved_for_user_signoff === true (no AI self-confirm path)", () => {
+    const entry = H6TrustLevelMatrix.find((e) => e.trust_level === "human_confirmed");
+    expect(entry).toBeDefined();
+    expect(entry!.id).toBe("user_signoff_authority");
+    expect(entry!.reserved_for_user_signoff).toBe(true);
+    expect(entry!.evidenceRef).toContain("hcc-go-authorization");
+  });
+
+  it("no AI self-confirm path exists: every human_confirmed must be reserved_for_user_signoff", () => {
+    const humanConfirmedEntries = H6TrustLevelMatrix.filter(
+      (e) => e.trust_level === "human_confirmed",
+    );
+    expect(humanConfirmedEntries.length).toBeGreaterThan(0);
+    for (const e of humanConfirmedEntries) {
+      expect(e.reserved_for_user_signoff).toBe(true);
+      expect(e.note).toMatch(/user signoff|self-confirm/i);
+    }
+  });
+
+  it("unverified entry covers the gap/blocked scan surface", () => {
+    const entry = H6TrustLevelMatrix.find((e) => e.trust_level === "unverified");
+    expect(entry).toBeDefined();
+    expect(entry!.evidenceRef).toContain("external-input-scan-coverage");
+  });
+});

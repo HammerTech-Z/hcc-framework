@@ -1,0 +1,28 @@
+{
+  "reflection_task_id": "HERMES-B2-001",
+  "created_at": "2026-06-11T19:55:00.000Z",
+  "artifact_ref": "tests/fixtures/learning-loop/ll011-b2-scan-gate-quarantine.json",
+  "proposed_state": "remain_quarantined",
+  "human_approval_ref": {
+    "ref": "anchor://user/2026-06-11/b2-scan-gate",
+    "content_hash": "sha256-placeholder--user-signs-after-review",
+    "approved_at": null,
+    "verified": false
+  },
+  "source_kind": "real_input_scan_gate",
+  "evidence_refs": [
+    "src/shared/lib/safety/real-input-scan-gate.ts",
+    "tests/safety/real-input-scan-gate.test.ts",
+    "tests/safety/external-input-scan-coverage.test.ts",
+    "docs/closeout/b2-scan-gate-closeout-2026-06-11.md"
+  ],
+  "notes": [
+    "B-2 first slice — Real Input Scan Gate (vault_import + local_file_import)",
+    "WeChat / Feishu / external_link gates NOT built (entries do not exist per plan B-2 spec)",
+    "trust_level unified to HCCProgressTrustLevel 5-level union (H-6 fix)",
+    "No fs / ipc / runtime / ~/.hermes writes; no ~/.hermes/vault reads",
+    "Caller passes content + sourceRef; adapter does not read filesystem"
+  ],
+  "trust_level": "single_run",
+  "decision_note": "REVIEW: user acceptance required before graduating from quarantine. All scan decisions carry *_allowed=false flags (runtime/persistence/daemon/weixin/channel/live_apply/hcc_auto_executor)."
+}
