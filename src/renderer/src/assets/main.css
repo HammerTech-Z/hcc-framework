@@ -157,7 +157,8 @@
   --radius-xl: 20px;
   --transition: 150ms ease;
   --font-sans:
-    "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", system-ui, "Google Sans",
     sans-serif;
   --font-mono:
     "SF Mono", "Fira Code", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -175,6 +176,14 @@
   --hp-font-mono: "SF Mono", "JetBrains Mono", ui-monospace, monospace;
   --hp-font-display:
     -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+
+  /* UI-CN-001a: unified state color tokens for bilingual badge component.
+     Used by StatusBadge and (future) StateLabel components. */
+  --hp-state-ok:     #30d158;
+  --hp-state-warn:   #ff9f0a;
+  --hp-state-danger: #ff453a;
+  --hp-state-frozen: #64d2ff;
+  --hp-state-idle:   rgba(235,235,245,0.3);
 }
 
 /* ----- Body ----- */
@@ -8772,4 +8781,356 @@ body {
   .model-strategy-dry-run-panel__cell--reason {
     grid-column: 1 / -1;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   UI-CN-001b: Read-only page disclaimer + Confirm Dialog
+   ══════════════════════════════════════════════════════════════════════ */
+
+.hp-readonly-disclaimer {
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(235, 235, 245, 0.45);
+  text-align: center;
+  padding: 6px 16px;
+  margin-bottom: 4px;
+  user-select: none;
+}
+
+/* ── Confirm Dialog ── */
+.hp-confirm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+}
+
+.hp-confirm-dialog-box {
+  width: 420px;
+  max-width: 90vw;
+  background: var(--bg-secondary, #1e1e1e);
+  border-radius: var(--hp-radius-lg, 10px);
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.hp-confirm-dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text-primary, #ebebf5);
+}
+
+.hp-confirm-dialog-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 8px;
+  color: var(--text-secondary, rgba(235, 235, 245, 0.6));
+}
+
+.hp-confirm-dialog-last-run {
+  font-size: 11px;
+  margin: 0 0 16px;
+  color: rgba(235, 235, 245, 0.35);
+}
+
+.hp-confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.hp-confirm-dialog-cancel {
+  padding: 7px 18px;
+  border-radius: var(--hp-radius-sm, 6px);
+  border: 1px solid rgba(235, 235, 245, 0.15);
+  background: transparent;
+  color: var(--text-secondary, rgba(235, 235, 245, 0.6));
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.hp-confirm-dialog-cancel:hover {
+  background: rgba(235, 235, 245, 0.06);
+}
+
+.hp-confirm-dialog-confirm {
+  padding: 7px 18px;
+  border-radius: var(--hp-radius-sm, 6px);
+  border: none;
+  background: var(--hp-state-warn, #ff9f0a);
+  color: #000;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.hp-confirm-dialog-confirm:hover {
+  opacity: 0.85;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   UI-MACOS-001b: Mission 3-section restructure
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Health Summary Row ── */
+.mission-health-row {
+  display: flex;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(235, 235, 245, 0.06);
+}
+
+.mission-health-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 72px;
+}
+
+.mission-health-value {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.mission-health-label {
+  font-size: 11px;
+  color: rgba(235, 235, 245, 0.35);
+  margin-top: 2px;
+}
+
+.mission-health-indicator.tone-ok .mission-health-value { color: var(--hp-state-ok, #30d158); }
+.mission-health-indicator.tone-warn .mission-health-value { color: var(--hp-state-warn, #ff9f0a); }
+.mission-health-indicator.tone-active .mission-health-value { color: var(--hp-accent, #64d2ff); }
+.mission-health-indicator.tone-frozen .mission-health-value { color: var(--hp-state-frozen, #64d2ff); }
+.mission-health-indicator.tone-muted .mission-health-value { color: rgba(235, 235, 245, 0.25); }
+
+/* ── Focus Area ── */
+.mission-focus {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(235, 235, 245, 0.06);
+}
+
+.mission-stage-track {
+  margin-bottom: 14px;
+}
+
+.mission-stage-track-label,
+.mission-blocker-label {
+  font-size: 11px;
+  color: rgba(235, 235, 245, 0.35);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.mission-stage-track-nodes {
+  display: flex;
+  gap: 4px;
+}
+
+.mission-stage-node {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--hp-radius-sm, 6px);
+  background: rgba(235, 235, 245, 0.04);
+  transition: background 160ms ease;
+}
+
+.mission-stage-node.active {
+  background: rgba(100, 210, 255, 0.12);
+  outline: 1px solid var(--hp-accent, #64d2ff);
+}
+
+.mission-stage-node.done {
+  background: rgba(48, 209, 88, 0.08);
+}
+
+.mission-stage-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(235, 235, 245, 0.2);
+}
+
+.mission-stage-node.active .mission-stage-dot {
+  background: var(--hp-accent, #64d2ff);
+}
+
+.mission-stage-node.done .mission-stage-dot {
+  background: var(--hp-state-ok, #30d158);
+}
+
+.mission-stage-label {
+  font-size: 12px;
+  color: rgba(235, 235, 245, 0.6);
+}
+
+.mission-stage-node.active .mission-stage-label {
+  color: var(--hp-accent, #64d2ff);
+  font-weight: 600;
+}
+
+/* ── Blocker Summary ── */
+.mission-blocker-summary {
+  margin-bottom: 12px;
+}
+
+.mission-blocker-none {
+  font-size: 12px;
+  color: rgba(235, 235, 245, 0.3);
+  font-style: italic;
+}
+
+.mission-blocker-item {
+  font-size: 12px;
+  color: var(--hp-state-warn, #ff9f0a);
+  padding: 3px 0;
+}
+
+/* ── Next Action ── */
+.mission-next-action {
+  font-size: 12px;
+  color: rgba(235, 235, 245, 0.35);
+  padding: 6px 0;
+  border-top: 1px solid rgba(235, 235, 245, 0.04);
+}
+
+.mission-next-action-label {
+  font-weight: 600;
+  color: rgba(235, 235, 245, 0.5);
+}
+
+/* ── Collapsible Sections ── */
+.mission-collapsible {
+  border-bottom: 1px solid rgba(235, 235, 245, 0.04);
+}
+
+.mission-collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  color: rgba(235, 235, 245, 0.6);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 120ms ease;
+  text-align: left;
+}
+
+.mission-collapsible-header:hover {
+  background: rgba(235, 235, 245, 0.03);
+}
+
+.mission-collapsible-caret {
+  font-size: 10px;
+  width: 12px;
+  color: rgba(235, 235, 245, 0.3);
+}
+
+.mission-collapsible-body {
+  padding: 0 20px 12px;
+}
+
+
+/* ── UI-CHAT-001a: Command Palette Overlay ── */
+.hp-command-palette-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 20vh;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.hp-command-palette-box {
+  width: 520px;
+  max-width: 92vw;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--bg-secondary, #1e1e1e);
+  border-radius: var(--hp-radius-lg, 10px);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.hp-command-palette-header {
+  padding: 12px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(235, 235, 245, 0.5);
+  border-bottom: 1px solid rgba(235, 235, 245, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hp-command-palette-list {
+  padding: 6px 0;
+}
+
+.hp-command-palette-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 8px 18px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #ebebf5);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 80ms ease;
+}
+
+.hp-command-palette-item:hover,
+.hp-command-palette-item--active {
+  background: rgba(100, 210, 255, 0.1);
+}
+
+.hp-command-palette-item-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+
+.hp-command-palette-item-name {
+  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+}
+
+.hp-command-palette-item-cat {
+  font-size: 10px;
+  color: rgba(235, 235, 245, 0.3);
+}
+
+.hp-command-palette-item-desc {
+  font-size: 11px;
+  color: rgba(235, 235, 245, 0.4);
+  line-height: 1.3;
+}
+
+.hp-command-palette-item--active .hp-command-palette-item-name {
+  color: var(--hp-accent, #64d2ff);
+}
+
+.hp-command-palette-item--active .hp-command-palette-item-desc {
+  color: rgba(235, 235, 245, 0.6);
 }
