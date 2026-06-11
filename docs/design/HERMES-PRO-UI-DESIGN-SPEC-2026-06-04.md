@@ -4,8 +4,10 @@
 > Scope: Hermes Pro visual direction, information architecture, and phased UI redesign plan.
 > Ground truth: `docs/design/UI-GROUND-TRUTH-2026-06-04.md`.
 > Research run: 2026-06-04 → `~/.hermes/pipeline-runs/HCC-20260604-UI-DESIGN-SPEC-REFERENCE-RESEARCH/01-report.md`.
-> License boundaries: ClawPanel AGPL-3.0 → design pattern reference only, zero code copy. BaiLongma license unknown → visual/conceptual reference only, no code copy.
+> License boundaries（2026-06-11 实测，见 §1）：ClawPanel 双仓库歧义 → `qingchencloud/clawpanel`（AGPL-3.0，2830★）与 `zhaoxinyi02/ClawPanel`（CC BY-NC-SA 4.0，852★，**非商用，法律风险更高，仅观察**）。BaiLongma 候选 `xiaoyuanda666-ship-it/BaiLongma`（MIT，338★，**身份待确认**）；另有 `taosdata/Bailongma`（TDengine，AGPL-3.0）为同名无关项目。**两类引用均按 pattern 参考，零代码复制**。
 > Approval: User approved spec direction 2026-06-05 (Mac Intelligence Console). 8 remaining open questions locked at spec defaults same day. Slice 0 (Contract Audit) unblocked, requires its own user approval to start.
+> Audit sync: 2026-06-11 第三方审计已比对 spec 与 HEAD 实现，主要差异（字体 / collapsed 宽度 / vibrancy 表述 / Reference Stack license）已就地修订。详见 `docs/design/audit/Hermes-Pro-UI-Audit-And-Redesign-2026-06-11.md`。
+> Slice 0 状态：已完成（见 `docs/design/UI-SLICE-0-CONTRACT-AUDIT-2026-06-05.md`）。后续 implementation slice 仍需用户逐项批准。
 
 ## 0. One-Line Direction
 
@@ -13,23 +15,26 @@ Hermes Pro should feel like a native macOS intelligence console: quiet, precise,
 
 The product should not feel like a generic SaaS dashboard. It should feel like a local Apple-quality control surface for chat, knowledge, agents, runs, and safety state.
 
-## 1. Reference Stack
+## 1. Reference Stack（license 实测 2026-06-11）
 
-| Reference | What To Borrow | What Not To Borrow |
-|---|---|---|
-| Apple macOS / HIG | low chrome, sidebar discipline, inspector pattern, restrained motion, system typography, vibrancy, split view, source list | marketing hero layouts, oversized decorative cards |
-| BaiLongma | futuristic chat energy, cockpit status language, mission-progress framing, real-time thought stream display concept | dense wall-of-panels as default, voice runtime, social distribution runtime |
-| ClawPanel | multi-engine agent console, AI assistant + memory + tools + service status architecture | AGPL code, direct visual clone, busy admin-panel feel |
-| Hermes Kanban | durable task states, profile lanes, blocked/retry/run-history model | enabling dispatcher/runtime actions from UI by default |
-| Obsidian | filesystem-first knowledge, wikilinks, graph/board mental model | turning Hermes Pro into a note editor clone |
-| darwin-ui | glass-morphism component shapes, Badge variant model, Sidebar skeleton | glass as default for every card (use only for sidebar/inspector) |
-| openclaw-nerve | session list as secondary nav, inline usage display, column-per-status kanban layout | voice runtime, subagent spawning UI |
-| turbovault | frontmatter schema for knowledge cards, health check concept, typed link graph | Rust/MCP runtime integration |
-| claude-obsidian | source taxonomy, provenance tagging, knowledge card shape | Obsidian dependency, Claude Code file hooks |
-| awesome-design-md | DESIGN.md format for token spec (post-approval) | individual site visual tokens |
+| Reference | Pinned repo / source | License（2026-06-11 实测） | What To Borrow | What Not To Borrow |
+|---|---|---|---|---|
+| Apple macOS / HIG | developer.apple.com/design/human-interface-guidelines | 设计指南（自由遵循） | low chrome, sidebar discipline, inspector pattern, restrained motion, system typography（via `-apple-system`）, split view, source list | marketing hero layouts, oversized decorative cards；**禁止打包 SF Pro / SF Mono .otf 字体文件**（Apple 许可仅限 Apple 平台 system font 方式使用，CSS 引用合法） |
+| BaiLongma | `xiaoyuanda666-ship-it/BaiLongma`（338★，**身份待确认**） | MIT（实读 LICENSE）；**另有 `taosdata/Bailongma`（TDengine，AGPL-3.0）为同名无关项目，注意不要混淆** | futuristic chat energy, cockpit status language, mission-progress framing, real-time thought stream display concept | dense wall-of-panels as default, voice runtime, social distribution runtime；Productionization NOT APPROVED，理由：身份未本地确认 + 未做代码质量/安全审计 + L6 冻结 |
+| ClawPanel (1) | `qingchencloud/clawpanel`（2830★，Tauri v2 桌面面板） | **AGPL-3.0** | multi-engine agent console, AI assistant + memory + tools + service status architecture | **AGPL code（传染至 Hermes Pro 闭源盈利产品）**, direct visual clone, busy admin-panel feel |
+| ClawPanel (2) | `zhaoxinyi02/ClawPanel`（852★，Go 单二进制面板） | **CC BY-NC-SA 4.0（非商用条款，法律风险更高；CC 协议不适于代码——无专利授权）** | 仅观察信息架构 | 任何接近复制的演绎；NonCommercial 条款与盈利北极星直接冲突 |
+| Hermes Kanban (外部) | `GumbyEnder/hermes-kanban`（251★） | **无 LICENSE → 默认版权保留，零复制授权** | 观察任务状态语言 | 任何代码复用 |
+| Hermes Kanban (内部 dispatcher) | `~/hermes-pro` 内部组件 | 内部 | durable task states, profile lanes, blocked/retry/run-history model | enabling dispatcher/runtime actions from UI by default |
+| Obsidian | obsidian.md（闭源商业） | 专有 | vault 心智 / 命令面板交互 / graph 视图（交互概念不受版权保护） | 任何代码 / 转为笔记编辑器 |
+| darwin-ui | `surajmandalcell/darwin-ui`（51★，"MacOS'esk react component library"） | MIT（实读） | glass-morphism 形态, Badge variant 模型, Sidebar skeleton | glass 作为每张卡的默认（仅用于 sidebar/inspector）；代码质量未审，按 pattern 参考 |
+| openclaw-nerve | `daggerhashimoto/openclaw-nerve`（834★） | MIT（实读） | session list as secondary nav, inline usage display, column-per-status kanban layout | voice runtime, subagent spawning UI |
+| turbovault | `Epistates/turbovault`（131★，Obsidian vault MCP SDK） | MIT（实读） | frontmatter schema, health check concept, typed link graph | Rust/MCP runtime integration |
+| claude-obsidian | `AgriciDaniel/claude-obsidian`（6535★） | MIT（实读） | source taxonomy, provenance tagging, knowledge card shape | Obsidian dependency, Claude Code file hooks |
+| awesome-design-md | `VoltAgent/awesome-design-md`（89k★） | MIT（实读） | DESIGN.md format for token spec（post-approval） | individual site visual tokens |
 
+幻觉判定（2026-06-11）：10/10 引用真实存在，未发现 AI 幻觉。
 Design principle: borrow product ideas and layout patterns, not source code.
-License policy: AGPL projects (ClawPanel) → patterns only, zero code copy.
+License policy: AGPL（ClawPanel 1）与 CC BY-NC-SA（ClawPanel 2）项目 → patterns only, zero code copy；MIT 项目法律允许复制（保留版权声明），但仍建议按 pattern 参考以减少审计负担。
 
 
 
@@ -73,19 +78,19 @@ Everything else should hang off these three modes instead of competing as equal 
 
 Adopted HIG patterns:
 
-- **Sidebar (source list)** — 220-260px expanded, 56px icon rail collapsed. Disclosure triangles for groups. Selection uses `controlAccentColor` (system indigo). Group separators between buckets.
+- **Sidebar (source list)** — 220-260px expanded, **64px icon rail collapsed**（实现值，2026-06 决议；spec 原 56px 已同步，理由：64px 在 HIG 触达目标 44pt + 周围边距上更稳定；见 audit 2026-06-11 P2-6）。Disclosure triangles for groups. Selection uses `controlAccentColor` (system indigo). Group separators between buckets.
 - **Inspector pane** — Right-side, contextual, collapsible. Width 240-280px. Never replaces the main content area. Toggle: `⌥⌘I`.
 - **Toolbar / titlebar** — Unified. Traffic lights + title + contextual actions. No large hero chrome.
 - **Split view** — Three independent panes (navigator | content | inspector), each resizable.
-- **Vibrancy** — Translucent surfaces for sidebar + inspector: `backdrop-filter: blur(20px) saturate(180%)` layered over content background. macOS Tahoe 26 (2025) "liquid glass" trend reinforces translucency.
-- **Typography** — System SF Pro Text 13px body, SF Pro Display for 15-16px app chrome, SF Mono for code/IDs/numbers. Letter spacing: 0 for body; `-0.3px` for medium labels.
+- **Vibrancy（措辞修订 2026-06-11）** — 当前实现为 **CSS `backdrop-filter: blur(20px) saturate(180%)` 模拟磨砂，非 macOS 原生窗口合成材质**。CSS blur 只能模糊 app 内部内容，无法透出桌面 / 其他窗口——真 vibrancy 的核心特征缺失。仅 sidebar + inspector 使用，内容区不使用。原生材质评估留给未来 `UI-MACOS-NATIVE-001`（单独审批）。
+- **Typography（目标态，UI-MACOS-001a 已执行）** — System SF Pro Text 13px body, SF Pro Display for 15-16px app chrome, SF Mono for code/IDs/numbers. Letter spacing: 0 for body; `-0.3px` for medium labels.**2026-06-11 UI-MACOS-001a 已将 `--font-sans` 重写为 system-first**：`-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, "Google Sans", sans-serif`。Google Sans 保留在 fallback 尾部；@font-face 块与 .ttf 字体文件未删除。body 通过 `var(--font-sans)` 间接接入，已生效。P1-3 关闭。
 - **Motion** — 150-200ms ease-in-out for transitions. Sidebar collapse: width + opacity. Inspector open: translate + opacity. No spring unless simulating physical objects. No decorative gradient animation.
 - **Color** — Semantic role names: `label`, `secondaryLabel`, `tertiaryLabel`, `quaternaryLabel`. Layered graphite (`#1e1e1e` to `#2d2d2d`) instead of flat black. System indigo accent. `systemBlue`, `systemRed`, `systemGreen`, `systemOrange` for status.
 - **Keyboard-first** — Every action has a shortcut. `⌘1`–`⌘9` for nav. `⌘N` for new chat. `⌘\` for sidebar collapse. `⌥⌘I` for inspector.
 - **Window behavior** — Multi-window native feel. Cmd+W to close. Cmd+M to minimize. Traffic lights integrated.
 
 What Hermes Pro adopts from this:
-1. Sidebar collapse to 56px icon rail (`⌘\`).
+1. Sidebar collapse to 64px icon rail (`⌘\`)（实现值，2026-06 决议）。
 2. Inspector pane width 260px slide-in.
 3. `backdrop-filter` vibrancy on sidebar + inspector.
 4. SF Pro system font stack; SF Mono for token counts, IDs, model names.
@@ -122,7 +127,7 @@ Default desktop shape:
 
 The sidebar must be hideable. It should have two states:
 
-- Collapsed: 56 px icon rail.
+- Collapsed: **64 px icon rail**（实现值，2026-06 决议）。
 - Expanded: 220-240 px grouped navigation.
 
 Navigation groups:
@@ -190,12 +195,20 @@ Dark palette should move away from flat `#212121` admin gray into a more refined
 
 Avoid purple-blue gradient dominance, beige, brown/orange, and one-note blue.
 
-### Typography
+### Typography（现状 vs 目标态，2026-06-11 修订）
 
-Use system-first typography:
+**现状（2026-06-11，UI-MACOS-001a 已执行）**：
 
-- UI: `-apple-system`, `BlinkMacSystemFont`, `SF Pro Text`, fallback sans.
-- Numeric / code / IDs: `SF Mono`, `ui-monospace`, fallback mono.
+- `body { font-family: var(--font-sans); }` 不变；`--font-sans` 已重写为 `-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, "Google Sans", sans-serif`。
+- `--hp-font-ui` token 已是 system-first，但 body 未引用它（保持 var(--font-sans) 语义链）。
+- 整个 app 的"macOS 原生感"在字体最底层已生效。Google Sans 保留在 fallback 尾部；@font-face 块与 .ttf 字体文件未删除，待后续 slice 处理。
+- 字体授权：Google Sans 非开放授权字体，在盈利产品中 bundle 存在风险——`UNVERIFIED`，字体文件来源待本地核实后决定是否移除。
+
+**目标态（UI-MACOS-001a 已执行，当前落地值）：**
+
+- UI: `-apple-system`, `BlinkMacSystemFont`, `SF Pro Text`, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif。
+- Numeric / code / IDs: `SF Mono`, `ui-monospace`, "JetBrains Mono", Menlo, monospace。
+- 中文字体显式入栈以保证 Windows / 兜底环境不掉到衬线。
 
 Type scale:
 
@@ -241,7 +254,7 @@ Additive to existing `main.css` tokens. Existing tokens (--bg-primary, --accent,
 | `--hp-bg-surface` | `#2c2c2e` | `#ffffff` | panels, cards |
 | `--hp-bg-surface-2` | `#3a3a3c` | `#f2f2f7` | hover, selected |
 | `--hp-bg-elevated` | `#48484a` | `#ffffff` | popovers, modals |
-| `--hp-bg-vibrancy` | `rgba(28,28,30,0.72)` | `rgba(251,251,253,0.72)` | sidebar / inspector backdrop |
+| `--hp-bg-vibrancy`（命名待 alias） | `rgba(28,28,30,0.72)` | `rgba(251,251,253,0.72)` | sidebar / inspector backdrop；**实为 CSS `backdrop-filter` 模拟磨砂，非原生 vibrancy**。建议在 `UI-MACOS-001a` / `UI-MACOS-001b` 内引入 alias `--hp-bg-translucent`，旧名保留一个版本周期。 |
 | `--hp-label` | `#ffffff` | `#000000` | primary text |
 | `--hp-label-secondary` | `rgba(235,235,245,0.6)` | `rgba(60,60,67,0.6)` | secondary text |
 | `--hp-label-tertiary` | `rgba(235,235,245,0.3)` | `rgba(60,60,67,0.3)` | metadata |
@@ -251,7 +264,7 @@ Additive to existing `main.css` tokens. Existing tokens (--bg-primary, --accent,
 | `--hp-warning` | `#ff9f0a` | `#ff9500` | candidate, stale candidate |
 | `--hp-danger` | `#ff453a` | `#ff3b30` | stale, redacted, error |
 | `--hp-divider` | `rgba(84,84,88,0.65)` | `rgba(60,60,67,0.29)` | separator lines |
-| `--hp-blur-vibrancy` | `blur(20px) saturate(180%)` | `blur(20px) saturate(180%)` | backdrop-filter |
+| `--hp-blur-vibrancy`（命名待 alias） | `blur(20px) saturate(180%)` | `blur(20px) saturate(180%)` | backdrop-filter；建议 alias 为 `--hp-blur-frosted`，理由同上。 |
 | `--hp-radius-sm` | `6px` | `6px` | chips, list rows |
 | `--hp-radius-md` | `8px` | `8px` | panels, controls (default) |
 | `--hp-radius-lg` | `10px` | `10px` | composer, inspector containers |
@@ -667,7 +680,7 @@ In one line: this spec is **read-only + design-only** — no runtime writes, no 
 2. UI ground truth (`docs/design/UI-GROUND-TRUTH-2026-06-04.md`) is still current (no unaddressed V1-V7 change).
 3. All §14 guardrails (G-01..G-15) are re-checked at every slice kickoff.
 4. Section numbering is sequential 0-15; all cross-references resolve.
-5. License boundary (ClawPanel AGPL, BaiLongma unknown) is restated at top of file.
+5. License boundary（2026-06-11 实测同步：ClawPanel 双仓库 AGPL-3.0 / CC BY-NC-SA 4.0；BaiLongma 候选实测 MIT，身份待确认；详见 §1）is restated at top of file.
 
 ### 11.2 Per-slice gates (applies to any implementation slice)
 
@@ -712,7 +725,7 @@ Derived from the 2026-06-04 reference research run. Each requirement traces to a
 | R-12 | TrustBadge color vocabulary: verified=green, authoritative=indigo, candidate=orange, unverified=label, stale=red | darwin-ui Badge 13-variant model |
 | R-13 | No voice runtime in composer; mic icon as inert placeholder with tooltip | hard boundary (no voice runtime) |
 | R-14 | Voice entry, file drop, persistent indicator: all INERT placeholders only | hard boundary (UI scope) |
-| R-15 | No code copy from ClawPanel (AGPL-3.0); design pattern reference only | ClawPanel license AGPL-3.0 |
+| R-15 | No code copy from ClawPanel（任何仓库）；design pattern reference only | `qingchencloud/clawpanel` AGPL-3.0 + `zhaoxinyi02/ClawPanel` CC BY-NC-SA 4.0（2026-06-11 实测，详见 §1） |
 | R-16 | No new IPC write handles in Knowledge Control board; all board interactions are read-only via existing IPC | ground truth §3; UI implementation gate |
 | R-17 | Keyboard shortcuts on every primary action (sidebar `⌘\`, inspector `⌥⌘I`, focus composer `⌘/`) | Apple HIG keyboard-first |
 | R-18 | Mission Control unifies BaiLongma + HCC + monitor facts into single read-only cockpit | ClawPanel multi-engine overview |
@@ -732,7 +745,7 @@ This spec does NOT approve:
 | G-05 | Round 2 C | frozen |
 | G-06 | L6 live knowledge flush | not enabled |
 | G-07 | direct runtime writes from UI | not approved |
-| G-08 | AGPL code copy from ClawPanel | license risk (AGPL-3.0) |
+| G-08 | AGPL / NC code copy from any ClawPanel repo | license risk: `qingchencloud/clawpanel` AGPL-3.0 + `zhaoxinyi02/ClawPanel` CC BY-NC-SA 4.0（NonCommercial 与盈利北极星冲突）；详见 §1 |
 | G-09 | UI-TARS / browser-use / automation controls | out of scope for v1 redesign |
 | G-10 | Live `knowledgeIngest` / `knowledgeSearch` write side | ground truth §3 explicit; UI must not enable |
 | G-11 | Hermes Kanban dispatcher trigger from UI | not approved; UI is read-only |

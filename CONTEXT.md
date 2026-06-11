@@ -55,7 +55,7 @@ Hermes Pro 当前不是单纯知识库，也不是单纯代码执行器，而是
 
 以 `NEXT_STEP.md` 为准：
 
-当前阶段：**P3 dry-run baseline 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换均已通过（2026-06-02）；P3.5 soft switch 观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）；Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成（2026-06-04，6 commits，全量基线 81 files / 2931 tests PASS）；UI Design Spec 方向已获用户批准（2026-06-05），但 UI 实现仍未开始，Slice 0 Contract Audit 仍需另批；HCC Auto Executor 仍不可用、未启动；P3 真实执行仍暂停；hard cutover 仍未批准；L6 live knowledge flush 未批准。**
+当前阶段：**P3 dry-run baseline 001-006 + 008 + 009 + P3 harness 8 artifact + P3.5 upgrade candidate 软切换均已通过（2026-06-02）；P3.5 soft switch 观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）；Knowledge Reuse Chain Slice 004-006.9 / 007A-007N / 008A-008M 已完成（2026-06-04，6 commits，全量基线 81 files / 2931 tests PASS）；UI Design Spec 方向已获用户批准（2026-06-05）、Slice 0 Contract Audit 已完成、Slice 1 tokens + screen boundary contract + Slice 2 App Shell + 21 路由表 + Mission（bailongma/hccCockpit legacy alias）+ KnowledgeControl 只读屏 + Knowledge IPC 迁移 + 7 个 UI 边界测试均已落地（详见 `docs/design/UI-GROUND-TRUTH-2026-06-04.md` §0，2026-06-11 同步），后续 Slice 3-7 仍未开始且需用户逐 slice 批准；HCC Auto Executor 仍不可用、未启动；P3 真实执行仍暂停；hard cutover 仍未批准；L6 实时知识注入仍未启用；Productionization NOT APPROVED。**
 
 已完成：
 
@@ -103,6 +103,30 @@ P3 真实执行仍未恢复：HCC Auto Executor 未批准、未启动、未接�
 1. P3 代码/项目任务由 Claude Code 按 dry-run 契约执行（已完成 6 切片 + harness 8 artifact）。
 2. Hermes 暂时只负责需求整理、计划审查、知识检索、Handoff Pack、执行结果归档。
 3. 后续给执行 Agent 的提示词默认面向 Claude Code，直到 HCC Auto Executor 可用并经用户明确授权。
+
+---
+
+## 待批 UI Slice 清单（2026-06-11 同步，待用户逐项批准）
+
+来源：`docs/design/audit/Hermes-Pro-UI-Audit-And-Redesign-2026-06-11.md` H 节。
+Preflight 文档：`docs/design/preflight/` 目录内 11 份独立审批文件。
+状态：**全部未开始**。`UI-DOC-SYNC-001`（文档级）已于本次会话完成。
+
+| Slice | Preflight 文件 | 范围 | 依赖 |
+|---|---|---|---|
+| UI-MACOS-001a | `docs/design/preflight/UI-MACOS-001a-font-switch.md` | ✅ **已完成**（2026-06-11）：`--font-sans` system-first，Google Sans fallback tail，P1-3 修复 | 无（已执行） |
+| UI-CN-001a | `docs/design/preflight/UI-CN-001a-badge-localization.md` | ✅ **已完成**（2026-06-11）：StatusBadge 组件 + bilingual label + `--hp-state-*` tokens | UI-MACOS-001a ✅ 满足 |
+| UI-CN-001b | `docs/design/preflight/UI-CN-001b-per-screen-sentences.md` | ✅ **已完成**（2026-06-11）：3 屏 bilingual disclaimer + ConfirmDialog + 4 scenarios | UI-CN-001a ✅ 满足 |
+| UI-MACOS-001b | `docs/design/preflight/UI-MACOS-001b-mission-restructure.md` | ✅ **已完成**（2026-06-11）：3-section layout | UI-CN-001a |
+| UI-CHAT-001a | `docs/design/preflight/UI-CHAT-001a-command-palette.md` | ✅ **已完成**（2026-06-11）：command palette overlay | UI-CN-001a ✅ 满足 |
+| UI-CHAT-001b | `docs/design/preflight/UI-CHAT-001b-approval-bar.md` | 审批栏强化 + 中文正则探测 | UI-CN-001a ✅ 满足 |
+| UI-CHAT-001c | `docs/design/preflight/UI-CHAT-001c-inspector-tabs.md` | Inspector 三 tab 化（上下文/引用/边界）+ Chat 引用面板迁入 | UI-CHAT-001a ✅ / 001b ⏳ |
+| UI-KNOWLEDGE-001 | `docs/design/preflight/UI-KNOWLEDGE-001-redaction-cards.md` | secret 脱敏遮蔽 + 卡片四要素 + 列中文标签 | UI-CN-001a |
+| UI-ARCHIVE-001 | `docs/design/preflight/UI-ARCHIVE-001-dead-code.md` | BaiLongma.tsx / HccCockpit.tsx 归档至 _archive/ | 无（可独立执行） |
+| UI-SHELL-CONTRACT-001 | `docs/design/preflight/UI-SHELL-CONTRACT-001.md` | contract 新增 shell pseudo-view 条目；VIEW_COUNT 21→22 | 无（可独立执行） |
+| UI-SAFETY-001 | `docs/design/preflight/UI-SAFETY-001-test-hardness.md` | ✅ **已完成**（2026-06-11）：`enforcement` 字段 21 view + import-graph 硬化 + installUpdate confirm 核实 | UI-SHELL-CONTRACT-001（shell entry 未创建，enforcement 字段已添加） |
+
+禁项重申（audit §J）：原生窗口合成材质、全局命令调度器、消息历史逆转 UI、Knowledge 写入/拖拽/实时注入 UI、结构化审批消息协议、焦点栈实时驱动版、浅色模式深度打磨——以上均不在任何 preflight 范围内。
 4. **P3.5 soft switch 观察期已结束、由用户裁决 KEEP v0.15.1（2026-06-04，ADR-20260604-p3-5-soft-switch-decision-keep-v0-15-1）；默认 `hermes` 入口保持指向 candidate v0.15.1；保持期内仍仅做 read-only 使用，避免 `serve` / `run` / `agent` / `delegate` / `update` / `config set|edit` 等危险子命令；如需回滚，使用 `ln -sf /Users/midoudou/.hermes/hermes-agent/venv/bin/hermes /Users/midoudou/.local/bin/hermes`（备份保留在 `~/.hermes/backups/hermes-live-wrapper-pre-soft-switch-20260602/`）**。
 5. Round 2 C 仍冻结（14 dead-infrastructure + 4 high-risk 待用户显式批 + Action Gate 部署）。
 6. hard cutover 仍未批准。

@@ -6,6 +6,8 @@
 > Output: this document. Run report at `~/.hermes/pipeline-runs/HCC-20260605-UI-SLICE-0-CONTRACT-AUDIT/01-report.md`.
 > Ground truth: `docs/design/UI-GROUND-TRUTH-2026-06-04.md` (no factual drift detected — see §6).
 > Spec: `docs/design/HERMES-PRO-UI-DESIGN-SPEC-2026-06-04.md`.
+>
+> **状态注记（2026-06-11 同步，audit P1-1）**：Slice 0 完成后，Knowledge IPC 迁移已落地（`knowledgeSearch` / `knowledgeIngest` / `getGbrainStats` 三通道通过 main-process IPC bridge，preload raw gateway 访问已移除）。本审计原文第 2 节 IPC 表中"`knowledgeSearch` / `knowledgeIngest` / `getGbrainStats` direct POST/GET to gateway :8643"行已过期，实际见 `tests/knowledge-ipc-closeout-audit.test.ts` 与 `tests/knowledge-ipc-preload-readonly-bridge.test.ts`（以及 `src/shared/lib/screen-boundary-contract.ts` 中 knowledgeControl / knowledge view 的 `migrated_ipc_methods` 字段）。原条目保留供历史参考，事实以测试为准。同步源 `docs/design/audit/Hermes-Pro-UI-Audit-And-Redesign-2026-06-11.md`。
 
 ---
 
@@ -179,7 +181,7 @@ Per spec §14 (G-01..G-15) applied to current IPC surface.
 | Area | Allowed in Slice 1 (additive shell only) | Requires extra approval (Slice 2+) | Forbidden |
 |---|---|---|---|
 | Visual tokens (--hp-*) | YES — additive only, no existing token rename | rename existing token | override of `--bg-primary` / `--accent` / etc. |
-| Sidebar shell | YES — collapse 56px ↔ 220-240px via `⌘\` | grouping by Work/Knowledge/Agents/System (Slice 2) | removing an existing route from nav |
+| Sidebar shell | YES — collapse **64px**（实现值，见 ground truth §6.collapsed 决议 2026-06）↔ 220-240px via `⌘\` | grouping by Work/Knowledge/Agents/System (Slice 2) | removing an existing route from nav |
 | Inspector pane | YES — empty container, no per-screen wiring | per-screen wiring (Slice 3+ adds Chat/Mission/Knowledge inspectors) | wiring that calls any new IPC |
 | Chat view | visual surface only | voice entry MUST be inert placeholder; no actual mic capture | any `runPlaybook` / `triggerCronJob` button in Chat |
 | Knowledge Control view | visual surface only | wired to read-only `knowledgeSearch` / `readVaultFile` / `listVaultFiles` only | wired to `knowledgeIngest` write side; wired to any new write IPC |
@@ -197,7 +199,7 @@ Per spec §14 (G-01..G-15) applied to current IPC surface.
 | `~/.hermes/handoff/packs` writes | n/a | n/a | any write to this path from design work |
 | `~/.hermes/audit` writes | n/a | n/a | any write to this path from design work |
 | Locked roadmap | n/a | n/a | any edit to `docs/roadmap-locked-2026-05-28.md` |
-| ClawPanel / BaiLongma code copy | n/a | n/a | copying any code from these projects (AGPL / unknown) |
+| ClawPanel / BaiLongma code copy | n/a | n/a | copying any code from these projects（license 实测 2026-06-11：ClawPanel 双仓库 AGPL-3.0 / CC BY-NC-SA 4.0；BaiLongma 候选 `xiaoyuanda666-ship-it/BaiLongma` 实测 MIT，身份待确认。详见 `docs/design/HERMES-PRO-UI-DESIGN-SPEC-2026-06-04.md` §1） |
 | New IPC handles | n/a | n/a | adding any new `ipcRenderer.invoke` channel |
 | `package.json` | n/a | n/a | any change to dependencies or scripts |
 
@@ -224,7 +226,7 @@ Per spec §14 (G-01..G-15) applied to current IPC surface.
 No P0 issues. No screen calls an unapproved external action. No unapproved IPC is exposed in main shell. Locked roadmap untouched.
 
 ### P1 — none
-No P1 issues. All 8 open questions are locked at spec defaults (commit `e171213`). Spec is approved (commit `411954b` + `e171213`). License boundaries stated (ClawPanel AGPL, BaiLongma unknown).
+No P1 issues. All 8 open questions are locked at spec defaults (commit `e171213`). Spec is approved (commit `411954b` + `e171213`). License boundaries stated（2026-06-11 实测同步：ClawPanel 双仓库 AGPL-3.0 / CC BY-NC-SA 4.0；BaiLongma 候选实测 MIT，身份待确认；详见 spec §1）。
 
 ### P2 — informational
 

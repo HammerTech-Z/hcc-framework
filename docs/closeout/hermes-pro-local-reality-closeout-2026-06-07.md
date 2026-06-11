@@ -392,3 +392,48 @@ The local `.claude/projects/-Users-midoudou/memory/hermes-pro-model-strategy.md`
 - All "NOT-GO" claims mirror the same constraints enforced by 132 / 3754 PASS tests + 8 forever-false flags × 30 fixtures / verdicts / decisions.
 
 > **勘误指针 (2026-06-10)**：本文若涉及"物理锁启用 / watchdog / violations.log / electron/ 路径 / 锁已生效"等历史描述，与 P0-1 实测状态不一致；以 `docs/plan/_errata-2026-06-10.md` §H-8 为准，本文不改。
+
+---
+
+## UI-DOC-SYNC-001 Closeout Addendum (2026-06-11)
+
+### HEAD baseline discrepancy
+
+第三方审计报告 (`docs/design/audit/Hermes-Pro-UI-Audit-And-Redesign-2026-06-11.md`) 引用 snapshot `3f01b31`。实际会话执行时 HEAD 变化：
+
+```text
+3f01b31 docs(soul): record user approval for v5.5.1 subset       ← audit snapshot
+836fea4 feat(gate): add A-2 HumanApprovalRef adapter
+e9cee80 docs(closeout): add A-3 errata pointers                  ← 首轮执行 HEAD
+14d1a3c test(dry-run): add A-4 dry-run010 controlled fixture
+bbad4b9 merge(test): A-4 dry-run010 fixture into main           ← 当前复核 HEAD
+```
+
+- `836fea4` / `e9cee80` / `14d1a3c` / `bbad4b9` 均为本任务开始前既有 commit，非本任务产生。
+- 本任务会话**未执行任何 git commit / push / rebase / amend / reset**。
+- 7 个 working-tree modified 文件均为本任务文档级改动（见 §changed-files），全部 unstaged。
+- `docs/design/audit/` 目录为本任务新建，3 个 audit 文件从 `~/Desktop` / `~/Downloads` `mv` 导入。
+
+### Changed files (this session, all unstaged, no commit)
+
+| File | Nature | Audit ref |
+|------|--------|-----------|
+| `.wolf/anatomy.md` | 新增 design/ 及 audit/ 条目描述 | — |
+| `.wolf/memory.md` | 追加 session 步骤记录 | — |
+| `.wolf/cerebrum.md` | Key Learnings + Do-Not-Repeat (bug-003) | — |
+| `.wolf/buglog.json` | 追加 bug-003 | P1-2 同源 |
+| `CONTEXT.md:58` | "UI 实现仍未开始" → 落地态 | P1-1 |
+| `NEXT_STEP.md:13` | "redesign 仍未实现" → 部分落地 | P1-1 |
+| `docs/design/UI-GROUND-TRUTH-2026-06-04.md` | §0 / §2 / §6.collapsed / §6.shell-level 重写 | P1-1 / P2-5 / P2-6 |
+| `docs/design/HERMES-PRO-UI-DESIGN-SPEC-2026-06-04.md` | §1 Reference Stack / §3.1 sidebar+typography+vibrancy / §5 Typography / §5.1 tokens / §11.1 §13 §14 license sync | P1-3 / P2-1 / P2-2 / P2-6 / P2-7 |
+| `docs/design/UI-SLICE-0-CONTRACT-AUDIT-2026-06-05.md` | header 状态注记 + §3 license/56px + §5 license | P1-1 / P2-1 / P2-6 |
+| `src/shared/lib/screen-boundary-contract.ts` | 文件头 shell-level surface registry 注释块（DOCUMENTATION ONLY） | P2-5 |
+
+### Verification (this session)
+
+- `npm run typecheck` PASS (node + web)
+- 9 UI-boundary test files / 111 cases ALL GREEN
+- `git diff -- tests/` empty — zero test assertions touched
+- `~/.hermes/{config.yaml, handoff/packs, audit}` mtime 全程 2026-05-31
+- `docs/roadmap-locked-2026-05-28.md` untouched
+- No renderer src (except contract comment), no IPC, no runtime activation, no package.json change

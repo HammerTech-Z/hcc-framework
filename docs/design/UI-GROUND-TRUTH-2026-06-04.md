@@ -1,24 +1,31 @@
-# Hermes Pro — UI Ground Truth（2026-06-04 / synced 2026-06-05）
+# Hermes Pro — UI Ground Truth（2026-06-04 / synced 2026-06-11）
 
-> 状态：UI redesign **未开始实现**；UI Design Spec 方向已获用户批准（2026-06-05），8 个 open questions 已锁定默认值；本文为事实汇总，**不是** UI 实现任务派发单。
+> 状态：UI redesign **部分落地**（详见 §0）。Design Spec 方向已获用户批准（2026-06-05），8 个 open questions 已锁定默认值。本文为事实汇总，**不是** UI 实现任务派发单。
+> 同步源：`docs/design/audit/Hermes-Pro-UI-Audit-And-Redesign-2026-06-11.md`（第一部分事实审计）。下一步 slice 入口：`UI-DOC-SYNC-001`（本文档当前承担其文档侧改动）。
 > 最高约束：`~/.hermes/HERMES-SOUL.md` v5.3；锁定路线图 `docs/roadmap-locked-2026-05-28.md`。
 > 关联入口：`CONTEXT.md` / `NEXT_STEP.md` / `docs/current-fusion-plan-2026-05-30.md` / `docs/p3-dry-run-baseline-2026-06-01.md` / `docs/iteration-plan-v2-updated.md`。
 > 关联脚本：`scripts/build-summary.mjs`（用于 Claude Web 审核的 summary 生成器）。
 
 ---
 
-## 0. 当前 UI 阶段
+## 0. 当前 UI 阶段（2026-06-11）
 
-| 维度 | 状态 |
-|------|------|
-| UI redesign 实现 | ❌ **未开始** |
-| UI Design Spec 方向 | ✅ 已获用户批准（2026-06-05，Mac Intelligence Console） |
-| 8 个 open questions | ✅ 已按 spec defaults 锁定 |
-| Slice 0 Contract Audit | ⏳ unblocked, 但仍需用户单独批准 |
-| 可做：只读 Contract Audit / DESIGN.md 落地准备 / 组件 token 草案 | ✅ 可开始（需按 slice 批准） |
-| 不可做：组件库替换 / 路由重构 / 主题切换 / renderer 实装 | ❌ 需先完成 Slice 0 + 用户显式批 |
+| 维度 | 状态 | 证据 |
+|------|------|------|
+| Slice 0 Contract Audit | ✅ 完成 | `docs/design/UI-SLICE-0-CONTRACT-AUDIT-2026-06-05.md` |
+| Slice 1 tokens（`--hp-*` additive 层） | ✅ 已落地 | `src/renderer/src/assets/main.css` |
+| Slice 1 screen boundary contract | ✅ 已落地 | `src/shared/lib/screen-boundary-contract.ts`（21 view） |
+| Slice 2 App Shell + 21 路由表 | ✅ 已落地 | `Layout/Layout.tsx`（shell）+ `Layout/layout-routes.tsx`（LAYOUT_ROUTES，21 条） |
+| Mission 组件 + bailongma/hccCockpit legacy alias | ✅ 已落地 | `screens/Mission/Mission.tsx`；route 通过 `legacySource="bailongma"\|"hcc"` 复用 |
+| KnowledgeControl 只读屏 | ✅ 已落地 | `screens/KnowledgeControl/KnowledgeControl.tsx`（read_only） |
+| Knowledge IPC 迁移（knowledgeSearch / knowledgeIngest / getGbrainStats） | ✅ 完成 | `tests/knowledge-ipc-closeout-audit.test.ts` 等 11 个测试 |
+| 7 个 UI 边界测试 | ✅ 全绿 | `screen-boundary-contract` / `layout-route-table` / `knowledge-control-readonly` / `mission-control-readonly` / `knowledge-ipc-closeout-audit` 等 |
+| UI Design Spec 方向 | ✅ 已获用户批准（2026-06-05） | `docs/design/HERMES-PRO-UI-DESIGN-SPEC-2026-06-04.md` |
+| 8 个 open questions | ✅ 已按 spec defaults 锁定 | spec §15 |
+| Productionization | ❌ **NOT APPROVED**（冻结不变） | §4 / spec §14 G-03 |
+| Slice 3 Chat / Slice 4 Mission 重排 / Slice 5 Knowledge board / Slice 6 Settings / Slice 7 Polish | ⏳ 未开始，**需用户逐 slice 批准** | 见 audit 2026-06-11 H 节 |
 
-进入 UI 实现前必须先完成 Slice 0 Contract Audit，并由用户显式批准后续 implementation slice。
+下一个文档侧 slice：`UI-DOC-SYNC-001`（本次同步即承担其改动）。下一组待批 slice：`UI-MACOS-001a`（字体）/ `UI-CN-001`（中文化）/ `UI-MACOS-001b`（Mission 重排）/ `UI-CHAT-001` / `UI-ARCHIVE-001` / `UI-SAFETY-001` / `UI-KNOWLEDGE-001`。
 
 ---
 
@@ -36,10 +43,12 @@
 
 | 模块 | 现状 | 备注 |
 |------|------|------|
-| BaiLongma Cockpit | `src/renderer/src/screens/BaiLongma/BaiLongma.tsx` | read-only 升级，Final Polish 已 PASS；无新 IPC、无 HCC/CLI/Safari MCP 外部动作；`tests/bailongma-status-sync.test.ts` 10/10 |
-| Knowledge Screen | `src/renderer/src/screens/Knowledge/Knowledge.tsx` | 检索屏，固定查询 0 超时；过时计划目录已硬排除 |
-| 主导航 / 左侧栏 | 已有，但暴露面待确认 | UI redesign 第一阶段先 enumerate |
-| Knowledge Control 管控页 | ❌ 缺失 | 必须新建；不允许塞进 Knowledge 检索屏 |
+| BaiLongma Cockpit | `src/renderer/src/screens/BaiLongma/BaiLongma.tsx`（历史 cockpit 组件，仍在仓库；route `bailongma` 已 alias 到 Mission） | read-only 升级，Final Polish 已 PASS；无新 IPC、无 HCC/CLI/Safari MCP 外部动作；`tests/bailongma-status-sync.test.ts` 10/10。引用核查留待 `UI-ARCHIVE-001` |
+| Knowledge Screen | `src/renderer/src/screens/Knowledge/Knowledge.tsx` | 检索屏，固定查询 0 超时；过时计划目录已硬排除；ingest 写入路径**仅** 此屏保留（spec G-10） |
+| 主导航 / 左侧栏 | ✅ 已分组 4 组（Work 6 / Knowledge 5 / Agents 4 / System 6）+ collapsed 64px（实现值，见 §6.collapsed 决议） | `Layout/Layout.tsx` + `layout-routes.tsx`；分组计数 4/6/5/4/6 受 cerebrum 锁定 |
+| Mission（原 BaiLongma cockpit 语言落点） | ✅ 已落地为独立组件 | `screens/Mission/Mission.tsx`；`bailongma` / `hccCockpit` route 均通过 `legacySource` prop alias 到此组件 |
+| HccCockpit | `src/renderer/src/screens/HccCockpit/HccCockpit.tsx`（历史 POC 组件，仍在仓库；route `hccCockpit` 已 alias 到 Mission） | read-only POC（ADR-20260530）；ModelStrategyDryRunPanel 嵌入此组件且零 IPC。引用核查留待 `UI-ARCHIVE-001` |
+| Knowledge Control 管控页 | ✅ 已落地（只读） | `screens/KnowledgeControl/KnowledgeControl.tsx`；boundary `read_only` + risk `P2`；Knowledge IPC 三通道已迁至 main-process IPC bridge |
 | V1-V7 完成度矩阵 | 见 §5 | |
 
 ---
@@ -96,6 +105,21 @@
 7. 任何新外部动作（CLI-Anything / Safari MCP / HCC / handoff 写入）必须经 Action Gate，不允许在 UI 层直接调用。
 
 > 现阶段不允许做的事：替换 component library / 改路由 / 改主题色 / 直接操作 `~/.hermes/handoff` 或 `~/.hermes/audit`。
+
+---
+
+## 6.collapsed sidebar 宽度决议（2026-06-11）
+
+Spec §3.1 描述 collapsed = 56px（Apple HIG 默认），`main.css` 实现值 = 64px。**采用 64px**（实现态），理由：64px 在 macOS HIG 触达目标（44pt）+ 周围 10pt 边距上更稳。spec 已同步更新（见 audit 2026-06-11 P2-6）。
+
+## 6.shell-level API 登记（audit P2-5）
+
+`Layout.tsx` 含 4 个 shell-level 存量 API（非 21-view 合约面）：`downloadUpdate` / `installUpdate` / `abortChat` / `getSessionMessages`。
+
+- 分类：update 流（2）= external-action；`abortChat` = chat-runtime；`getSessionMessages` = read-only。
+- `tests/layout-route-table.test.ts` 当前断言"Layout.tsx contains no new fetch/ipcRenderer"——存量被默许，新增禁止。
+- `installUpdate` 是否已有原生确认弹层：`UNVERIFIED`，留待 `UI-SAFETY-001` 核查。
+- `screen-boundary-contract.ts` 已加注释明确登记（见 `src/shared/lib/screen-boundary-contract.ts` 文件头 shell-level surface registry 块），未改运行逻辑。
 
 ---
 
