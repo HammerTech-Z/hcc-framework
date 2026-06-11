@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import {
   buildKnowledgeControlItem,
   deriveLifecycle,
   deriveStaleState,
 } from "../src/renderer/src/screens/KnowledgeControl/knowledge-control-model";
+import { getTransitiveImports, FORBIDDEN_RE } from "./_helpers/import-graph";
 
 const ROOT = join(__dirname, "..");
 const knowledgeControlSrc = readFileSync(
@@ -141,5 +142,33 @@ describe("Knowledge Control read-only boundary", () => {
   it("does not hide forbidden terms in the model layer", () => {
     expect(modelSrc).not.toContain("knowledgeIngest");
     expect(modelSrc).not.toContain("fetch(");
+  });
+
+  describe("UI-SAFETY-001 import-graph hardened boundary", () => {
+    const kcEntry = resolve(
+      ROOT,
+      "src/renderer/src/screens/KnowledgeControl/KnowledgeControl.tsx",
+    );
+
+    it("transitive imports of KnowledgeControl contain no forbidden API calls", () => {
+      const modules = getTransitiveImports(kcEntry);
+
+      expect(modules.size).toBeGreaterThan(0);
+
+      for (const mod of modules) {
+        if (mod.endsWith(".d.ts")) continue;
+        if (mod === kcEntry) continue; // already covered by string-based assertions
+
+        const src = readFileSync(mod, "utf-8");
+        if (FORBIDDEN_RE.test(src)) {
+          const match = src.match(FORBIDDEN_RE);
+          throw new Error(
+            `Import-graph violation in ${mod}: ` +
+              `contains forbidden API call \`${match?.[0]?.trim()}\`. ` +
+              `This module is transitively imported by KnowledgeControl.tsx.`,
+          );
+        }
+      }
+    });
   });
 });

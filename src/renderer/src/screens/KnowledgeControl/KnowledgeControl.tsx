@@ -121,6 +121,11 @@ export default function KnowledgeControl(): React.JSX.Element {
 
   return (
     <div className="knowledge-control-container">
+      <div className="hp-readonly-disclaimer">
+        本页仅展示状态，不会自动执行任何操作。<br />
+        Status display only · No automatic execution
+      </div>
+
       <div className="knowledge-control-hero">
         <div>
           <div className="knowledge-control-eyebrow">Local Knowledge OS</div>

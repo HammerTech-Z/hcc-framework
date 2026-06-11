@@ -33,6 +33,7 @@ import {
 } from "../../assets/icons";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
+import { StatusBadge } from "../../components/StatusBadge/StatusBadge";
 
 type View =
   | "chat"
@@ -338,9 +339,11 @@ function Layout(): React.JSX.Element {
               data-direct-gateway-risk={
                 boundaryBadge.direct_gateway_risk ? "true" : "false"
               }
-              title={boundaryBadgeTitle}
             >
-              {boundaryBadge.label}
+              <StatusBadge
+                kind={boundaryContract?.boundary_kind ?? "read_only"}
+                tooltip={boundaryBadgeTitle}
+              />
             </span>
             <span className="shell-status-badge">KEEP v0.15.1</span>
             <span className="shell-status-badge">profile: {activeProfile}</span>

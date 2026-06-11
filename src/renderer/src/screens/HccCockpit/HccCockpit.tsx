@@ -269,6 +269,11 @@ function HccCockpit(): React.JSX.Element {
 
   return (
     <div className="hcc-cockpit-container">
+      <div className="hp-readonly-disclaimer">
+        本页仅展示状态，不会自动执行任何操作。<br />
+        Status display only · No automatic execution
+      </div>
+
       <div className="hcc-cockpit-readonly-badge">
         HCC 自动执行驾驶舱 · Read-only POC · No new IPC · No writes · No model/tool execution
       </div>
