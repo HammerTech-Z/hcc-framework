@@ -37,8 +37,44 @@ const KIND_LABEL: Readonly<Record<ScreenBoundaryKind, string>> = {
   mixed: "mixed",
 };
 
+// Bilingual badge labels — UI-CN-001a (2026-06-11).
+// Primary text uses 中文 · English format; tooltip preserves full English
+// anchor strings for test stability.
+const KIND_LABEL_CN: Readonly<
+  Record<ScreenBoundaryKind, { primary: string; tooltip: string }>
+> = {
+  read_only: {
+    primary: "只读 · Read-only",
+    tooltip:
+      "风险分级 P3 · 无写入接口 · 无新增 IPC · Read-only · No writes · Productionization NOT APPROVED",
+  },
+  mixed: {
+    primary: "读写混合 · Mixed",
+    tooltip: "含发送/中止/配置写入 · 风险分级 P1",
+  },
+  read_write_runtime: {
+    primary: "可执行 · Runtime",
+    tooltip: "本页可触发运行时动作，操作前将要求确认",
+  },
+  read_write_config: {
+    primary: "配置写入 · Config",
+    tooltip: "修改将影响凭据/模型默认值",
+  },
+  external_action: {
+    primary: "外部动作 · External",
+    tooltip: "本页可触发外部进程/网络调用",
+  },
+};
+
 export function getBoundaryBadgeLabel(kind: ScreenBoundaryKind): string {
   return KIND_LABEL[kind];
+}
+
+export function getBoundaryKindLabel(kind: ScreenBoundaryKind): {
+  primary: string;
+  tooltip: string;
+} {
+  return KIND_LABEL_CN[kind];
 }
 
 export function buildBoundaryBadgeDescriptor(
@@ -58,8 +94,10 @@ export function buildBoundaryBadgeDescriptor(
       class_modifier: "shell-status-badge--unknown--P3",
     };
   }
-  const kindLabel = KIND_LABEL[contract.boundary_kind];
-  const label = `${kindLabel} · ${contract.risk_level}`;
+  // UI-CN-001a: use bilingual label as primary text. English anchors
+  // preserved in `buildBoundaryBadgeTitle` → `title` attribute.
+  const cnLabel = getBoundaryKindLabel(contract.boundary_kind);
+  const label = cnLabel.primary;
   const directGatewayRisk =
     contract.risk_level === "P0" && contract.direct_gateway_methods.length > 0;
   const class_modifier = `shell-status-badge--${contract.boundary_kind}--${contract.risk_level}`;
@@ -79,9 +117,16 @@ export function buildBoundaryBadgeDescriptor(
 export function buildBoundaryBadgeTitle(
   descriptor: BoundaryBadgeDescriptor,
 ): string {
+  // UI-CN-001a: prepend the bilingual tooltip (English anchor strings)
+  // so they survive in the title attribute even when visible text is
+  // bilingual.
+  const cnAnchor = KIND_LABEL_CN[descriptor.kind_token as ScreenBoundaryKind]
+    ?.tooltip;
+  const prefix = cnAnchor ? `${cnAnchor}\n` : "";
+
   if (!descriptor.direct_gateway_risk) {
     const lines: string[] = [
-      `view=${descriptor.view}`,
+      `${prefix}view=${descriptor.view}`,
       `kind=${descriptor.kind_token}`,
       `risk=${descriptor.risk_level}`,
       `writes=${descriptor.write_surface_count}`,

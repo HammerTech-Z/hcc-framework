@@ -86,7 +86,7 @@ describe("UI Slice 3 boundary badge shape", () => {
 });
 
 describe("UI Slice 3 boundary badge per-view classification", () => {
-  it("hccCockpit / bailongma / mission / monitor show read-only · P3", () => {
+  it("hccCockpit / bailongma / mission / monitor show read-only bilingual label", () => {
     for (const view of [
       "hccCockpit",
       "bailongma",
@@ -96,32 +96,33 @@ describe("UI Slice 3 boundary badge per-view classification", () => {
       const descriptor = descriptorFor(view);
       expect(descriptor.kind_token).toBe("read_only");
       expect(descriptor.risk_level).toBe("P3");
-      expect(descriptor.label).toBe("read-only · P3");
+      // UI-CN-001a: label is now bilingual (中文 · English).
+      expect(descriptor.label).toBe("只读 · Read-only");
       expect(descriptor.write_surface_count).toBe(0);
       expect(descriptor.direct_gateway_risk).toBe(false);
     }
   });
 
-  it("providers shows config-write · P1", () => {
+  it("providers shows bilingual config-write label", () => {
     const descriptor = descriptorFor("providers");
     expect(descriptor.kind_token).toBe("read_write_config");
     expect(descriptor.risk_level).toBe("P1");
-    expect(descriptor.label).toBe("config-write · P1");
+    expect(descriptor.label).toBe("配置写入 · Config");
     expect(descriptor.write_surface_count).toBeGreaterThan(0);
   });
 
-  it("chat shows mixed · P1", () => {
+  it("chat shows bilingual mixed label", () => {
     const descriptor = descriptorFor("chat");
     expect(descriptor.kind_token).toBe("mixed");
     expect(descriptor.risk_level).toBe("P1");
-    expect(descriptor.label).toBe("mixed · P1");
+    expect(descriptor.label).toBe("读写混合 · Mixed");
   });
 
-  it("knowledge shows mixed · P2 and no direct_gateway risk after IPC migration closeout", () => {
+  it("knowledge shows bilingual mixed label and no direct_gateway risk after IPC migration closeout", () => {
     const descriptor = descriptorFor("knowledge");
     expect(descriptor.kind_token).toBe("mixed");
     expect(descriptor.risk_level).not.toBe("P0");
-    expect(descriptor.label).toBe("mixed · P2");
+    expect(descriptor.label).toBe("读写混合 · Mixed");
     expect(descriptor.direct_gateway_risk).toBe(false);
     expect(descriptor.risk_methods).toEqual([]);
     expect(descriptor.migrated_ipc_methods).toEqual(
