@@ -13,7 +13,6 @@ import {
   Code,
   ChartLine,
   Bell,
-  Slash,
   Zap,
   Mic,
   PanelRight,
@@ -25,109 +24,171 @@ import {
   X,
 } from "lucide-react";
 
-// ── Slash Commands ──────────────────────────────────────
+// ── Slash Commands (UI-CHAT-001a command palette, 2026-06-11) ──
+
+type SlashCategory = "session" | "approval" | "tools" | "system";
+
+const CATEGORY_LABELS: Record<SlashCategory, string> = {
+  session: "会话 · Session",
+  approval: "审批 · Approval",
+  tools: "工具 · Tools",
+  system: "系统 · System",
+};
 
 interface SlashCommand {
   name: string;
   description: string;
-  category: "chat" | "agent" | "tools" | "info";
-  /** If true, the command is handled locally instead of sent to the backend */
+  /** Chinese description for the bilingual command palette. */
+  descriptionCn: string;
+  category: SlashCategory;
+  /** If true, handled locally instead of sent to the backend. */
   local?: boolean;
 }
 
 const SLASH_COMMANDS: SlashCommand[] = [
-  // Chat control
+  // ── Session ──
   {
     name: "/new",
     description: "Start a new chat",
-    category: "chat",
+    descriptionCn: "开始新对话",
+    category: "session",
     local: true,
   },
   {
     name: "/clear",
     description: "Clear conversation history",
-    category: "chat",
+    descriptionCn: "清除对话历史",
+    category: "session",
     local: true,
-  },
-  // Agent commands (sent to backend)
-  {
-    name: "/btw",
-    description: "Ask a side question without affecting context",
-    category: "agent",
-  },
-  {
-    name: "/approve",
-    description: "Approve a pending action",
-    category: "agent",
-  },
-  { name: "/deny", description: "Deny a pending action", category: "agent" },
-  {
-    name: "/status",
-    description: "Show current agent status",
-    category: "agent",
-  },
-  {
-    name: "/reset",
-    description: "Reset conversation context",
-    category: "agent",
   },
   {
     name: "/compact",
     description: "Compact and summarize the conversation",
-    category: "agent",
-  },
-  { name: "/undo", description: "Undo the last action", category: "agent" },
-  {
-    name: "/retry",
-    description: "Retry the last failed action",
-    category: "agent",
-  },
-  {
-    name: "/fast",
-    description: "Toggle priority processing (lower latency)",
-    category: "agent",
-    local: true,
+    descriptionCn: "压缩并摘要当前对话",
+    category: "session",
   },
   {
     name: "/compress",
     description: "Compress conversation with optional focus topic",
-    category: "agent",
+    descriptionCn: "按主题压缩对话上下文",
+    category: "session",
   },
+
+  // ── Approval ──
+  {
+    name: "/approve",
+    description: "Approve a pending action",
+    descriptionCn: "批准待审批操作",
+    category: "approval",
+  },
+  {
+    name: "/deny",
+    description: "Deny a pending action",
+    descriptionCn: "拒绝待审批操作",
+    category: "approval",
+  },
+
+  // ── Tools ──
+  {
+    name: "/btw",
+    description: "Ask a side question without affecting context",
+    descriptionCn: "不影响上下文的旁路提问",
+    category: "tools",
+  },
+  {
+    name: "/fast",
+    description: "Toggle priority processing (lower latency)",
+    descriptionCn: "切换优先处理模式",
+    category: "tools",
+    local: true,
+  },
+  {
+    name: "/web",
+    description: "Search the web",
+    descriptionCn: "搜索网页",
+    category: "tools",
+  },
+  {
+    name: "/image",
+    description: "Generate an image",
+    descriptionCn: "生成图片",
+    category: "tools",
+  },
+  {
+    name: "/browse",
+    description: "Browse a URL",
+    descriptionCn: "浏览指定网址",
+    category: "tools",
+  },
+  {
+    name: "/code",
+    description: "Write or execute code",
+    descriptionCn: "编写或执行代码",
+    category: "tools",
+  },
+  {
+    name: "/file",
+    description: "Read or write files",
+    descriptionCn: "读写文件",
+    category: "tools",
+  },
+  {
+    name: "/shell",
+    description: "Run a shell command",
+    descriptionCn: "执行 Shell 命令",
+    category: "tools",
+  },
+
+  // ── System ──
+  {
+    name: "/status",
+    description: "Show current agent status",
+    descriptionCn: "显示当前代理状态",
+    category: "system",
+  },
+  {
+    name: "/reset",
+    description: "Reset conversation context",
+    descriptionCn: "重置对话上下文",
+    category: "system",
+  },
+  { name: "/undo", description: "Undo the last action", descriptionCn: "撤销上一步", category: "system" },
+  { name: "/retry", description: "Retry the last failed action", descriptionCn: "重试上次失败", category: "system" },
   {
     name: "/usage",
     description: "Show token usage, cost, and rate limits",
-    category: "agent",
+    descriptionCn: "显示 Token / 费用 / 速率",
+    category: "system",
     local: true,
   },
   {
     name: "/debug",
     description: "Show diagnostics and debug info",
-    category: "agent",
+    descriptionCn: "显示诊断信息",
+    category: "system",
   },
-  // Tools & capabilities
-  { name: "/web", description: "Search the web", category: "tools" },
-  { name: "/image", description: "Generate an image", category: "tools" },
-  { name: "/browse", description: "Browse a URL", category: "tools" },
-  { name: "/code", description: "Write or execute code", category: "tools" },
-  { name: "/file", description: "Read or write files", category: "tools" },
-  { name: "/shell", description: "Run a shell command", category: "tools" },
-  // Info
-  {
-    name: "/help",
-    description: "Show available commands and help",
-    category: "info",
-  },
-  { name: "/tools", description: "List available tools", category: "info" },
-  { name: "/skills", description: "List installed skills", category: "info" },
+  { name: "/help", description: "Show available commands and help", descriptionCn: "列出可用命令", category: "system" },
+  { name: "/tools", description: "List available tools", descriptionCn: "列出可用工具", category: "system" },
+  { name: "/skills", description: "List installed skills", descriptionCn: "列出已安装技能", category: "system" },
   {
     name: "/model",
     description: "Show or switch the current model",
-    category: "info",
+    descriptionCn: "显示或切换当前模型",
+    category: "system",
   },
-  { name: "/memory", description: "Show agent memory", category: "info" },
-  { name: "/persona", description: "Show current persona", category: "info" },
-  { name: "/version", description: "Show Hermes version", category: "info" },
+  { name: "/memory", description: "Show agent memory", descriptionCn: "显示代理记忆", category: "system" },
+  { name: "/persona", description: "Show current persona", descriptionCn: "显示当前 Persona", category: "system" },
+  { name: "/version", description: "Show Hermes version", descriptionCn: "显示当前版本号", category: "system" },
 ];
+// Commands that execute immediately from the palette (no args needed).
+// All other commands insert their name + space into the input for editing.
+const IMMEDIATE_COMMANDS = new Set([
+  // local commands
+  "/new", "/clear", "/fast", "/usage",
+  // system display commands handled by executeLocalCommand
+  "/help", "/tools", "/skills", "/model", "/memory", "/persona", "/version",
+]);
+
 
 function HermesAvatar({ size = 30 }: { size?: number }): React.JSX.Element {
   return (
@@ -266,9 +327,15 @@ function Chat({
   const filteredSlashCommands = useMemo(
     () =>
       slashMenuOpen
-        ? SLASH_COMMANDS.filter((cmd) =>
-            cmd.name.toLowerCase().startsWith(slashFilter.toLowerCase()),
-          )
+        ? SLASH_COMMANDS.filter((cmd) => {
+            const query = slashFilter.slice(1).toLowerCase(); // strip "/"
+            if (!query) return true;
+            return (
+              cmd.name.toLowerCase().includes(query) ||
+              cmd.description.toLowerCase().includes(query) ||
+              cmd.descriptionCn.includes(query)
+            );
+          })
         : [],
     [slashMenuOpen, slashFilter],
   );
@@ -512,7 +579,7 @@ function Chat({
     if (text.startsWith("/")) {
       const cmd = text.split(/\s+/)[0].toLowerCase();
       const isLocal = SLASH_COMMANDS.some(
-        (c) => c.name === cmd && (c.local || c.category === "info"),
+        (c) => c.name === cmd && c.local,
       );
       if (isLocal) {
         if (cmd !== "/new" && cmd !== "/clear") {
@@ -614,11 +681,11 @@ function Chat({
       target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
     });
 
-    // Slash command detection: open menu when input starts with /
-    if (value.startsWith("/") && !value.includes(" ")) {
-      const query = value.split(" ")[0];
+    // Slash command detection: open palette when input starts with /
+    // UI-CHAT-001a: keep open on space so users can filter by description text.
+    if (value.startsWith("/")) {
       setSlashMenuOpen(true);
-      setSlashFilter(query);
+      setSlashFilter(value);
       setSlashSelectedIndex(0);
     } else if (slashMenuOpen) {
       setSlashMenuOpen(false);
@@ -767,18 +834,13 @@ function Chat({
         for (const c of SLASH_COMMANDS) {
           (grouped[c.category] ||= []).push(c);
         }
-        const categoryLabels: Record<string, string> = {
-          chat: t("chat.categoryChat"),
-          agent: t("chat.categoryAgent"),
-          tools: t("chat.categoryTools"),
-          info: t("chat.categoryInfo"),
-        };
         let md = `**${t("chat.availableCommands")}**\n`;
-        for (const cat of ["chat", "agent", "tools", "info"]) {
-          if (!grouped[cat]) continue;
-          md += `\n**${categoryLabels[cat]}**\n`;
-          for (const c of grouped[cat]) {
-            md += `\`${c.name}\` — ${c.description}\n`;
+        for (const cat of ["session", "approval", "tools", "system"] as SlashCategory[]) {
+          const group = grouped[cat];
+          if (!group || group.length === 0) continue;
+          md += `\n**${CATEGORY_LABELS[cat]}**\n`;
+          for (const c of group) {
+            md += `\`${c.name}\` — ${c.descriptionCn || c.description}\n`;
           }
         }
         pushLocalResponse(md);
@@ -796,7 +858,7 @@ function Chat({
     if (inputRef.current) inputRef.current.style.height = "auto";
 
     // Commands that need no arguments — execute immediately
-    if (cmd.local || ["info"].includes(cmd.category)) {
+    if (cmd.local || IMMEDIATE_COMMANDS.has(cmd.name)) {
       // Show as user message for non-UI commands
       if (cmd.name !== "/new" && cmd.name !== "/clear") {
         setMessages((prev) => [
@@ -1122,32 +1184,6 @@ function Chat({
       </div>
 
       <div className="chat-input-area">
-        {slashMenuOpen && filteredSlashCommands.length > 0 && (
-          <div className="slash-menu" ref={slashMenuRef}>
-            <div className="slash-menu-header">
-              <Slash size={12} />
-              Command Palette
-            </div>
-            <div className="slash-menu-list">
-              {filteredSlashCommands.map((cmd, i) => (
-                <button
-                  key={cmd.name}
-                  className={`slash-menu-item ${i === slashSelectedIndex ? "slash-menu-item-active" : ""}`}
-                  onMouseEnter={() => setSlashSelectedIndex(i)}
-                  onClick={() => handleSlashSelect(cmd)}
-                >
-                  <span className="slash-menu-item-name">{cmd.name}</span>
-                  <span className="slash-menu-item-desc">
-                    {cmd.description}
-                  </span>
-                  <span className="slash-menu-item-meta">
-                    {cmd.local || cmd.category === "info" ? "local" : cmd.category}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
         <div className="chat-composer-shell">
           <div className="chat-composer-meta">
             <span>Chat Home</span>
@@ -1259,6 +1295,34 @@ function Chat({
             )}
           </div>
         </div>
+
+      {/* UI-CHAT-001a Command Palette Overlay */}
+      {slashMenuOpen && filteredSlashCommands.length > 0 && (
+        <div className="hp-command-palette-overlay" onClick={() => setSlashMenuOpen(false)}>
+          <div className="hp-command-palette-box" ref={slashMenuRef} onClick={(e) => e.stopPropagation()}>
+            <div className="hp-command-palette-header">
+              命令面板 · Command Palette
+            </div>
+            <div className="hp-command-palette-list">
+              {filteredSlashCommands.map((cmd, i) => (
+                <button
+                  key={cmd.name}
+                  className={"hp-command-palette-item" + (i === slashSelectedIndex ? " hp-command-palette-item--active" : "")}
+                  onMouseEnter={() => setSlashSelectedIndex(i)}
+                  onClick={() => handleSlashSelect(cmd)}
+                >
+                  <div className="hp-command-palette-item-main">
+                    <span className="hp-command-palette-item-name">{cmd.name}</span>
+                    <span className="hp-command-palette-item-cat">{CATEGORY_LABELS[cmd.category]}</span>
+                  </div>
+                  <span className="hp-command-palette-item-desc">{cmd.descriptionCn} — {cmd.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
     </div>
   );
