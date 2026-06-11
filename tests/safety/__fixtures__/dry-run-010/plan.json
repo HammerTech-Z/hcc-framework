@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0.0",
+  "completed_baseline": [
+    {
+      "id": "baseline-001",
+      "summary": "P3 dry-run 001-006 + 008 + 009 PASS; harness 8 artifact PASS; HCC Auto Executor remains unstarted.",
+      "evidence_refs": [
+        "src/main/hcc-task-runner.ts",
+        "src/main/hcc-handoff-pack.ts",
+        "src/main/hcc-artifact-store.ts",
+        "tests/safety/hcc-p3-exchange-contract.test.ts"
+      ],
+      "verified": true,
+      "append_only": true
+    },
+    {
+      "id": "baseline-002",
+      "summary": "A-1 GOV-006 handoff/progress/danger policy contract committed (e7db08b). A-2 HumanApprovalRef adapter committed (836fea4). A-3 errata committed (e9cee80).",
+      "evidence_refs": [
+        "src/shared/lib/safety/hcc-task-handoff-policy.ts",
+        "src/main/safety/human-approval-gate.ts",
+        "docs/plan/_errata-2026-06-10.md"
+      ],
+      "verified": true,
+      "append_only": true
+    }
+  ],
+  "in_progress": {
+    "task_id": "DRY-RUN-010",
+    "objective": "Validate A-1 HCCTaskHandoffPlan + HCCProgressRecord + danger matrix as the first consumer; A-2 confirmHumanApproval adapter as the human-approval gate; tmpDir-only artifact persistence.",
+    "owner": "claude_code",
+    "status": "in_progress",
+    "evidence_ref": "tests/safety/hcc-dry-run-010-fixture.test.ts"
+  },
+  "next_step": {
+    "task_id": "DRY-RUN-010-fixture-construct",
+    "objective": "Construct HCCTaskHandoffPlan + 3 HCCProgressRecord fixtures; run plan/progress validation; call A-2 adapter for one human anchor match + one AI self-approval rejection; persist artifact record to tmpDir only; emit closeout report.",
+    "input_conditions": [
+      "main HEAD includes e9cee80 (A-3 errata)",
+      "A-1 handoff-policy committed",
+      "A-2 human-approval-gate committed",
+      "physical lock PASS=46 FAIL=0",
+      "~/.hermes/ mtime unchanged since P0-2 injection"
+    ],
+    "success_criteria": [
+      "npx vitest run tests/safety/hcc-dry-run-010-fixture.test.ts passes",
+      "npm run typecheck (node+web) exit=0",
+      "fixture files exist under tests/safety/__fixtures__/dry-run-010/",
+      "no fixture writes to ~/.hermes/**",
+      "no spawn / exec / runPlaybook symbols in fixture test",
+      "no AI self-approval path bypasses A-2 actor gate"
+    ],
+    "requires_user_authorization": false
+  }
+}

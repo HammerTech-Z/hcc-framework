@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "payload_kind": "dry_run_handoff",
+  "task_id": "DRY-RUN-010",
+  "from_owner": "claude_code",
+  "to_owner": "claude_code",
+  "executable": false,
+  "runtime_class": "dry_run",
+  "dry_run": true,
+  "created_at": "2026-06-11T17:00:00.000Z",
+  "steps": [
+    {
+      "step_id": "step-1-load-plan",
+      "action": "read",
+      "target": "tests/safety/__fixtures__/dry-run-010/plan.json",
+      "verification_command": "node --input-type=module -e \"import('./tests/safety/__fixtures__/dry-run-010/plan.json', { with: { type: 'json' } }).then(p => console.log('plan ok', p.schema_version))\"",
+      "verification_signal": "plan ok 1.0.0"
+    },
+    {
+      "step_id": "step-2-validate-progress",
+      "action": "write",
+      "target": "tests/safety/__fixtures__/dry-run-010/progress-round-1.json",
+      "verification_command": "bash ~/hermes-pro-work/scripts/lock-verify.sh | grep -c PASS",
+      "verification_signal": ">= 1"
+    },
+    {
+      "step_id": "step-3-persist-artifact",
+      "action": "write",
+      "target": "<tmpDir>/dry-run-010-artifact.json",
+      "verification_command": "ls -1 <tmpDir>/dry-run-010-artifact.json | wc -l",
+      "verification_signal": "1"
+    }
+  ],
+  "forbidden_actions": [
+    "spawn",
+    "exec",
+    "runPlaybook",
+    "ipcMain.handle",
+    "BrowserWindow.create"
+  ],
+  "evidence_refs": [
+    "tests/safety/__fixtures__/dry-run-010/plan.json",
+    "tests/safety/__fixtures__/dry-run-010/progress-round-1.json",
+    "tests/safety/__fixtures__/dry-run-010/artifact.json"
+  ]
+}
