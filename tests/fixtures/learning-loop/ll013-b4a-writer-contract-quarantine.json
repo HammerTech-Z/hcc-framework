@@ -1,0 +1,46 @@
+{
+  "fixture_id": "ll013-b4a-writer-contract-quarantine",
+  "schema_version": "1.0.0",
+  "task_id": "HERMES-B4A-001",
+  "proposed_state": "remain_quarantined",
+  "human_approval_ref": {
+    "verified": false,
+    "note": "B-4A preflight — contract-only, writer_allowed=false"
+  },
+  "evidence_refs": [
+    "src/shared/lib/post-task-reflection-writer-contract.ts",
+    "tests/post-task-reflection-writer-contract.test.ts",
+    "docs/plan/b4a-live-reflection-writer-preflight-2026-06-12.md"
+  ],
+  "trust_level": "single_run",
+  "writer_status": "contract_only",
+  "writer_allowed": false,
+  "live_flush_allowed": false,
+  "knowledge_ingest_allowed": false,
+  "knowledge_search_allowed": false,
+  "audit_write_allowed": false,
+  "persistence_allowed": false,
+  "next_task_context_write_allowed": false,
+  "live_ranking_mutation_allowed": false,
+  "config_write_allowed": false,
+  "dry_run_only": true,
+  "single_writer_required": true,
+  "writer_owner": "hermes_main",
+  "b3_evaluator_required": true,
+  "quarantine_default": true,
+  "boundary": {
+    "no_src_main_modification": true,
+    "no_renderer_modification": true,
+    "no_preload_modification": true,
+    "no_package_modification": true,
+    "no_hermes_writes": true,
+    "no_knowledgeIngest_call": true,
+    "no_runtime_started": true,
+    "no_auto_executor_started": true,
+    "no_locked_roadmap_change": true,
+    "no_push": true,
+    "no_live_flush_declaration": true
+  },
+  "next_slice": "B-4B (Writer implementation in src/main/, single writer + uniqueness test) — separate approval",
+  "created_at": "2026-06-12T00:00:00Z"
+}
