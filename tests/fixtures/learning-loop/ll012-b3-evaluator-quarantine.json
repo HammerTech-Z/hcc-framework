@@ -1,0 +1,28 @@
+{
+  "reflection_task_id": "HERMES-B3-001",
+  "created_at": "2026-06-11T21:30:00.000Z",
+  "artifact_ref": "tests/fixtures/learning-loop/ll012-b3-evaluator-quarantine.json",
+  "proposed_state": "remain_quarantined",
+  "human_approval_ref": {
+    "ref": "anchor://user/2026-06-11/b3-evaluator-runner",
+    "content_hash": "sha256-placeholder--user-signs-after-review",
+    "approved_at": null,
+    "verified": false
+  },
+  "source_kind": "evaluator_runner",
+  "evidence_refs": [
+    "src/shared/lib/post-task-reflection-evaluator-runner.ts",
+    "tests/post-task-reflection-evaluator-runner.test.ts",
+    "docs/closeout/b3-evaluator-closeout-2026-06-11.md"
+  ],
+  "notes": [
+    "B-3 Reflection Evaluator Runner (read-only)",
+    "Wraps evaluatePostTaskReflection + NoRuntime guard",
+    "8/8 tests pass; baseline 36/36 maintained",
+    "All *_allowed flags remain literally false",
+    "isReflectionEvaluatorPromotionEligible = hard-wired false",
+    "No fs/ipc/electron/child_process/spawn/exec/.hermes"
+  ],
+  "trust_level": "single_run",
+  "decision_note": "REVIEW: user acceptance required before graduating from quarantine."
+}
