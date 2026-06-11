@@ -56,7 +56,7 @@ bash ~/hermes-pro-work/scripts/lock-verify.sh
 ## 4. 给 Hermes Agent / Claude Code 的硬约束
 
 1. **不得**直接写 `~/hermes-pro/src/**`、`~/hermes-pro/package.json`。
-2. **不得**执行 `chflags nouchg` 或 `chmod` 解锁（无 watchdog 检测，但仍违反灵魂 §9 范围闸）。
+2. **不得**执行 `chflags nouchg` 或 `chmod` 解锁（无 watchdog 检测，但仍违反本 LOCK.md 范围约束与灵魂 §3/§6/§10/§12）。
 3. **不得**调用 `lock-enforce.sh --apply` 或 `--unlock`（脚本要求 TTY + 输入确认，本约束禁止触发该意图；非 TTY 环境下脚本自身会拒绝并 exit=2）。
 4. 所有代码改动走 `~/hermes-pro-work` 仓，sync 由用户手动执行。
 5. **不得**创建或写入 `~/.hermes/**`（家目录下的 hermes 配置目录，即红线区；与 `~/hermes-pro/` 仓库根不同）。
