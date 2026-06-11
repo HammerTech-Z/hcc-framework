@@ -34,6 +34,20 @@
 - L6 live knowledge flush：未批准。
 - Locked roadmap（`docs/roadmap-locked-2026-05-28.md`）：不可直接改；任何路线图变更需新 ADR + 用户确认。
 
+## HCC Phase B 车道一状态（2026-06-12 同步）
+
+> HCC-GO 已签收（2026-06-11）。Phase B 车道一以"每任务人工发车模式"运行。
+> 来源：`docs/governance/hcc-go-authorization-2026-06-11.md`（HCC-STATUS-SYNC-001 已同步）。
+
+| 任务 | 状态 | 证据 |
+|------|------|------|
+| B-1 注册表空壳 | ✅ 已被 A-6 消耗 | `capability-registry.ts` |
+| B-2 scan gate + H-6 | ✅ 已完成 | `b2-scan-gate-closeout-2026-06-11.md` |
+| B-3 Evaluator Runner | ✅ 已完成 | `b3-evaluator-closeout-2026-06-11.md` |
+| B-4 Writer → Flush | 🔶 下一步 | 拆为 B-4A/B-4B/B-4C；B-4C 另批 |
+
+**禁项重申**：Auto Executor 常驻未授权。Live Flush 未启用。车道二未开放。
+
 ## 开工顺序
 
 1. 先读 `/Users/midoudou/.hermes/HERMES-SOUL.md`。

@@ -205,6 +205,15 @@ Phase B  HCC 执行期（HCC-GO 后，HCC 承载调度/执行/双审，批准权
 
 **Phase B 排序逻辑**：车道一内 B-1/B-2 可并行喂 HCC（互不依赖的小任务，正好起量计数）；B-3→B-4 串行且每步你单独批——这条串行链就是"知识库做好"的主干：Evaluator 活化 → Writer 唯一 → Flush 上线 = 知识闭环从 dry-run 变真。车道二不占当前注意力。
 
+> **Phase B 执行状态注记（2026-06-12 HCC-STATUS-SYNC-001）**：
+> - B-1：✅ 已被 A-6 消耗（`capability-registry.ts`）。
+> - B-2：✅ 已完成（`docs/closeout/b2-scan-gate-closeout-2026-06-11.md`）。
+> - B-3：✅ 已完成（`docs/closeout/b3-evaluator-closeout-2026-06-11.md`）。
+> - B-4：🔶 下一步。拆为 B-4A（preflight/contract）、B-4B（Writer 实现）、B-4C（Live Flush 另批）。
+> - B-5/B-6：⬜ 车道二，HCC-STABLE 达成前不开放。
+> - Auto Executor 常驻：仍未授权。Live Flush：未启用。
+> 本注记仅追加执行状态，不修改计划正文。
+
 ---
 
 ## 附录一：B1 九闸 ↔ P 项映射

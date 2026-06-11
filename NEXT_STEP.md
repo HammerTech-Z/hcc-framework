@@ -37,6 +37,31 @@
 | Manual QA | ✅ PASS（2026-05-29）|
 | Productionization | ❌ NOT APPROVED（用户选择3d：暂不批准，只读增强方向）|
 
+### HCC Phase B 车道一进度（2026-06-12 状态同步）
+
+> HCC-GO 已于 2026-06-11 签收。Phase B 车道一以"每任务人工发车模式"运行。
+> Auto Executor 常驻仍未授权、未启动。车道二（B-5/B-6）仍未开放。
+
+| 任务 | 状态 | closeout / 注记 |
+|------|------|----------------|
+| B-1 能力/领域注册表空壳 | ✅ 已被 A-6 消耗 | `src/shared/lib/registry/capability-registry.ts` |
+| B-2 真实输入路径 scan gate + H-6 | ✅ 已完成 | `docs/closeout/b2-scan-gate-closeout-2026-06-11.md` |
+| B-3 Reflection Evaluator Runner | ✅ 已完成 | `docs/closeout/b3-evaluator-closeout-2026-06-11.md` |
+| B-4 Live Reflection Writer → Live Flush | 🔶 下一步 | 拆为 B-4A preflight / B-4B 实现 / B-4C Live Flush 另批 |
+| B-5 UI Slice 8 KnowledgeControl 视觉 | ⬜ 车道二（HCC-STABLE 后） | |
+| B-6 Mano-P 放弃 ADR + license 审计 | ⬜ 车道二（HCC-STABLE 后） | |
+
+**B-4 拆分**（见 `docs/governance/hcc-go-authorization-2026-06-11.md` §4.4）：
+- B-4A：Live Reflection Writer preflight / contract（纯文档，零代码）
+- B-4B：Writer 实现（唯一 writer + 唯一性测试）
+- B-4C：Live Flush（copy-deck 红线文案，**另批**）
+
+**禁项重申**：
+- Auto Executor 常驻 ≠ HCC-GO，不得启动
+- Live Flush 不得声明已启用
+- Phase B 车道二不得开放
+- `~/.hermes/**` 不得自动写入
+
 ---
 
 ## 下一步优先级

@@ -2,18 +2,18 @@
 
 > Phase A 收口文档。不启动 runtime，不启动 Auto Executor，不改代码。
 > 基座：`a3f6dd6`（A-6 merge to main）
-> 批准状态：**待用户签字**
+> 批准状态：**已签收 — Phase B 车道一执行中（2026-06-12 状态同步）**
 
 ## 1. HCC-GO 四条件最终状态
 
 | # | 条件 | 状态 | 证据 |
 |---|---|---|---|
 |1 | B1 九闸 `blocked` 清零 | ✅ 已达成 | A-5 `docs/governance/b1-go-evaluation-2026-06.md`（commit `2382bcc`，merge `a7be913`） |
-|2 | `requires_user_authorization` 项全部由用户显式批 | ⏳ **待用户签收本文件** | 见 §2 清单 |
+|2 | `requires_user_authorization` 项全部由用户显式批 | ✅ 已达成 | 用户已签收本文件（2026-06-11）；B-2 / B-3 已执行并 closeout |
 |3 | dry-run 010 PASS | ✅ 已达成 | A-4 `tests/safety/hcc-dry-run-010-fixture.test.ts` 15/15（commit `14d1a3c`，merge `bbad4b9`） |
 |4 | A-6 首个真实任务交付 + 复盘入 LOOP 候选 | ✅ 已达成 | A-6 `src/shared/lib/registry/capability-registry.ts` + test 16/16 + quarantine fixture `ll010-a6-first-task-quarantine.json`（commit `3ed8fcb`，merge `a3f6dd6`） |
 
-**HCC-GO 四条件：3/4 technical ✅ + 1/4 待用户签收本文件。**
+**HCC-GO 四条件：4/4 ✅。Phase B 车道一已启动，"每任务人工发车模式"。**
 
 ## 2. 用户授权清单
 
@@ -53,18 +53,42 @@
 
 `consumed by A-6`。A-6 产出的 `CapabilityRegistry` + `DomainRegistry` 空壳已在 main（`src/shared/lib/registry/capability-registry.ts`）。B-2 scan gate 可直接引用为 capability 证据查找表。
 
-### 4.2 B-2 候选（推荐下一 slice）
+### 4.2 B-2 状态
 
-- **任务**：真实输入路径 scan gate（vault 导入 / 本地文件——仅已存在入口）+ H-6 信任阶梯断言补齐
-- **范围**：`src/shared/lib/safety/`（新建 scan gate）+ `tests/safety/`（新建 test + H-6 trust level 5 级全覆盖）
+✅ **已完成**（2026-06-11）。closeout：`docs/closeout/b2-scan-gate-closeout-2026-06-11.md`。
+- `src/shared/lib/safety/real-input-scan-gate.ts`（~150 行）
+- `tests/safety/real-input-scan-gate.test.ts`（14/14）
+- H-6 信任阶梯断言补齐（`tests/safety/external-input-scan-coverage.test.ts` 25/25）
+- LOOP quarantine fixture：`ll011-b2-scan-gate-quarantine.json`
+
+### 4.3 B-3 状态
+
+✅ **已完成**（2026-06-11）。closeout：`docs/closeout/b3-evaluator-closeout-2026-06-11.md`。
+- `src/shared/lib/post-task-reflection-evaluator-runner.ts`（~100 行）
+- `tests/post-task-reflection-evaluator-runner.test.ts`（18/18）
+- 生产代码零 I/O；`isReflectionEvaluatorPromotionEligible` hard-wired `false`
+- LOOP quarantine fixture：`ll012-b3-evaluator-quarantine.json`
+
+### 4.4 B-4 下一步（当前任务）
+
+**B-4 Live Reflection Writer → Live Flush**（plan 标记 `是，各一次`）。
+
+B-4 必须拆为三个子阶段，逐段用户批：
+
+| 子阶段 | 内容 | 预计 |
+|---|---|---|
+| **B-4A** | Live Reflection Writer preflight / contract（纯文档，零代码） | 1 file / ~100 行 |
+| **B-4B** | Writer 实现（Hermes main 唯一 writer + 唯一性测试） | 2-3 files / ~200 行 |
+| **B-4C** | Live Flush（copy-deck 红线文案） | **另批**（不在 B-4A/B 范围内） |
+
+- **前置**：B-3 已完成（Evaluator Runner 已活化）
 - **不改**：`src/main/` / `src/renderer/` / `src/screens/` / `package.json`（均在锁内）
-- **不建**：微信 / 飞书 / 外链 gate（入口不存在）
-- **预计**：2 files / ~200 行 / 12-15 tests
-- **前置**：用户签收本文件（HCC-GO 条件二）→ GO B-2 slice
+- **不启动**：Live Flush（B-4C 另批）
+- **不声明**：Live Flush 已启用
 
-### 4.3 流程
+### 4.5 流程
 
-B-2 只做 Preflight（不直接实施）——等用户签收本文件 + 单独 GO B-2 后，再进 worktree 执行。
+B-4A 只做 Preflight（不直接实施）——等用户单独 GO B-4A 后，再进 worktree 执行。B-4B 同理。B-4C（Live Flush）另批。
 
 ## 5. 边界
 
@@ -81,16 +105,16 @@ B-2 只做 Preflight（不直接实施）——等用户签收本文件 + 单独
 
 ## 6. 签收
 
-> **批准状态：待用户签字**
+> **批准状态：已签收（2026-06-11）**
 >
-> 签字即确认：
+> 用户已签字确认：
 > - 已审阅 HCC-GO 四条件状态
 > - 批准 Phase B 车道一 B-1~B-4 逐项发车（每 slice 仍需单独 GO）
 > - 确认 Auto Executor 常驻 ≠ HCC-GO，不随本签收自动启动
 > - 确认车道二 B-5/B-6 在 HCC-STABLE 达成前不开放
 > - 确认不允许项清单仍然生效
-
-签字后：__________________  日期：__________________
+>
+> B-1 已被 A-6 消耗。B-2 ✅ 已完成。B-3 ✅ 已完成。**B-4 是当前下一步**（拆为 B-4A/B-4B/B-4C）。
 
 ---
 
@@ -98,5 +122,12 @@ B-2 只做 Preflight（不直接实施）——等用户签收本文件 + 单独
 > - [A-5 B1 九闸评估](b1-go-evaluation-2026-06.md)
 > - [A-4 dry-run010 closeout](../closeout/dry-run-010-2026-06-11-report.md)
 > - [A-6 first task closeout](../closeout/a6-first-task-closeout-2026-06-11.md)
+> - [B-2 scan gate closeout](../closeout/b2-scan-gate-closeout-2026-06-11.md)
+> - [B-3 evaluator closeout](../closeout/b3-evaluator-closeout-2026-06-11.md)
 > - [02-execution-plan §Phase B](../plan/02-execution-plan.md)
 > - [LOCK.md](../../LOCK.md)
+
+## 7. 修订记录
+
+- 2026-06-12：HCC-STATUS-SYNC-001 — 状态同步。签收状态 "待用户签字" → "已签收"；HCC-GO 四条件 3/4 → 4/4；B-2 "推荐下一 slice" → ✅ 已完成（closeout 指针）；新增 B-3 ✅ 已完成；B-4 拆为 B-4A/B-4B/B-4C；流程段改为 B-4A preflight；签收段移除空白签名行、补 B-2/B-3 closeout 指针。
+- 2026-06-11 v1：初版（待用户签字）
