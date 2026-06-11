@@ -390,3 +390,5 @@ The local `.claude/projects/-Users-midoudou/memory/hermes-pro-model-strategy.md`
 - I have only added `docs/closeout/hermes-pro-local-reality-closeout-2026-06-07.md` (this file) and made 3 plan-doc edits (current-fusion-plan / iteration-plan / learning-loop) plus 1 governance-matrix edit for LOOP-009 sync.
 - All test numbers in this document come from real `npx vitest run` output captured during this slice.
 - All "NOT-GO" claims mirror the same constraints enforced by 132 / 3754 PASS tests + 8 forever-false flags × 30 fixtures / verdicts / decisions.
+
+> **勘误指针 (2026-06-10)**：本文若涉及"物理锁启用 / watchdog / violations.log / electron/ 路径 / 锁已生效"等历史描述，与 P0-1 实测状态不一致；以 `docs/plan/_errata-2026-06-10.md` §H-8 为准，本文不改。

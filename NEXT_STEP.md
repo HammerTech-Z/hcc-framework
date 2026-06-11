@@ -112,3 +112,5 @@ Hermes 需求翻译/调度 -> 用户确认 -> 双视角审计划 -> Claude Code 
 
 仅当 HCC v2 修复 3 次仍无法执行或无法通过测试时，降级到旧 code_dev：
 Hermes -> Karpathy planner -> Claude Code executor -> Bellard reviewer -> deliver/escalate -> reflect
+
+> **勘误指针 (2026-06-10)**：本文若引用"物理锁启用 / watchdog / violations.log / electron/ 路径 / 锁已生效"等历史描述，以 `docs/plan/_errata-2026-06-10.md` §H-8 为准，本文不改。
