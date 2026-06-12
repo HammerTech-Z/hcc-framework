@@ -2,8 +2,8 @@
 
 > HCC Phase B / HCC-STABLE / vault / B-5/B-6 全提交栈最终审计与 push readiness 预检。
 > 不 push。不修改代码。只出具审计报告。
-> **HEAD = `0f6fda2`**（vault health report final snapshot）。
-> **Fresh gates ran at 2026-06-12 23:35 UTC+8。**
+> **本审计基于 `0f6fda2`；审计文档 commit = `6a1150c`；post-audit report refresh = `cedd3cc`。**
+> Fresh gates ran at 2026-06-12 23:35 UTC+8。
 
 ## 1. 今日提交栈清单
 
@@ -31,8 +31,10 @@
 | 20 | B-5 CSS guardrail fix | `4ab391d` | 1 | CSS (`letter-spacing: 0.5px` → `0`) |
 | 21 | Vault health report snapshot | `46a69ae` | 1 | generated content |
 | 22 | Vault health report final snapshot | `0f6fda2` | 1 | generated content |
+| 23 | Final stack audit preflight | `6a1150c` | 1 | docs (本审计) |
+| 24 | Post-audit vault health snapshot | `cedd3cc` | 1 | generated content |
 
-**22 batches, 48 files, +4,878/-198 lines (2026-06-12 session).** Full vitest: 154/154 files, 4166/4166 tests PASS (fresh run 23:35 UTC+8).
+**24 batches, 50 files (2026-06-12 session).** Full vitest: 154/154 files, 4166/4166 tests PASS (fresh run 23:35 UTC+8).
 
 ## 2. Fresh Full Vitest (2026-06-12 23:35 UTC+8)
 
@@ -63,7 +65,7 @@ npx vitest run --config vitest.config.ts
 | Typecheck | PASS |
 | Full vitest | 154/154, 4166/4166 PASS |
 | Lock-verify | PASS=46 |
-| Dirty workspace | `.claude/settings.json` (harness config, excluded) + this preflight untracked |
+| Dirty workspace | `.claude/settings.json` (harness config, excluded)；预期 post-commit 仅此 dirty；vault health report committed in this batch |
 | Phase B 红线 | 全部维持 |
 | **Push Readiness** | **READY** |
 
@@ -108,5 +110,6 @@ npx vitest run --config vitest.config.ts
 
 ## 10. 修订
 
-- 2026-06-12 v2：Rebuild from HEAD `0f6fda2`。删除旧 stale 失败数据；fresh full vitest 154/154, 4166/4166；Push Readiness READY。Bellard: clean rebuild。Karpathy: exact counts。
+- 2026-06-12 v3：Post-audit drift consistency fix。HEAD 措辞改为 "audit base + audit document commit + post-audit report refresh"；栈加 23 (6a1150c) + 24 (cedd3cc)；dirty workspace gate 调整。
+- 2026-06-12 v2：Rebuild from `0f6fda2`。删除旧 stale 失败数据；fresh full vitest 154/154, 4166/4166；Push Readiness READY。Bellard: clean rebuild。Karpathy: exact counts。
 - 2026-06-12 v1：Initial final stack audit (deprecated — contained stale 153/154 test data)。
