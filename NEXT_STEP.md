@@ -47,7 +47,10 @@
 | B-1 能力/领域注册表空壳 | ✅ 已被 A-6 消耗 | `src/shared/lib/registry/capability-registry.ts` |
 | B-2 真实输入路径 scan gate + H-6 | ✅ 已完成 | `docs/closeout/b2-scan-gate-closeout-2026-06-11.md` |
 | B-3 Reflection Evaluator Runner | ✅ 已完成 | `docs/closeout/b3-evaluator-closeout-2026-06-11.md` |
-| B-4 Live Reflection Writer → Live Flush | 🔶 下一步 | 拆为 B-4A preflight / B-4B 实现 / B-4C Live Flush 另批 |
+| B-4 Live Reflection Writer → Live Flush | 🔶 进行中 | 拆为 B-4A preflight / B-4B 实现 / B-4C Live Flush 另批 |
+| B-4A | ✅ 已完成 | Writer 契约（contract_only） |
+| B-4B | ✅ 已完成 | Writer 实现（in-memory + singleton） |
+| B-4C Live Flush | ⏳ 待批 preflight | `docs/plan/b4c-live-flush-preflight-2026-06-12.md`；仍需用户逐次批准 |
 | B-5 UI Slice 8 KnowledgeControl 视觉 | ⬜ 车道二（HCC-STABLE 后） | |
 | B-6 Mano-P 放弃 ADR + license 审计 | ⬜ 车道二（HCC-STABLE 后） | |
 
