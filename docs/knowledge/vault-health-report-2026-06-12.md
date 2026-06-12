@@ -1,6 +1,6 @@
 # Hermes Pro — Vault Health Report
 
-> Generated: 2026-06-12T13:17:06.615Z
+> Generated: 2026-06-12T13:21:01.542Z
 > Hermes Vault: /Users/midoudou/.hermes/vault/wiki
 > Obsidian Vault: /Users/midoudou/Desktop/赵铁锤的武器库
 
@@ -97,14 +97,14 @@ No ambiguous links found.
 | codebase/cron-B-2026-05-27.md | 16.1 | 55.0% | codebase |
 | codebase/cron-B-2026-05-28.md | 15.0 | 52.5% | codebase |
 | codebase/cron-B-2026-05-29.md | 14.5 | 51.2% | codebase |
-| codebase/cron-B-2026-05-30.md | 13.4 | 48.5% | codebase |
+| codebase/cron-B-2026-05-30.md | 13.4 | 48.6% | codebase |
 | codebase/cron-B-2026-05-31.md | 12.4 | 45.9% | codebase |
 | codebase/cron-B-2026-06-01.md | 11.4 | 43.1% | codebase |
-| codebase/cron-B-2026-06-02.md | 10.4 | 40.2% | codebase |
-| creative/ai-video-notes.md | 20.3 | 37.4% | creative |
-| tools/claude-code-review.md | 20.3 | 37.4% | tools |
-| tools/horizon-2026-05-23.md | 20.3 | 37.4% | tools |
-| tools/react-doctor.md | 20.3 | 37.4% | tools |
+| codebase/cron-B-2026-06-02.md | 10.4 | 40.3% | codebase |
+| creative/ai-video-notes.md | 20.3 | 37.5% | creative |
+| tools/claude-code-review.md | 20.3 | 37.5% | tools |
+| tools/horizon-2026-05-23.md | 20.3 | 37.5% | tools |
+| tools/react-doctor.md | 20.3 | 37.5% | tools |
 
 ## 6. Content Overlaps (>80%)
 
