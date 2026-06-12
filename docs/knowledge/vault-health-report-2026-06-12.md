@@ -1,6 +1,6 @@
 # Hermes Pro — Vault Health Report
 
-> Generated: 2026-06-12T15:19:57.400Z
+> Generated: 2026-06-12T15:29:26.816Z
 > Hermes Vault: /Users/midoudou/.hermes/vault/wiki
 > Obsidian Vault: /Users/midoudou/Desktop/赵铁锤的武器库
 
@@ -92,7 +92,7 @@ No ambiguous links found.
 | codebase/employee-library-filter.md | 20.4 | 63.6% | codebase |
 | codebase/react-doctor-baseline-2026-05-23.md | 20.4 | 63.6% | codebase |
 | codebase/cron-B-2026-05-23.md | 20.4 | 63.5% | codebase |
-| codebase/K1.5-T4-冒烟测试-2026-05-23.md | 20.0 | 62.9% | codebase |
+| codebase/K1.5-T4-冒烟测试-2026-05-23.md | 20.1 | 62.9% | codebase |
 | codebase/llm-checker-baseline-2026-05-25.md | 18.1 | 59.2% | codebase |
 | codebase/cron-B-2026-05-27.md | 16.2 | 55.2% | codebase |
 | codebase/cron-B-2026-05-28.md | 15.1 | 52.7% | codebase |
