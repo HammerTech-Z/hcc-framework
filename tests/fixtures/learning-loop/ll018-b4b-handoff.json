@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0.0",
+  "completed_baseline": [
+    {
+      "id": "b4b-writer-impl",
+      "summary": "In-memory singleton LiveReflectionWriter (main/safety). 26/26 tests. All runtime/apply flags false.",
+      "evidence_refs": [
+        "docs/closeout/hcc-phase-b-lane-one-b4-closeout-2026-06-12.md",
+        "62b9bef:src/main/safety/post-task-reflection-writer.ts",
+        "tests/fixtures/learning-loop/ll013-b4a-writer-contract-quarantine.json"
+      ],
+      "verified": true,
+      "append_only": true
+    }
+  ],
+  "in_progress": {
+    "task_id": "B-4B",
+    "objective": "Implement singleton LiveReflectionWriter. Single entry getReflectionWriter(). dry_run_only=true. No apply path.",
+    "owner": "claude_code",
+    "status": "in_progress",
+    "evidence_ref": "docs/closeout/hcc-phase-b-lane-one-b4-closeout-2026-06-12.md"
+  },
+  "next_step": {
+    "task_id": "B-4C",
+    "objective": "Design and implement Live Flush approval gate (pending_user_approval only). No live flush. No apply path.",
+    "input_conditions": [
+      "B-4B writer 26/26 PASS",
+      "B-4A contract 42/42 PASS",
+      "typecheck node+web PASS",
+      "lock-verify PASS=46"
+    ],
+    "success_criteria": [
+      "B-4C preflight approved",
+      "flush gate 34/34 PASS",
+      "all runtime/apply flags false",
+      "quarantine fixture ll014 produced",
+      "apply path NOT implemented"
+    ],
+    "requires_user_authorization": true
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0.0",
+  "completed_baseline": [
+    {
+      "id": "b2-real-input-scan-gate",
+      "summary": "RealInputScanGate (vault_import + local_file_import only) with 14/14 tests + H-6 trust-level 5-tier matrix 25/25",
+      "evidence_refs": [
+        "docs/closeout/b2-scan-gate-closeout-2026-06-11.md",
+        "e4a688b:src/shared/lib/safety/real-input-scan-gate.ts",
+        "tests/fixtures/learning-loop/ll011-b2-scan-gate-quarantine.json"
+      ],
+      "verified": true,
+      "append_only": true
+    }
+  ],
+  "in_progress": {
+    "task_id": "B-2",
+    "objective": "Build real-input scan gate (vault_import + local_file_import) + complete H-6 trust-level 5-tier matrix",
+    "owner": "claude_code",
+    "status": "in_progress",
+    "evidence_ref": "docs/closeout/b2-scan-gate-closeout-2026-06-11.md"
+  },
+  "next_step": {
+    "task_id": "B-3",
+    "objective": "Activate Reflection Evaluator Runner (LOOP-008 read-only) with synthetic fixture batch coverage",
+    "input_conditions": [
+      "B-2 closeout reviewed",
+      "scan gate tests 14/14 + H-6 25/25 PASS",
+      "lock-verify PASS=46"
+    ],
+    "success_criteria": [
+      "evaluator runner tests 18/18 PASS",
+      "baseline design tests 36/36 PASS",
+      "zero I/O in production code",
+      "quarantine fixture ll012 produced"
+    ],
+    "requires_user_authorization": true
+  }
+}

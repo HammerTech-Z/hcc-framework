@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0.0",
+  "completed_baseline": [
+    {
+      "id": "b4c-flush-gate-impl",
+      "summary": "Live Flush approval gate: contract (shared/lib) + singleton adapter (main/safety). 34/34 tests. Status guard: only pending_user_approval. All flags false.",
+      "evidence_refs": [
+        "docs/closeout/b4c-flush-gate-closeout-2026-06-12.md",
+        "a15971f:src/main/safety/live-flush-adapter.ts",
+        "tests/fixtures/learning-loop/ll014-b4c-flush-gate-quarantine.json"
+      ],
+      "verified": true,
+      "append_only": true
+    }
+  ],
+  "in_progress": {
+    "task_id": "B-4C",
+    "objective": "Implement live flush approval gate: contract + singleton adapter. pending_user_approval only. No live flush.",
+    "owner": "claude_code",
+    "status": "in_progress",
+    "evidence_ref": "docs/closeout/b4c-flush-gate-closeout-2026-06-12.md"
+  },
+  "next_step": {
+    "task_id": "HCC-AUDIT-001",
+    "objective": "Backfill structured handoff + progress artifacts for 5 real tasks (A-6, B-2, B-3, B-4B, B-4C) per A-1 contract. Append-only fixtures.",
+    "input_conditions": [
+      "B-4C closeout reviewed",
+      "G-2 artifact gap identified in HCC-STABLE-AUDIT",
+      "5 task closeout documents available"
+    ],
+    "success_criteria": [
+      "10 handoff+progress fixtures pass A-1 schema validation",
+      "contract test covers all 10 + evidence refs + content checks",
+      "HCC-STABLE condition 3 structured-compliant",
+      "G-3 rollback drill still outstanding"
+    ],
+    "requires_user_authorization": true
+  }
+}
