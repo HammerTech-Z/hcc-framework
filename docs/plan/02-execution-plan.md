@@ -210,8 +210,7 @@ Phase B  HCC 执行期（HCC-GO 后，HCC 承载调度/执行/双审，批准权
 > - B-2：✅ 已完成（`docs/closeout/b2-scan-gate-closeout-2026-06-11.md`）。
 > - B-3：✅ 已完成（`docs/closeout/b3-evaluator-closeout-2026-06-11.md`）。
 > - B-4：✅ 全部完成（2026-06-12）。拆为 B-4A（contract `6a33f6c`）、B-4B（writer impl `62b9bef`）、B-4C（approval gate preflight `b0e12a5` + impl `a15971f`）。B-4C apply path 仍未实现（future slice，separate approval）；Live Flush 未真实执行、未启用。
-> - B-5/B-6：⬜ 车道二（可进入逐任务 preflight，HCC-STABLE 已达標，2026-06-12 用户签收；不自动执行；每个任务仍需单独 GO）。
-> - Auto Executor 常驻：仍未授权。Live Flush：未启用。Live Ranking mutation：仍未开放。apply path：仍未实现。
+> - B-5/B-6：✅ 全部完成（2026-06-12）。B-5 KnowledgeControl cards `a5ab9f9` + B-6 Mano-P ADR + agent-spaces license audit `637775c`。Phase B 全链 B-1~B-6 8/8 complete。HCC-STABLE accepted（`b2db6a2`）。apply path / Auto Executor / Live Ranking mutation / Live Flush auto-apply 均未开放。每个后续任务仍需用户单独 GO。
 > 本注记仅追加执行状态，不修改计划正文。
 
 ---
