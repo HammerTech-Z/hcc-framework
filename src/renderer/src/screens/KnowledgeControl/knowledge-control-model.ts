@@ -132,6 +132,15 @@ function extractWikiLinks(content?: string): string[] {
   return [...content.matchAll(/\[\[([^\]]+)\]\]/g)].map((match) => match[1]).slice(0, 8);
 }
 
+
+export function redactSecrets(content?: string): string {
+  if (!content) return "";
+  return content
+    .replace(/(?:api[_-]?key|apikey|secret|token|password)=[\S"']+/gi, "$1=***REDACTED***")
+    .replace(/\b(sk-[a-zA-Z0-9]{8,})\b/g, "sk-***REDACTED***")
+    .replace(/\b(AKIA[0-9A-Z]{16})\b/g, "AKIA***REDACTED***");
+}
+
 function extractTaskRefs(content?: string): string[] {
   if (!content) return [];
   return [...content.matchAll(/\b(?:HCC|P\d(?:\.\d)?|Slice)\S*/g)].map((match) => match[0]).slice(0, 8);
@@ -199,7 +208,7 @@ export function buildKnowledgeControlItem(input: KnowledgeControlInput): Knowled
     linkedNotes,
   });
   const allowPromptUse = normalizePromptUse(frontmatter?.allow_prompt_use, trustLevel);
-  const contentPreview = input.content?.replace(/\s+/g, " ").trim().slice(0, 180);
+  const contentPreview = redactSecrets(input.content)?.replace(/\s+/g, " ").trim().slice(0, 180);
 
   return {
     id: input.path,

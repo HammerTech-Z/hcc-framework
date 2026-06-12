@@ -5,6 +5,7 @@ import {
   buildKnowledgeControlItem,
   deriveLifecycle,
   deriveStaleState,
+  redactSecrets,
 } from "../src/renderer/src/screens/KnowledgeControl/knowledge-control-model";
 import { getTransitiveImports, FORBIDDEN_RE } from "./_helpers/import-graph";
 
@@ -171,4 +172,24 @@ describe("Knowledge Control read-only boundary", () => {
       }
     });
   });
+
+  describe("B-5 KnowledgeControl card polish", () => {
+    it("redactSecrets masks api keys", () => {
+      const result = redactSecrets("api_key=sk-abc123def456 token=secret123");
+      expect(result).not.toMatch(/sk-abc123def456/);
+      expect(result).not.toMatch(/secret123/);
+      expect(result).toMatch(/REDACTED/);
+    });
+
+    it("redactSecrets masks AWS access keys", () => {
+      const result = redactSecrets("AKIA1234567890ABCDEF");
+      expect(result).not.toMatch(/AKIA1234567890ABCDEF/);
+      expect(result).toMatch(/REDACTED/);
+    });
+
+    it("redactSecrets returns empty for undefined input", () => {
+      expect(redactSecrets(undefined)).toBe("");
+    });
+  });
+
 });

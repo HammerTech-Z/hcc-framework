@@ -191,6 +191,12 @@ export default function KnowledgeControl(): React.JSX.Element {
             />
           ))}
         </div>
+      {selected && (
+        <span className={selected.redactionStatus === "clean" ? "kc-redacted-badge kc-redacted-badge--clean" : "kc-redacted-badge"}>
+          脱敏状态: {selected.redactionStatus === "clean" ? "clean · 无秘钥泄露" : "redacted · 已脱敏"}
+        </span>
+      )}
+
         <KnowledgeInspector item={selected} />
       </div>
 
