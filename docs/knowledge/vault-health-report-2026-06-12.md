@@ -1,6 +1,6 @@
 # Hermes Pro — Vault Health Report
 
-> Generated: 2026-06-12T15:29:26.816Z
+> Generated: 2026-06-12T15:35:38.474Z
 > Hermes Vault: /Users/midoudou/.hermes/vault/wiki
 > Obsidian Vault: /Users/midoudou/Desktop/赵铁锤的武器库
 
@@ -96,9 +96,9 @@ No ambiguous links found.
 | codebase/llm-checker-baseline-2026-05-25.md | 18.1 | 59.2% | codebase |
 | codebase/cron-B-2026-05-27.md | 16.2 | 55.2% | codebase |
 | codebase/cron-B-2026-05-28.md | 15.1 | 52.7% | codebase |
-| codebase/cron-B-2026-05-29.md | 14.6 | 51.4% | codebase |
+| codebase/cron-B-2026-05-29.md | 14.6 | 51.5% | codebase |
 | codebase/cron-B-2026-05-30.md | 13.5 | 48.8% | codebase |
-| codebase/cron-B-2026-05-31.md | 12.5 | 46.1% | codebase |
+| codebase/cron-B-2026-05-31.md | 12.5 | 46.2% | codebase |
 | codebase/cron-B-2026-06-01.md | 11.5 | 43.4% | codebase |
 | codebase/cron-B-2026-06-02.md | 10.5 | 40.5% | codebase |
 | creative/ai-video-notes.md | 20.4 | 37.6% | creative |
