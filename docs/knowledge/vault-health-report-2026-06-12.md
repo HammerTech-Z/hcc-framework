@@ -1,6 +1,6 @@
 # Hermes Pro — Vault Health Report
 
-> Generated: 2026-06-12T13:21:01.542Z
+> Generated: 2026-06-12T15:19:57.400Z
 > Hermes Vault: /Users/midoudou/.hermes/vault/wiki
 > Obsidian Vault: /Users/midoudou/Desktop/赵铁锤的武器库
 
@@ -85,26 +85,26 @@ No ambiguous links found.
 
 | File | Age (days) | Score | Category |
 |------|-----------|-------|----------|
-| codebase/cron-B-2026-05-19.md | 20.3 | 63.4% | codebase |
-| codebase/cron-B-2026-05-20.md | 20.3 | 63.4% | codebase |
-| codebase/cron-B-2026-05-21.md | 20.3 | 63.4% | codebase |
-| codebase/cron-B-2026-05-22.md | 20.3 | 63.4% | codebase |
-| codebase/cron-B-2026-05-23.md | 20.3 | 63.4% | codebase |
-| codebase/employee-library-filter.md | 20.3 | 63.4% | codebase |
-| codebase/react-doctor-baseline-2026-05-23.md | 20.3 | 63.4% | codebase |
-| codebase/K1.5-T4-冒烟测试-2026-05-23.md | 20.0 | 62.8% | codebase |
-| codebase/llm-checker-baseline-2026-05-25.md | 18.0 | 59.1% | codebase |
-| codebase/cron-B-2026-05-27.md | 16.1 | 55.0% | codebase |
-| codebase/cron-B-2026-05-28.md | 15.0 | 52.5% | codebase |
-| codebase/cron-B-2026-05-29.md | 14.5 | 51.2% | codebase |
-| codebase/cron-B-2026-05-30.md | 13.4 | 48.6% | codebase |
-| codebase/cron-B-2026-05-31.md | 12.4 | 45.9% | codebase |
-| codebase/cron-B-2026-06-01.md | 11.4 | 43.1% | codebase |
-| codebase/cron-B-2026-06-02.md | 10.4 | 40.3% | codebase |
-| creative/ai-video-notes.md | 20.3 | 37.5% | creative |
-| tools/claude-code-review.md | 20.3 | 37.5% | tools |
-| tools/horizon-2026-05-23.md | 20.3 | 37.5% | tools |
-| tools/react-doctor.md | 20.3 | 37.5% | tools |
+| codebase/cron-B-2026-05-19.md | 20.4 | 63.6% | codebase |
+| codebase/cron-B-2026-05-20.md | 20.4 | 63.6% | codebase |
+| codebase/cron-B-2026-05-21.md | 20.4 | 63.6% | codebase |
+| codebase/cron-B-2026-05-22.md | 20.4 | 63.6% | codebase |
+| codebase/employee-library-filter.md | 20.4 | 63.6% | codebase |
+| codebase/react-doctor-baseline-2026-05-23.md | 20.4 | 63.6% | codebase |
+| codebase/cron-B-2026-05-23.md | 20.4 | 63.5% | codebase |
+| codebase/K1.5-T4-冒烟测试-2026-05-23.md | 20.0 | 62.9% | codebase |
+| codebase/llm-checker-baseline-2026-05-25.md | 18.1 | 59.2% | codebase |
+| codebase/cron-B-2026-05-27.md | 16.2 | 55.2% | codebase |
+| codebase/cron-B-2026-05-28.md | 15.1 | 52.7% | codebase |
+| codebase/cron-B-2026-05-29.md | 14.6 | 51.4% | codebase |
+| codebase/cron-B-2026-05-30.md | 13.5 | 48.8% | codebase |
+| codebase/cron-B-2026-05-31.md | 12.5 | 46.1% | codebase |
+| codebase/cron-B-2026-06-01.md | 11.5 | 43.4% | codebase |
+| codebase/cron-B-2026-06-02.md | 10.5 | 40.5% | codebase |
+| creative/ai-video-notes.md | 20.4 | 37.6% | creative |
+| tools/claude-code-review.md | 20.4 | 37.6% | tools |
+| tools/horizon-2026-05-23.md | 20.4 | 37.6% | tools |
+| tools/react-doctor.md | 20.4 | 37.6% | tools |
 
 ## 6. Content Overlaps (>80%)
 
