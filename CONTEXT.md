@@ -44,7 +44,7 @@
 | B-1 注册表空壳 | ✅ 已被 A-6 消耗 | `capability-registry.ts` |
 | B-2 scan gate + H-6 | ✅ 已完成 | `b2-scan-gate-closeout-2026-06-11.md` |
 | B-3 Evaluator Runner | ✅ 已完成 | `b3-evaluator-closeout-2026-06-11.md` |
-| B-4 Writer → Flush | 🔶 进行中 | 拆为 B-4A/B-4B/B-4C；A+B ✅；C 待批 preflight |
+| B-4 Writer → Flush | ✅ 全部完成（2026-06-12） | A+B+C 三段；apply path 仍未实现 |
 
 **禁项重申**：Auto Executor 常驻未授权。Live Flush 未启用。车道二未开放。
 

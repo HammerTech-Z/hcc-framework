@@ -69,26 +69,24 @@
 - 生产代码零 I/O；`isReflectionEvaluatorPromotionEligible` hard-wired `false`
 - LOOP quarantine fixture：`ll012-b3-evaluator-quarantine.json`
 
-### 4.4 B-4 下一步（当前任务）
+### 4.4 B-4 状态（2026-06-12 状态同步）
 
-**B-4 Live Reflection Writer → Live Flush**（plan 标记 `是，各一次`）。
+B-4 拆为三个子阶段，逐段用户批：
 
-B-4 必须拆为三个子阶段，逐段用户批：
+| 子阶段 | 内容 | 状态（2026-06-12） | closeout / preflight |
+|---|---|---|---|
+| **B-4A** | Live Reflection Writer preflight / contract | ✅ **已完成** | `docs/plan/b4a-live-reflection-writer-preflight-2026-06-12.md` + contract commit `6a33f6c` |
+| **B-4B** | Writer 实现（Hermes main 唯一 writer + 唯一性测试） | ✅ **已完成** | commit `62b9bef`（2 files, +502） |
+| **B-4C** | Live Flush approval gate（pending_user_approval only） | ✅ **approval gate 已完成** | preflight `b0e12a5` + impl commit `a15971f` |
 
-| 子阶段 | 内容 | 预计 |
-|---|---|---|
-| **B-4A** | Live Reflection Writer preflight / contract（纯文档，零代码） | 1 file / ~100 行 |
-| **B-4B** | Writer 实现（Hermes main 唯一 writer + 唯一性测试） | 2-3 files / ~200 行 |
-| **B-4C** | Live Flush（copy-deck 红线文案） | **另批**（不在 B-4A/B 范围内） |
-
-- **前置**：B-3 已完成（Evaluator Runner 已活化）
-- **不改**：`src/main/` / `src/renderer/` / `src/screens/` / `package.json`（均在锁内）
-- **不启动**：Live Flush（B-4C 另批）
-- **不声明**：Live Flush 已启用
+- **B-4C apply path 仍未实现**（future slice，separate approval）
+- **Live Flush 未真实执行、未启用**
+- **不改**：`src/main/` / `src/renderer/` / `src/screens/` / `package.json`（均在锁内；新增文件需用户手动 `chflags uchg` 补锁）
+- **不开放**：Auto Executor 常驻、Phase B 车道二、Live Ranking mutation
 
 ### 4.5 流程
 
-B-4A 只做 Preflight（不直接实施）——等用户单独 GO B-4A 后，再进 worktree 执行。B-4B 同理。B-4C（Live Flush）另批。
+B-4A/B-4B/B-4C 全部完成（commit stack 6a33f6c → 62b9bef → b0e12a5 → a15971f）。B-4 主干串行链「Writer 契约 → Writer 实现 → Approval Gate」已落库。**apply path 仍需 future slice 单独批准**。每次 Live Flush 触发仍需用户逐次人工 `approve` 回显 copy-deck 红线文案。
 
 ## 5. 边界
 
@@ -114,7 +112,7 @@ B-4A 只做 Preflight（不直接实施）——等用户单独 GO B-4A 后，�
 > - 确认车道二 B-5/B-6 在 HCC-STABLE 达成前不开放
 > - 确认不允许项清单仍然生效
 >
-> B-1 已被 A-6 消耗。B-2 ✅ 已完成。B-3 ✅ 已完成。**B-4 是当前下一步**（拆为 B-4A/B-4B/B-4C）。
+> B-1 已被 A-6 消耗。B-2 ✅ 已完成。B-3 ✅ 已完成。**B-4 全部完成（2026-06-12）**：B-4A ✅ contract、B-4B ✅ writer 实现、B-4C ✅ approval gate。**B-4C apply path 仍未实现**（future slice，separate approval）；Live Flush 未真实执行、未启用。
 
 ---
 
@@ -124,10 +122,14 @@ B-4A 只做 Preflight（不直接实施）——等用户单独 GO B-4A 后，�
 > - [A-6 first task closeout](../closeout/a6-first-task-closeout-2026-06-11.md)
 > - [B-2 scan gate closeout](../closeout/b2-scan-gate-closeout-2026-06-11.md)
 > - [B-3 evaluator closeout](../closeout/b3-evaluator-closeout-2026-06-11.md)
+> - [B-4A writer preflight](../plan/b4a-live-reflection-writer-preflight-2026-06-12.md)
+> - [B-4C flush gate closeout](../closeout/b4c-flush-gate-closeout-2026-06-12.md)
+> - [HCC Phase B 车道一 B-4 closeout 同步](../closeout/hcc-phase-b-lane-one-b4-closeout-2026-06-12.md)
 > - [02-execution-plan §Phase B](../plan/02-execution-plan.md)
 > - [LOCK.md](../../LOCK.md)
 
 ## 7. 修订记录
 
 - 2026-06-12：HCC-STATUS-SYNC-001 — 状态同步。签收状态 "待用户签字" → "已签收"；HCC-GO 四条件 3/4 → 4/4；B-2 "推荐下一 slice" → ✅ 已完成（closeout 指针）；新增 B-3 ✅ 已完成；B-4 拆为 B-4A/B-4B/B-4C；流程段改为 B-4A preflight；签收段移除空白签名行、补 B-2/B-3 closeout 指针。
+- 2026-06-12：HCC-B4-CLOSEOUT-SYNC — B-4 三段全部完成状态同步。§4.4 标题改「下一步」→「状态」；子阶段表加状态列与 closeout 指针；流程段更新为「B-4 主干串行链已落库」；§6 签收段 B-4 描述改为「全部完成」；新增 B-4A preflight / B-4C closeout 链接。B-4C apply path 仍未实现，Live Flush 未启用。
 - 2026-06-11 v1：初版（待用户签字）

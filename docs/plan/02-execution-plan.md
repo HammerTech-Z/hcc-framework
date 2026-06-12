@@ -209,9 +209,9 @@ Phase B  HCC 执行期（HCC-GO 后，HCC 承载调度/执行/双审，批准权
 > - B-1：✅ 已被 A-6 消耗（`capability-registry.ts`）。
 > - B-2：✅ 已完成（`docs/closeout/b2-scan-gate-closeout-2026-06-11.md`）。
 > - B-3：✅ 已完成（`docs/closeout/b3-evaluator-closeout-2026-06-11.md`）。
-> - B-4：🔶 下一步。拆为 B-4A（preflight/contract）、B-4B（Writer 实现）、B-4C（Live Flush 另批）。
+> - B-4：✅ 全部完成（2026-06-12）。拆为 B-4A（contract `6a33f6c`）、B-4B（writer impl `62b9bef`）、B-4C（approval gate preflight `b0e12a5` + impl `a15971f`）。B-4C apply path 仍未实现（future slice，separate approval）；Live Flush 未真实执行、未启用。
 > - B-5/B-6：⬜ 车道二，HCC-STABLE 达成前不开放。
-> - Auto Executor 常驻：仍未授权。Live Flush：未启用。
+> - Auto Executor 常驻：仍未授权。Live Flush：未启用。Live Ranking mutation：仍未开放。
 > 本注记仅追加执行状态，不修改计划正文。
 
 ---
