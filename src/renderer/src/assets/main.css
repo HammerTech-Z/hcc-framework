@@ -9193,7 +9193,7 @@ body {
   display: inline-block;
   font-size: 9px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
   padding: 1px 5px;
   border-radius: 3px;
   color: var(--hp-state-warn-fg, #ffd866);
