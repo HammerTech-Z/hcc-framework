@@ -46,7 +46,11 @@
 | B-3 Evaluator Runner | ✅ 已完成 | `b3-evaluator-closeout-2026-06-11.md` |
 | B-4 Writer → Flush | ✅ 全部完成（2026-06-12） | A+B+C 三段；apply path 仍未实现 |
 
-**禁项重申**：Auto Executor 常驻未授权。Live Flush 未启用。车道二未开放。
+**禁项重申**：Auto Executor 常驻未授权。Live Flush 未启用。
+
+### HCC-STABLE 达標裁决（2026-06-12 用户签收）
+
+6 条件全部满足。车道二可进入逐任务 preflight。apply path / Auto Executor / Live Ranking mutation / Live Flush auto-apply 均未开放。每个后续任务仍需用户单独 GO。
 
 ## 开工顺序
 

@@ -32,7 +32,7 @@
 | 禁止项 | 原因 | 解除条件 |
 |---|---|---|
 | **Auto Executor 常驻启动** | 独立授权（plan A-5 §1.6：`hcc_auto_executor` = `requires_user_authorization`；常驻 ≠ HCC-GO） | 用户另开独立批 |
-| **Phase B 车道二 B-5 / B-6** | plan 裁决：车道二在 HCC-STABLE 达成后开放 | HCC-STABLE = 连续 5 任务零违规 + 全链 artifact + 1 次回滚演练 + 零自确认 |
+| **Phase B 车道二 B-5 / B-6** | plan 裁决：车道二在 HCC-STABLE 达成后开放。HCC-STABLE 已于 2026-06-12 用户签收达標。车道二可进入逐任务 preflight；每个任务仍需用户单独 GO | HCC-STABLE = 连续 5 任务零违规 + 全链 artifact + 1 次回滚演练 + 零自确认 |
 | **写 ~/.hermes/** | 红线（P0-1 LOCK.md §4；lock-verify PASS=46 FAIL=0） | 永不自动解除；每次写入需用户显式解锁 + 批 |
 | **启动 runtime / dev server** | 红线（Phase A 全链无 runtime 操作） | 某个 slice 单独获批后 |
 | **git push** | 红线（Phase A 全链未 push） | 用户另批 |
@@ -44,8 +44,8 @@
   - Hermes 调度 → 用户确认 → 双视角审计划 → Claude Code worktree 执行 → Codex 双审 → 交付 → 反思候选入 quarantine。
   - 每个 slice 独立走此链。用户在每个 slice 发车前仍需显式 GO。
 - **HCC-GO ≠ Auto Executor 常驻**。常驻自动执行仍是独立批，不因 HCC-GO 而自动授权。
-- **HCC-GO ≠ 放开所有任务域**。车道二（UI / 外部项目）在 HCC-STABLE 达成前不开放。
-- **HCC-STABLE 定义**（来自 plan v3.2）：连续 5 任务零违规 + 全链 artifact 齐 + 1 次回滚演练 + 零自确认（AI 不自盖 `human_confirmed`）。
+- **HCC-GO ≠ 放开所有任务域**。车道二（UI / 外部项目）在 HCC-STABLE 达成前不开放。**HCC-STABLE 已于 2026-06-12 用户签收达標——车道二可进入逐任务 preflight，不自动执行。**
+- **HCC-STABLE 定义**（来自 plan v3.2）：连续 5 任务零违规 + 全链 artifact 齐 + 1 次回滚演练 + 零自确认（AI 不自盖 `human_confirmed`）。**达標证据见 `docs/plan/hcc-stable-adjudication-preflight-2026-06-12.md`。**
 
 ## 4. Phase B 下一步推荐
 
@@ -82,7 +82,7 @@ B-4 拆为三个子阶段，逐段用户批：
 - **B-4C apply path 仍未实现**（future slice，separate approval）
 - **Live Flush 未真实执行、未启用**
 - **不改**：`src/main/` / `src/renderer/` / `src/screens/` / `package.json`（均在锁内；新增文件需用户手动 `chflags uchg` 补锁）
-- **不开放**：Auto Executor 常驻、Phase B 车道二、Live Ranking mutation
+- **不开放**：Auto Executor 常驻、Live Ranking mutation、apply path、Live Flush auto-apply
 
 ### 4.5 流程
 
@@ -109,7 +109,7 @@ B-4A/B-4B/B-4C 全部完成（commit stack 6a33f6c → 62b9bef → b0e12a5 → a
 > - 已审阅 HCC-GO 四条件状态
 > - 批准 Phase B 车道一 B-1~B-4 逐项发车（每 slice 仍需单独 GO）
 > - 确认 Auto Executor 常驻 ≠ HCC-GO，不随本签收自动启动
-> - 确认车道二 B-5/B-6 在 HCC-STABLE 达成前不开放
+> - 确认车道二 B-5/B-6 可进入逐任务 preflight（HCC-STABLE 已达標，2026-06-12 用户签收）；仍不自动执行，每个任务仍需单独 GO
 > - 确认不允许项清单仍然生效
 >
 > B-1 已被 A-6 消耗。B-2 ✅ 已完成。B-3 ✅ 已完成。**B-4 全部完成（2026-06-12）**：B-4A ✅ contract、B-4B ✅ writer 实现、B-4C ✅ approval gate。**B-4C apply path 仍未实现**（future slice，separate approval）；Live Flush 未真实执行、未启用。
@@ -132,4 +132,5 @@ B-4A/B-4B/B-4C 全部完成（commit stack 6a33f6c → 62b9bef → b0e12a5 → a
 
 - 2026-06-12：HCC-STATUS-SYNC-001 — 状态同步。签收状态 "待用户签字" → "已签收"；HCC-GO 四条件 3/4 → 4/4；B-2 "推荐下一 slice" → ✅ 已完成（closeout 指针）；新增 B-3 ✅ 已完成；B-4 拆为 B-4A/B-4B/B-4C；流程段改为 B-4A preflight；签收段移除空白签名行、补 B-2/B-3 closeout 指针。
 - 2026-06-12：HCC-B4-CLOSEOUT-SYNC — B-4 三段全部完成状态同步。§4.4 标题改「下一步」→「状态」；子阶段表加状态列与 closeout 指针；流程段更新为「B-4 主干串行链已落库」；§6 签收段 B-4 描述改为「全部完成」；新增 B-4A preflight / B-4C closeout 链接。B-4C apply path 仍未实现，Live Flush 未启用。
+- 2026-06-12：HCC-STABLE adjudication status sync — 用户签收 HCC-STABLE 达標（最低门槛解读）。车道二禁止列表改为可进入逐任务 preflight；不自动执行；每个任务仍需单独 GO。apply path / Auto Executor / Live Ranking mutation / Live Flush auto-apply 均未开放。
 - 2026-06-11 v1：初版（待用户签字）

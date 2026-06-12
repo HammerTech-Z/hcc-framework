@@ -30,17 +30,19 @@
 
 ### 2.2 裁决文本（用户签收处）
 
-```
-本人已审阅 HCC-STABLE 6 条件证据。
-
-□ 采纳最低门槛解读。HCC-STABLE 条件全部满足。批准进入 Phase B 车道二 preflight。
-
-□ 采纳严格解读。要求补齐 ________（条件 #: ____________）后重新裁决。
-
-□ 不裁决。HCC-STABLE 冻结，车道二继续冻结。
-
-签字：__________________  日期：__________________
-```
+> **以下为 2026-06-12 用户签收文本：**
+>
+> 我签收 HCC-STABLE：采纳最低门槛解读。HCC-STABLE 条件全部满足。批准 Phase B 车道二进入 preflight。
+>
+> 边界声明：
+> - Phase B 车道二仅允许进入逐任务 preflight，不自动执行。
+> - apply path 未开放。
+> - Auto Executor 未授权。
+> - Live Ranking mutation 未开放。
+> - Live Flush auto-apply 未开放。
+> - 每个后续任务仍需我单独 GO。
+>
+> **签收日期：2026-06-12**
 
 ## 3. 裁决后允许发生什么
 
@@ -92,4 +94,5 @@
 
 ## 7. 修订
 
+- 2026-06-12 v2：HCC-STABLE adjudication status sync — 用户签收裁决文本已填写；最低门槛解读采纳；Phase B 车道二可进入逐任务 preflight；明确尚未开放 apply path / Auto Executor / Live Ranking mutation / Live Flush auto-apply。
 - 2026-06-12 v1：HCC-STABLE adjudication preflight — 6 条件证据表 + 裁决点 + 红线表。
