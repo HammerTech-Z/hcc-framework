@@ -34,7 +34,7 @@
 - L6 live knowledge flush：未批准。
 - Locked roadmap（`docs/roadmap-locked-2026-05-28.md`）：不可直接改；任何路线图变更需新 ADR + 用户确认。
 
-## HCC Phase B 车道一状态（2026-06-12 同步）
+## HCC Phase B 車道一狀態（2026-06-12 同步）
 
 > HCC-GO 已签收（2026-06-11）。Phase B 车道一以"每任务人工发车模式"运行。
 > 来源：`docs/governance/hcc-go-authorization-2026-06-11.md`（HCC-STATUS-SYNC-001 已同步）。
@@ -45,12 +45,25 @@
 | B-2 scan gate + H-6 | ✅ 已完成 | `b2-scan-gate-closeout-2026-06-11.md` |
 | B-3 Evaluator Runner | ✅ 已完成 | `b3-evaluator-closeout-2026-06-11.md` |
 | B-4 Writer → Flush | ✅ 全部完成（2026-06-12） | A+B+C 三段；apply path 仍未实现 |
+| B-5 KnowledgeControl 视觉收尾 | ✅ 已完成（2026-06-12） | `a5ab9f9` |
+| B-6 Mano-P ADR + license 审计 | ✅ 已完成（2026-06-12） | `637775c` |
 
-**禁项重申**：Auto Executor 常驻未授权。Live Flush 未启用。
+**禁项重申**：Auto Executor 常驻未授权。Live Flush 未启用。apply path 未开放。Live Ranking mutation 未开放。Live Flush auto-apply 未开放。
+
+### Vault feature batch 收口（2026-06-12）
+
+| 组 | 文件数 | 状态 |
+|---|--------|------|
+| A2 KB pipeline | 10 | ✅ `854281e` |
+| A1 vault audit | 7 | ✅ `2aeda92` |
+| A3 ADR/backlog | 2 | ✅ `63e1827` |
+| report refresh | 1 | ✅ `b7be1bc` |
+
+19 个 vault/ADR/KB strays 全部收口。`npm run typecheck` gate 已恢复 PASS。
 
 ### HCC-STABLE 达標裁决（2026-06-12 用户签收）
 
-6 条件全部满足。车道二可进入逐任务 preflight。apply path / Auto Executor / Live Ranking mutation / Live Flush auto-apply 均未开放。每个后续任务仍需用户单独 GO。
+6 条件全部满足。Phase B 车道一 + 车道二全部完成。apply path / Auto Executor / Live Ranking mutation / Live Flush auto-apply 均未开放。每个后续任务仍需用户单独 GO。
 
 ## 开工顺序
 
