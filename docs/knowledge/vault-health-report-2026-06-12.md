@@ -1,6 +1,6 @@
 # Hermes Pro — Vault Health Report
 
-> Generated: 2026-06-12T23:33:08.223Z
+> Generated: 2026-06-13T05:56:09.003Z
 > Hermes Vault: /Users/midoudou/.hermes/vault/wiki
 > Obsidian Vault: /Users/midoudou/Desktop/赵铁锤的武器库
 
@@ -8,11 +8,11 @@
 
 | Metric | Value |
 |--------|-------|
-| Hermes Vault files | 94 |
+| Hermes Vault files | 95 |
 | Obsidian Vault files | 442 |
-| Total wikilinks | 304 |
-| Dead links | 44 |
-| Dead link rate | 14.5% |
+| Total wikilinks | 313 |
+| Dead links | 45 |
+| Dead link rate | 14.4% |
 | Ambiguous links | 0 |
 | Content overlap pairs | 4 |
 | Dead directories | 6 |
@@ -55,6 +55,7 @@
 | codebase/cron-B-2026-05-27.md | `双向链接` | 50 |
 | codebase/cron-B-2026-05-27.md | `patterns/knowledge-management` | 53 |
 | codebase/cron-B-2026-06-12.md | `关联` | 159 |
+| codebase/cron-B-2026-06-13.md | `关联` | 167 |
 | codebase/employee-library-filter.md | `hermes-pro` | 12 |
 | codebase/employee-library-filter.md | `electron` | 12 |
 | codebase/employee-library-filter.md | `typescript` | 12 |
@@ -89,26 +90,26 @@ No ambiguous links found.
 
 | File | Age (days) | Score | Category |
 |------|-----------|-------|----------|
-| codebase/cron-B-2026-05-19.md | 20.7 | 64.2% | codebase |
-| codebase/cron-B-2026-05-20.md | 20.7 | 64.2% | codebase |
-| codebase/cron-B-2026-05-21.md | 20.7 | 64.2% | codebase |
-| codebase/cron-B-2026-05-22.md | 20.7 | 64.2% | codebase |
-| codebase/employee-library-filter.md | 20.7 | 64.2% | codebase |
-| codebase/react-doctor-baseline-2026-05-23.md | 20.7 | 64.2% | codebase |
-| codebase/cron-B-2026-05-23.md | 20.7 | 64.1% | codebase |
-| codebase/K1.5-T4-冒烟测试-2026-05-23.md | 20.4 | 63.6% | codebase |
-| codebase/llm-checker-baseline-2026-05-25.md | 18.5 | 59.9% | codebase |
-| codebase/cron-B-2026-05-27.md | 16.6 | 55.9% | codebase |
-| codebase/cron-B-2026-05-28.md | 15.4 | 53.4% | codebase |
-| codebase/cron-B-2026-05-29.md | 14.9 | 52.3% | codebase |
-| codebase/cron-B-2026-05-30.md | 13.8 | 49.6% | codebase |
-| codebase/cron-B-2026-05-31.md | 12.8 | 47.0% | codebase |
-| codebase/cron-B-2026-06-01.md | 11.8 | 44.3% | codebase |
-| codebase/cron-B-2026-06-02.md | 10.8 | 41.5% | codebase |
-| codebase/cron-B-2026-06-03.md | 9.8 | 38.5% | codebase |
-| creative/ai-video-notes.md | 20.7 | 38.1% | creative |
-| tools/claude-code-review.md | 20.7 | 38.1% | tools |
-| tools/horizon-2026-05-23.md | 20.7 | 38.1% | tools |
+| codebase/cron-B-2026-05-19.md | 21.0 | 64.6% | codebase |
+| codebase/cron-B-2026-05-20.md | 21.0 | 64.6% | codebase |
+| codebase/cron-B-2026-05-21.md | 21.0 | 64.6% | codebase |
+| codebase/cron-B-2026-05-22.md | 21.0 | 64.6% | codebase |
+| codebase/cron-B-2026-05-23.md | 21.0 | 64.6% | codebase |
+| codebase/employee-library-filter.md | 21.0 | 64.6% | codebase |
+| codebase/react-doctor-baseline-2026-05-23.md | 21.0 | 64.6% | codebase |
+| codebase/K1.5-T4-冒烟测试-2026-05-23.md | 20.6 | 64.0% | codebase |
+| codebase/llm-checker-baseline-2026-05-25.md | 18.7 | 60.4% | codebase |
+| codebase/cron-B-2026-05-27.md | 16.8 | 56.5% | codebase |
+| codebase/cron-B-2026-05-28.md | 15.7 | 54.1% | codebase |
+| codebase/cron-B-2026-05-29.md | 15.2 | 52.9% | codebase |
+| codebase/cron-B-2026-05-30.md | 14.1 | 50.3% | codebase |
+| codebase/cron-B-2026-05-31.md | 13.1 | 47.7% | codebase |
+| codebase/cron-B-2026-06-01.md | 12.1 | 45.1% | codebase |
+| codebase/cron-B-2026-06-02.md | 11.1 | 42.3% | codebase |
+| codebase/cron-B-2026-06-03.md | 10.1 | 39.3% | codebase |
+| creative/ai-video-notes.md | 21.0 | 38.4% | creative |
+| tools/claude-code-review.md | 21.0 | 38.4% | tools |
+| tools/horizon-2026-05-23.md | 21.0 | 38.4% | tools |
 
 ## 6. Content Overlaps (>80%)
 
@@ -129,18 +130,18 @@ No ambiguous links found.
 
 | Topic | Hermes Files | Obsidian Files | Coverage |
 |-------|-------------|----------------|----------|
-| agent-architecture | 75 | 59 | both |
-| mcp-protocol | 54 | 6 | both |
-| llm-wiki | 17 | 3 | both |
-| knowledge-base | 47 | 45 | both |
+| agent-architecture | 76 | 59 | both |
+| mcp-protocol | 55 | 6 | both |
+| llm-wiki | 18 | 3 | both |
+| knowledge-base | 48 | 45 | both |
 | claude-code | 44 | 2 | both |
 | ai-models | 68 | 55 | both |
-| horizon-radar | 27 | 11 | both |
+| horizon-radar | 28 | 11 | both |
 | code-engineering | 27 | 1 | both |
-| security | 35 | 70 | both |
+| security | 36 | 70 | both |
 | ui-design | 4 | 13 | both |
 | ai-comic | 6 | 406 | both |
-| hermes-pro | 37 | 0 | hermes_only |
+| hermes-pro | 38 | 0 | hermes_only |
 
 ## 9. Obsidian Vault Wikilink Stats
 
