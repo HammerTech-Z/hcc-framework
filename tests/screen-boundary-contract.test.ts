@@ -56,6 +56,7 @@ const CANONICAL_LAYOUT_ORDER: readonly ScreenViewId[] = [
   "schedules",
   "gateway",
   "settings",
+  "shell",
 ];
 
 function result() {
@@ -79,33 +80,32 @@ function extractLayoutNavViews(): string[] {
 }
 
 describe("UI Slice 1 screen boundary contract schema", () => {
-  it("uses schema 1.0.0 and emits 21 Layout view contracts", () => {
+  it("uses schema 1.0.0 and emits 22 Layout view contracts", () => {
     const built = result();
     expect(SCREEN_BOUNDARY_CONTRACT_SCHEMA_VERSION).toBe("1.0.0");
-    expect(SCREEN_BOUNDARY_CONTRACT_VIEW_COUNT).toBe(21);
+    expect(SCREEN_BOUNDARY_CONTRACT_VIEW_COUNT).toBe(22);
     expect(built.schema_version).toBe("1.0.0");
     expect(built.mode).toBe("ui_slice_1_contract_descriptor");
-    expect(built.view_count).toBe(21);
-    expect(built.contracts).toHaveLength(21);
+    expect(built.view_count).toBe(22);
+    expect(built.contracts).toHaveLength(22);
   });
 
-  it("matches the actual Layout NAV_GROUPS order", () => {
-    expect(extractLayoutNavViews()).toEqual([...CANONICAL_LAYOUT_ORDER]);
+  it("matches the actual Layout NAV_GROUPS order (shell excluded — pseudo-view)", () => {
+    const navViews = CANONICAL_LAYOUT_ORDER.filter((v) => v !== "shell");
+    expect(extractLayoutNavViews()).toEqual(navViews);
     expect(result().contracts.map((entry) => entry.view)).toEqual([
       ...CANONICAL_LAYOUT_ORDER,
     ]);
   });
 
   it("each contract view appears in Layout route table rendering", () => {
-    // UI Slice 2 supersedes the literal paneStyle("view") check: panes are
-    // now driven by LAYOUT_ROUTES from layout-routes.tsx. Contract: every
-    // contract view is present in the route table, and Layout.tsx uses the
-    // generic paneStyle(route.view) helper.
+    // shell is a pseudo-view — not in layout-routes.tsx
+    const navViews = CANONICAL_LAYOUT_ORDER.filter((v) => v !== "shell");
     const layoutRoutesSrc = readFileSync(
       join(ROOT, "src/renderer/src/screens/Layout/layout-routes.tsx"),
       "utf-8",
     );
-    for (const view of CANONICAL_LAYOUT_ORDER) {
+    for (const view of navViews) {
       expect(layoutRoutesSrc).toContain(`view: "${view}"`);
     }
     expect(layoutSrc).toContain("paneStyle(route.view)");
@@ -120,7 +120,7 @@ describe("UI Slice 1 screen boundary contract schema", () => {
       {},
     );
     expect(counts).toEqual({
-      Work: 6,
+      Work: 7,
       Knowledge: 5,
       Agents: 4,
       System: 6,
@@ -166,6 +166,7 @@ describe("UI Slice 1 read-only and write-capable classifications", () => {
       schedules: "read_write_runtime",
       gateway: "mixed",
       settings: "mixed",
+      shell: "mixed",
     };
 
     for (const entry of result().contracts) {

@@ -2,34 +2,27 @@
 // Pure data projection only. No renderer wiring, no IPC, no network.
 //
 // ─────────────────────────────────────────────────────────────────────────────
-// Shell-level surface registry (DOCUMENTATION ONLY, 2026-06-11)
-// audit ref: docs/design/audit/Hermes-Pro-UI-Audit-And-Redesign-2026-06-11.md P2-5
+// Shell-level surface registry — PROMOTED to contract entry 2026-06-13
+// per preflight UI-SHELL-CONTRACT-001 (soul-level approval, audit I-6).
 //
-// The 21-view CONTRACTS array below intentionally does NOT cover the four
-// pre-existing Layout.tsx shell APIs. They are shell-level (always reachable
-// while any route is active) and therefore live outside the per-view contract
-// surface. Logged here for traceability:
-//   - downloadUpdate        : external-action  (auto-update flow, S-23)
-//   - installUpdate         : external-action  (replaces app binary; VERIFIED 2026-06-11:
-//     NO native confirm dialog before the call — gated only by user clicking
-//     the update button. This is a high-risk shell API. UI-SAFETY-001 checked.)
+// The 22-view CONTRACTS array below now includes a `shell` pseudo-view entry
+// covering the four pre-existing Layout.tsx shell APIs:
+//   - downloadUpdate        : external-action  (auto-update flow)
+//   - installUpdate         : external-action  (replaces app binary; VERIFIED
+//     2026-06-11: NO native confirm dialog — gated only by user clicking the
+//     update button. UI-SAFETY-001 checked.)
 //   - abortChat             : chat-runtime     (paired with sendMessage)
 //   - getSessionMessages    : read-only        (session resume helper)
 //
-// The Layout route-table test asserts that Layout.tsx contains no NEW
-// renderer-bridge or HTTP calls beyond the four pre-existing shell APIs
-// listed above; net new IPC bridges in Layout.tsx remain forbidden. Any
-// future addition of a fifth shell-level API MUST be logged here AND in
-// that test before it is allowed.
-//
-// This block is a comment-only registry. No runtime behaviour, no type, no
-// export, no contract entry is changed by it. Adding a real `shell` pseudo-
-// view to CONTRACTS is tracked under preflight UI-SHELL-CONTRACT-001 (see
-// Stage 3 preflight list) and requires user approval per audit I-6.
+// Shell is a pseudo-view — not rendered as a nav route, not in sidebar.
+// Always reachable while any of the 21 Layout routes is active.
+// Net new IPC bridges in Layout.tsx remain forbidden. Any future addition
+// of a fifth shell-level API MUST be logged here AND in the layout-route-table
+// test before it is allowed.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SCREEN_BOUNDARY_CONTRACT_SCHEMA_VERSION = "1.0.0" as const;
-export const SCREEN_BOUNDARY_CONTRACT_VIEW_COUNT = 21 as const;
+export const SCREEN_BOUNDARY_CONTRACT_VIEW_COUNT = 22 as const;
 export const SCREEN_BOUNDARY_CONTRACT_NO_RENDERER_WIRING = true as const;
 export const SCREEN_BOUNDARY_CONTRACT_NEW_IPC_ALLOWED = false as const;
 export const SCREEN_BOUNDARY_CONTRACT_RUNTIME_ACTIVATION_ALLOWED = false as const;
@@ -60,7 +53,8 @@ export type ScreenViewId =
   | "tools"
   | "schedules"
   | "gateway"
-  | "settings";
+  | "settings"
+  | "shell";
 
 export type ScreenBoundaryKind =
   | "read_only"
@@ -722,6 +716,32 @@ const CONTRACTS: readonly ScreenBoundaryContract[] = [
     remote_mode_restricted: false,
     model_strategy_relevant: true,
     notes: ["Broad system settings surface with config, MCP, backup, and update actions."],
+    enforcement: "static-string",
+  }),
+  contract({
+    view: "shell",
+    sidebar_group: "Work",
+    display_label: "Shell",
+    component_surface: "Layout",
+    boundary_kind: "mixed",
+    risk_level: "P1",
+    api_methods: [
+      read("getSessionMessages"),
+      write("abortChat"),
+      api("downloadUpdate", "ipc_bridge", true),
+      api("installUpdate", "ipc_bridge", true),
+    ],
+    write_surfaces: ["app_update_install", "chat_runtime_abort"],
+    direct_gateway_methods: [],
+    migrated_ipc_methods: [],
+    remote_mode_restricted: false,
+    model_strategy_relevant: false,
+    notes: [
+      "Shell-level pseudo-view — not rendered as a nav route. Registered 2026-06-13 per audit P2-5 / preflight UI-SHELL-CONTRACT-001.",
+      "Always reachable while any of the 21 Layout routes is active.",
+      "installUpdate confirm dialog: VERIFIED absent by UI-SAFETY-001.",
+      "4 shell APIs were previously documented only in file-header comment (UI-DOC-SYNC-001); now promoted to contract entry.",
+    ],
     enforcement: "static-string",
   }),
 ] as const;
