@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { ModelStrategyDryRunPanel } from "./ModelStrategyDryRunPanel";
+import { ModelStrategyDryRunPanel } from "../../HccCockpit/ModelStrategyDryRunPanel";
 
 type HermesApi = Window["hermesAPI"];
 type PipelineRun = Awaited<ReturnType<HermesApi["listPipelineRuns"]>>[number];
