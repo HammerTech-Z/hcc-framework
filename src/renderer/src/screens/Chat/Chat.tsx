@@ -15,13 +15,8 @@ import {
   Bell,
   Zap,
   Mic,
-  PanelRight,
   Maximize2,
   Minimize2,
-  Database,
-  Globe2,
-  ShieldCheck,
-  X,
 } from "lucide-react";
 
 // ── Slash Commands (UI-CHAT-001a command palette, 2026-06-11) ──
@@ -319,7 +314,6 @@ function Chat({
   } | null>(null);
   const [fastMode, setFastMode] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [referencesOpen, setReferencesOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -989,14 +983,6 @@ function Chat({
         <div className="chat-header-actions">
           <button
             type="button"
-            className={`btn-ghost chat-clear-btn ${referencesOpen ? "chat-header-btn-active" : ""}`}
-            onClick={() => setReferencesOpen((value) => !value)}
-            title="Toggle references"
-          >
-            <PanelRight size={15} />
-          </button>
-          <button
-            type="button"
             className={`btn-ghost chat-clear-btn ${focusMode ? "chat-header-btn-active" : ""}`}
             onClick={() => setFocusMode((value) => !value)}
             title={focusMode ? "Exit focus" : "Focus mode"}
@@ -1160,48 +1146,6 @@ function Chat({
 
           <div ref={messagesEndRef} />
         </div>
-
-        {referencesOpen && (
-          <aside className="chat-reference-panel">
-            <div className="chat-reference-header">
-              <span>References</span>
-              <button
-                type="button"
-                className="chat-reference-close"
-                onClick={() => setReferencesOpen(false)}
-                aria-label="Close references"
-              >
-                <X size={13} />
-              </button>
-            </div>
-            <div className="chat-reference-card">
-              <div className="chat-reference-card-title">
-                <Database size={13} />
-                Local Knowledge
-              </div>
-              <div className="chat-reference-card-value">standby</div>
-              <p>No live flush</p>
-            </div>
-            <div className="chat-reference-card">
-              <div className="chat-reference-card-title">
-                <Globe2 size={13} />
-                Web Sources
-              </div>
-              <div className="chat-reference-card-value">manual</div>
-              <p>Verify on request</p>
-            </div>
-            <div className="chat-reference-card">
-              <div className="chat-reference-card-title">
-                <ShieldCheck size={13} />
-                Agent Judgment
-              </div>
-              <div className="chat-reference-card-value">
-                {isLoading ? "running" : "idle"}
-              </div>
-              <p>Read-only UI state</p>
-            </div>
-          </aside>
-        )}
       </div>
 
       <div className="chat-input-area">

@@ -6,7 +6,6 @@ import {
   buildBoundaryBadgeTitle,
 } from "./boundary-badge";
 import {
-  BoundaryInspectorPanel,
   buildBoundaryInspectorDescriptor,
 } from "./boundary-inspector";
 import { getWriteActionDisplayState } from "./write-action-display-state";
@@ -34,6 +33,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
 import { StatusBadge } from "../../components/StatusBadge/StatusBadge";
+import { InspectorTabs } from "../../components/Inspector/InspectorTabs";
 
 type View =
   | "chat"
@@ -405,7 +405,7 @@ function Layout(): React.JSX.Element {
           </button>
         </div>
         <div className="shell-inspector-body">
-          <BoundaryInspectorPanel descriptor={boundaryInspector} />
+          <InspectorTabs view={view} descriptor={boundaryInspector} />
         </div>
       </aside>
     </div>
