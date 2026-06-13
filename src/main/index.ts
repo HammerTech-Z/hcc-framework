@@ -81,6 +81,7 @@ import {
 } from "./session-cache";
 import { listModels, addModel, removeModel, updateModel } from "./models";
 import { createKnowledgeIpcStartup } from "./knowledge-ipc-startup";
+import { installAutoExecutorHost } from "./auto-executor-bootstrap";
 import {
   listProfiles,
   createProfile,
@@ -1295,6 +1296,11 @@ app.whenReady().then(() => {
   setupIPC();
   createWindow();
   setupUpdater();
+  // HCC Auto Executor bootstrap — idle / disabled / no-start.
+  // Constructs the host in `constructed` state only. Does NOT arm,
+  // start, or invoke any action. Held for a separate explicit GO to
+  // transition out of `constructed`. See docs/plan/hcc-auto-executor-bootstrap-preflight-2026-06-13.md.
+  installAutoExecutorHost();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
