@@ -3,8 +3,9 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 const ROOT = join(__dirname, "..");
+// UI-ARCHIVE-001: source moved to _archive (historical reference, not active route).
 const bailongmaSrc = readFileSync(
-  join(ROOT, "src/renderer/src/screens/BaiLongma/BaiLongma.tsx"),
+  join(ROOT, "src/renderer/src/screens/_archive/BaiLongma/BaiLongma.tsx"),
   "utf-8",
 );
 

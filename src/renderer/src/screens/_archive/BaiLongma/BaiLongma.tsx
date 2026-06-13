@@ -1,3 +1,9 @@
+// historical reference — archived 2026-06-13 per UI-ARCHIVE-001
+// route bailongma → Mission legacySource="bailongma" (layout-routes.tsx)
+// see ADR-20260529-bailongma-poc2-qa-pass-productionization-not-approved
+// This file is NOT part of any active route surface.
+// Preserved as cockpit language design reference. Do not delete.
+
 // BaiLongma P2: 主驾驶舱 — 读所有可用 preload API
 // Hard boundaries: no new IPC handles, no writes, read-only via existing preload APIs
 // P2 panels use ONLY: getGatewayState, listVaultFiles, knowledgeSearch, listPipelineRuns, getEvents, listCronJobs

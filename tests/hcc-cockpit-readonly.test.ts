@@ -3,8 +3,9 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 const ROOT = join(__dirname, "..");
+// UI-ARCHIVE-001: source moved to _archive (historical reference, not active route).
 const cockpitSrc = readFileSync(
-  join(ROOT, "src/renderer/src/screens/HccCockpit/HccCockpit.tsx"),
+  join(ROOT, "src/renderer/src/screens/_archive/HccCockpit/HccCockpit.tsx"),
   "utf-8",
 );
 

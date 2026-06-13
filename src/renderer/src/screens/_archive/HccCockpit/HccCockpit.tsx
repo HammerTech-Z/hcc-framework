@@ -1,3 +1,9 @@
+// historical reference — archived 2026-06-13 per UI-ARCHIVE-001
+// route hccCockpit → Mission legacySource="hcc" (layout-routes.tsx)
+// see ADR-20260530-hcc-cockpit-readonly-poc
+// This file is NOT part of any active route surface.
+// Preserved as cockpit language design reference. Do not delete.
+
 import { useEffect, useMemo, useState } from "react";
 
 import { ModelStrategyDryRunPanel } from "./ModelStrategyDryRunPanel";
