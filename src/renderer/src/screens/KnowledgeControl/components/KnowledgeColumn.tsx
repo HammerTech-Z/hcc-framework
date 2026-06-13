@@ -2,12 +2,12 @@ import type { KnowledgeControlItem, KnowledgeLifecycle } from "../knowledge-cont
 import KnowledgeCard from "./KnowledgeCard";
 
 const COLUMN_LABELS: Record<KnowledgeLifecycle, string> = {
-  inbox: "Inbox",
-  candidate: "Candidate",
-  verified: "Verified",
-  linked: "Linked",
-  stale: "Stale",
-  archived: "Archived",
+  inbox: "收件箱",
+  candidate: "候选",
+  verified: "已验证",
+  linked: "已链接",
+  stale: "过期",
+  archived: "归档",
 };
 
 const COLUMN_HINTS: Record<KnowledgeLifecycle, string> = {

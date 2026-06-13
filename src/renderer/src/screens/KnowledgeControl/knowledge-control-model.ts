@@ -138,7 +138,16 @@ export function redactSecrets(content?: string): string {
   return content
     .replace(/(?:api[_-]?key|apikey|secret|token|password)=[\S"']+/gi, "$1=***REDACTED***")
     .replace(/\b(sk-[a-zA-Z0-9]{8,})\b/g, "sk-***REDACTED***")
-    .replace(/\b(AKIA[0-9A-Z]{16})\b/g, "AKIA***REDACTED***");
+    .replace(/\b(AKIA[0-9A-Z]{16})\b/g, "AKIA***REDACTED***")
+    .replace(/\b(ghp_[a-zA-Z0-9]{36})\b/g, "ghp_***REDACTED***")
+    .replace(
+      /-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g,
+      "-----BEGIN PRIVATE KEY***REDACTED***-----END PRIVATE KEY-----",
+    )
+    .replace(
+      /\b[a-f0-9]{40}\b(?=[^\n]{0,80}(?:secret|token|key|password))/gi,
+      "***HEX40-REDACTED***",
+    );
 }
 
 function extractTaskRefs(content?: string): string[] {

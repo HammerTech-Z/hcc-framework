@@ -190,6 +190,104 @@ describe("Knowledge Control read-only boundary", () => {
     it("redactSecrets returns empty for undefined input", () => {
       expect(redactSecrets(undefined)).toBe("");
     });
+
+    // UI-KNOWLEDGE-001 — extended redaction patterns
+    it("redactSecrets masks GitHub personal access tokens", () => {
+      const result = redactSecrets("token: ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789");
+      expect(result).not.toMatch(/ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789/);
+      expect(result).toMatch(/REDACTED/);
+    });
+
+    it("redactSecrets masks PEM private key blocks", () => {
+      const pem = [
+        "-----BEGIN RSA PRIVATE KEY-----",
+        "MIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/ygWyF5PBbGPhqUg",
+        "-----END RSA PRIVATE KEY-----",
+      ].join("\n");
+      const result = redactSecrets(pem);
+      expect(result).not.toMatch(/MIIEpAIBAAKCAQEA0Z3VS5JJcds3xfn/);
+      expect(result).toMatch(/REDACTED/);
+      expect(result).toMatch(/-----BEGIN/);
+    });
+
+    it("redactSecrets masks 40-char hex adjacent to secret keywords", () => {
+      const hex = "a".repeat(40);
+      const result = redactSecrets(`hashed token value: ${hex} stored as key`);
+      expect(result).not.toMatch(new RegExp(hex));
+      expect(result).toMatch(/HEX40-REDACTED/);
+    });
+  });
+
+  describe("UI-KNOWLEDGE-001 four-element card layout + Chinese labels", () => {
+    it("renders column labels in Chinese per audit", () => {
+      const columnSrc = readFileSync(
+        join(
+          ROOT,
+          "src/renderer/src/screens/KnowledgeControl/components/KnowledgeColumn.tsx",
+        ),
+        "utf-8",
+      );
+      expect(columnSrc).toContain('inbox: "收件箱"');
+      expect(columnSrc).toContain('candidate: "候选"');
+      expect(columnSrc).toContain('verified: "已验证"');
+      expect(columnSrc).toContain('linked: "已链接"');
+      expect(columnSrc).toContain('stale: "过期"');
+      expect(columnSrc).toContain('archived: "归档"');
+    });
+
+    it("renders card title before source/trust/prompt_use badges (fixed order)", () => {
+      const cardSrc = readFileSync(
+        join(
+          ROOT,
+          "src/renderer/src/screens/KnowledgeControl/components/KnowledgeCard.tsx",
+        ),
+        "utf-8",
+      );
+      const titleIdx = cardSrc.indexOf("knowledge-control-card-title");
+      const metaRowIdx = cardSrc.indexOf("knowledge-control-card-meta-row");
+      const promptIdx = cardSrc.indexOf("knowledge-control-prompt-use");
+      expect(titleIdx).toBeGreaterThan(-1);
+      expect(metaRowIdx).toBeGreaterThan(titleIdx);
+      expect(promptIdx).toBeGreaterThan(metaRowIdx);
+    });
+
+    it("shows 来源未验证 when trustLevel=unverified and no provenance", () => {
+      const item = buildKnowledgeControlItem({
+        path: "wiki/raw/unverified.md",
+        name: "unverified.md",
+        dir: "wiki",
+        size: 100,
+        mtime: 1790000000,
+        content: "",
+        frontmatter: {
+          title: "Unverified Note",
+          trust_level: "unverified",
+        },
+      });
+      expect(item.trustLevel).toBe("unverified");
+      expect(item.provenanceCount).toBe(0);
+      expect(item.verifiedAt).toBeNull();
+    });
+
+    it("renders page-level notice pointing users to Knowledge screen for ingest", () => {
+      const kcSrc = readFileSync(
+        join(ROOT, "src/renderer/src/screens/KnowledgeControl/KnowledgeControl.tsx"),
+        "utf-8",
+      );
+      expect(kcSrc).toContain("knowledge-control-notice");
+      expect(kcSrc).toMatch(/录入请前往「知识」页/);
+    });
+
+    it("does not introduce write/ingest/drag entry points", () => {
+      const cardSrc = readFileSync(
+        join(
+          ROOT,
+          "src/renderer/src/screens/KnowledgeControl/components/KnowledgeCard.tsx",
+        ),
+        "utf-8",
+      );
+      expect(cardSrc).not.toMatch(/knowledgeIngest|onDrop|onDrag|draggable|dnd-kit/);
+    });
   });
 
 });

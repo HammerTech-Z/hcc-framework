@@ -9203,3 +9203,92 @@ body {
   color: var(--hp-state-pass-fg, #8bc34a);
   background: var(--hp-state-pass-bg, rgba(139, 195, 74, 0.1));
 }
+
+/* UI-KNOWLEDGE-001 — page-level notice (anti-write misunderstanding) */
+.knowledge-control-notice {
+  margin: 8px 0 12px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--hp-state-warn-fg, #ffd866);
+  background: var(--hp-state-warn-bg, rgba(255, 216, 102, 0.10));
+  border-left: 3px solid var(--hp-state-warn, #ff9f0a);
+  border-radius: 0 var(--hp-radius-md, 8px) var(--hp-radius-md, 8px) 0;
+}
+
+/* UI-KNOWLEDGE-001 — card four-element layout (title → source → trust → prompt_use) */
+.knowledge-control-card-title {
+  order: 1;
+}
+.knowledge-control-card-meta-row {
+  order: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+.knowledge-control-card p {
+  order: 3;
+}
+.knowledge-control-card-meta {
+  order: 4;
+}
+
+.knowledge-control-prompt-use {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  color: var(--text-secondary, #cbd5e1);
+  background: var(--bg-elevated, rgba(255, 255, 255, 0.05));
+}
+.knowledge-control-prompt-use[data-allowed="yes"] {
+  color: var(--hp-state-pass-fg, #8bc34a);
+  background: var(--hp-state-pass-bg, rgba(139, 195, 74, 0.10));
+}
+.knowledge-control-prompt-use[data-allowed="no"] {
+  color: var(--hp-state-warn-fg, #ffd866);
+  background: var(--hp-state-warn-bg, rgba(255, 216, 102, 0.12));
+}
+
+.knowledge-control-trust-warn {
+  color: var(--hp-state-warn-fg, #ffd866);
+}
+
+/* UI-CHAT-001b — upgraded approval bar (orange left-edge, Chinese title, disclaimer) */
+.hp-approval-bar {
+  margin-top: 8px;
+  margin-left: 42px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--hp-state-warn, #ff9f0a);
+  background: rgba(255, 159, 10, 0.08);
+  border-radius: 0 var(--hp-radius-md, 8px) var(--hp-radius-md, 8px) 0;
+}
+.hp-approval-bar-header {
+  font-weight: 700;
+  color: var(--hp-state-warn, #ff9f0a);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.hp-approval-bar-excerpt {
+  font-size: 12px;
+  color: var(--text-secondary, #cbd5e1);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: var(--bg-elevated, rgba(255, 255, 255, 0.04));
+  padding: 6px 8px;
+  border-radius: 4px;
+  max-height: 80px;
+  overflow: auto;
+  margin-bottom: 10px;
+}
+.hp-approval-bar-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.hp-approval-bar-note {
+  font-size: 10px;
+  color: var(--text-secondary, #94a3b8);
+  font-style: italic;
+}

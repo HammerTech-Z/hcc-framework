@@ -8,6 +8,13 @@ function shortDate(value: string): string {
   return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
 }
 
+const PROMPT_USE_LABEL: Record<KnowledgeControlItem["allowPromptUse"], string> = {
+  yes: "可用于回答",
+  prefer_local: "优先本地",
+  ask_first: "需先询问",
+  no: "禁止用于回答",
+};
+
 export default function KnowledgeCard({
   item,
   selected,
@@ -23,11 +30,14 @@ export default function KnowledgeCard({
       className={`knowledge-control-card ${selected ? "selected" : ""}`}
       onClick={() => onSelect(item)}
     >
-      <div className="knowledge-control-card-top">
+      <div className="knowledge-control-card-title">{item.title}</div>
+      <div className="knowledge-control-card-meta-row">
         <span className="knowledge-control-source">{item.sourceType}</span>
         <TrustBadge item={item} />
+        <span className="knowledge-control-prompt-use" data-allowed={item.allowPromptUse}>
+          {PROMPT_USE_LABEL[item.allowPromptUse]}
+        </span>
       </div>
-      <div className="knowledge-control-card-title">{item.title}</div>
       <p>{item.preview}</p>
       <div className="knowledge-control-card-meta">
         <span>

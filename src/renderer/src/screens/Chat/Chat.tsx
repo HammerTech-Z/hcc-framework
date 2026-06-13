@@ -202,6 +202,13 @@ export { AgentMarkdown };
 
 const APPROVAL_RE =
   /⚠️.*dangerous|requires? (your )?approval|\/approve.*\/deny|do you want (me )?to (proceed|continue|run|execute)/i;
+// UI-CHAT-001b — Chinese danger prompts (added 2026-06 per audit P2-3, additive only)
+const APPROVAL_RE_CN =
+  /需要.*?(确认|审批)|是否(继续|执行|运行)|危险操作|请(确认|批准)/i;
+const APPROVAL_RE_COMBINED = new RegExp(
+  APPROVAL_RE.source + "|" + APPROVAL_RE_CN.source,
+  "i",
+);
 
 interface MessageRowProps {
   msg: ChatMessage;
@@ -236,17 +243,31 @@ const MessageRow = memo(function MessageRow({
       {msg.role === "agent" &&
         !isLoading &&
         isLast &&
-        APPROVAL_RE.test(msg.content) && (
-          <div className="chat-approval-bar">
-            <button
-              className="chat-approval-btn chat-approve"
-              onClick={onApprove}
-            >
-              {t("chat.approve")}
-            </button>
-            <button className="chat-approval-btn chat-deny" onClick={onDeny}>
-              {t("chat.deny")}
-            </button>
+        APPROVAL_RE_COMBINED.test(msg.content) && (
+          <div className="hp-approval-bar">
+            <div className="hp-approval-bar-header">⚠ 代理请求审批</div>
+            <div className="hp-approval-bar-excerpt">
+              {msg.content.length > 200 ? `${msg.content.slice(0, 200)}…` : msg.content}
+            </div>
+            <div className="hp-approval-bar-actions">
+              <button
+                type="button"
+                className="chat-approval-btn chat-approve"
+                onClick={onApprove}
+              >
+                {t("chat.approve")}
+              </button>
+              <button
+                type="button"
+                className="chat-approval-btn chat-deny"
+                onClick={onDeny}
+              >
+                {t("chat.deny")}
+              </button>
+            </div>
+            <div className="hp-approval-bar-note">
+              按钮将以消息形式发送给代理，不是本地开关。
+            </div>
           </div>
         )}
     </div>

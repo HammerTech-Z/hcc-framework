@@ -126,6 +126,10 @@ export default function KnowledgeControl(): React.JSX.Element {
         Status display only · No automatic execution
       </div>
 
+      <div className="knowledge-control-notice">
+        录入请前往「知识」页（保留显式写入路径）· Ingest remains in the Knowledge screen
+      </div>
+
       <div className="knowledge-control-hero">
         <div>
           <div className="knowledge-control-eyebrow">Local Knowledge OS</div>
