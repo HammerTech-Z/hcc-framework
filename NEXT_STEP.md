@@ -69,8 +69,8 @@
 
 ## 待批项（需用户授权，未执行）
 
-> 以下 4 项为当前真正等待用户授权的任务队列。
-> 已完成的 UI-KNOWLEDGE-001 / UI-CHAT-001b / UI-ARCHIVE-001 / UI-CHAT-001c 已移入历史 ledger（见下方「历史 ledger」段）。
+> 以下 3 项为当前真正等待用户授权的任务队列。
+> 已完成的 UI-KNOWLEDGE-001 / UI-CHAT-001b / UI-ARCHIVE-001 / UI-CHAT-001c / UI-SHELL-CONTRACT-001 已移入历史 ledger（见下方「历史 ledger」段）。
 
 | 优先级 | 任务 | 状态 | 阻塞 | owner | trigger | done definition |
 |--------|------|------|------|-------|---------|-----------------|
@@ -121,7 +121,6 @@
 | **UI-KNOWLEDGE-001** | secret 脱敏 + 卡片四要素 | ✅ **已完成并推送**（2026-06-13，commit `85a4f78`，与 UI-CHAT-001b 同 commit）。redactSecrets 扩展五种模式（AWS/GitHub PAT/PEM 块/hex40 启发式）；KnowledgeColumn 中文化（收件箱/候选/已验证/已链接/过期/归档）；KnowledgeCard 固定四要素顺序（title→source→trust→prompt_use）；TrustBadge "来源未验证" 指示；page-level "录入请前往「知识」页" notice；8 测试断言 PASS。|
 | **UI-ARCHIVE-001** | BaiLongma/HccCockpit 归档 | ✅ **已完成并推送**（2026-06-13，commit `d80a71f`）。BaiLongma.tsx / HccCockpit.tsx git mv 到 `screens/_archive/`，加历史参考头注解；删除孤单 index.tsx（HccCockpit + BaiLongma）+ HccCockpit.test.tsx（已归档组件集成测试）；layout-routes.tsx 未改动（legacySource prop 通过 Mission）；ModelStrategyDryRunPanel 原位保留（preflight §4）；error-classification 原位保留；grep 零活跃引用；36/36 tests PASS。|
 | **UI-SHELL-CONTRACT-001** | shell pseudo-view 入合约 | ✅ **已完成并推送**（2026-06-13，commit `fad8368`）。screen-boundary-contract.ts：ScreenViewId +`"shell"`；VIEW_COUNT 21→22；shell 伪视图合约条目（4 个 Layout.tsx shell API 从文件头注释升级）；`enforcement: "static-string"`；`risk_level: "P1"`（installUpdate 高风险）；`sidebar_group: "Work"`（伪组，不在 nav 渲染）；screen-boundary-contract.test.ts 23/23 PASS；typecheck:node EXIT 0；layout-route-table recharts baseline failure 已知，未声称 PASS。|
-| **UI-SAFETY-001** | 只读测试 import-graph 硬化 | ✅ **已完成**（2026-06-11）。contract 加 `enforcement` 字段；5 个 read_only view 设为 import-graph；新增 `tests/_helpers/import-graph.ts`；3 个测试文件加 import-graph 断言。installUpdate 已确认无原生确认弹层。 |
 | **UI-SAFETY-001** | 只读测试 import-graph 硬化 | ✅ **已完成**（2026-06-11）。contract 加 `enforcement` 字段；5 个 read_only view 设为 import-graph；新增 `tests/_helpers/import-graph.ts`；3 个测试文件加 import-graph 断言。installUpdate 已确认无原生确认弹层。 |
 
 > **Productionization NOT APPROVED** — BaiLongma/HCC 仍停留在只读增强与候选设计阶段；写入/执行版必须另批。
