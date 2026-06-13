@@ -67,7 +67,27 @@
 
 ---
 
-## 下一步优先级
+## 待批项（需用户授权，未执行）
+
+> 以下 4 项为当前真正等待用户授权的任务队列。
+> 已完成的 UI-KNOWLEDGE-001 / UI-CHAT-001b / UI-ARCHIVE-001 / UI-CHAT-001c 已移入历史 ledger（见下方「历史 ledger」段）。
+
+| 优先级 | 任务 | 状态 | 阻塞 | owner | trigger | done definition |
+|--------|------|------|------|-------|---------|-----------------|
+| 待批 | P3 候选 010 受控 worktree dry-run | ⏸️ 待批 | HCC Auto Executor 冻结 | 用戶 | HCC Auto Executor 解凍 | worktree 跑 plan 構造，不執行 step 命令，verifier PASS |
+| 待批 | P3 真实执行入口 HCC Auto Executor 启动 | ❌ 需用户重新明确授权 + 硬件验证 + 安全复核 + 独立批 | HCC-AUTH-AUDIT-001 已 PASS（仅解 implementation-preflight scope） | 用戶 | 用户在 governance/hcc-go-authorization 下发独立批 | Auto Executor 常驻启动 + health check PASS + typecheck + tests 全绿 |
+| 待批 | P6 外部 Agent 能力采纳决策 | ⏸️ 待批 | OpenClaw/OpenHuman/Ruflo/MyForge/DataLogic/MiroFish 选型 | 用戶 | ADR-20260530 阅读完 | 用户选 A/B/C/D；批准后更新 roadmap，不批准归档 |
+| 待批 | UI-SHELL-CONTRACT-001 shell pseudo-view 入合约 | ⏸️ 待批 | Preflight 已交 | Claude Code | soul-level approval | contract view count 21→22 + tests PASS |
+
+> **Auto Executor 仍未批准** — runtime / startup 红线下禁止。
+> **Productionization NOT APPROVED** — BaiLongma/HCC 仍停留在只读增强与候选设计阶段；写入/执行版必须另批。
+> **L6 live flush 未批准** · **hard cutover 未批准** · **P3 真实执行需要独立批**。
+
+---
+
+## 历史 ledger（已完成项，仅供回溯）
+
+> 本段原名为「下一步优先级」。2026-06-13 审计重构后改名。已完成项保留为历史证据，不再作为当前待执行队列。
 
 | 优先级 | 任务 | 说明 |
 |--------|------|------|
@@ -86,11 +106,9 @@
 | **P3 dry-run 008** | Handoff payload temp fixture + local verifier-only check | ✅ PASS（20/20 fixture tests；`tests/safety` 当时 19 files, 470/470 PASS；仅 tmpDir 写读，不写真实 `~/.hermes/handoff`） |
 | **P3** | HCC + CodeGraph + Quality Loop 主任务闭环 | ⏸️ **dry-run baseline PASS / real execution paused**：HCC Auto Executor 仍未批准、未启动；Claude Code 按 dry-run 契约执行 P3 代码/项目任务；Hermes 暂时只做需求整理、计划审查、知识检索、Handoff Pack、执行结果归档 |
 | **P3 dry-run 009** | Artifact Store dry-run record | ✅ PASS（`src/main/hcc-artifact-store.ts` + `tests/safety/hcc-artifact-store.test.ts` new；`tests/safety` 20 files, 515/515 PASS；typecheck EXIT 0；record `dryRun:true` / `executable:false` / `runtime_class:"dry_run"` 类型硬编码；tmpDir 写读，零真实 `~/.hermes/handoff/packs` 与 `~/.hermes/audit` 写入；详见 `~/.hermes/pipeline-runs/HCC-20260601-P3-SLICE-009-artifact-store-dry-run/01-report.md`） |
-| **P3 候选 010** | 受控 worktree dry-run | 待批：隔离 worktree 跑 plan 构造，不执行 step 命令。仅在 HCC Auto Executor 解冻后才有意义；真实执行入口必须另批。 |
-| **P3 真实执行入口** | HCC Auto Executor 启动 | ❌ **必须用户重新明确授权 + 硬件/云端验证 + 安全复核，独立批** |
 | **P4** | CLI-Anything / Safari MCP 安全工具桥 | Safari MCP MVP 已接；深度 CLI-Anything 进入试点，必须走授权、allowlist、pre-flight、安全复核 |
 | **P5** | AI 漫剧提效链路 | awesome-video-generation + AstraVideo-AI 作为候选参考，先做工具雷达和任务队列设计，不直接入主线 |
-| **P6** | 外部 Agent 能力采纳决策 | 基于 `docs/adr/ADR-20260530-external-agent-capability-adoption.md`；OpenClaw/OpenHuman/Ruflo/MyForge/DataLogic/MiroFish 只做候选或架构借鉴 |
+| **P7** | WeChat/iLink rate limit 自然运行验证 + 投递策略 | ✅ **低优先级 4 个 cron job 已切 deliver=local**
 | **P7** | WeChat/iLink rate limit 自然运行验证 + 投递策略 | ✅ **低优先级 4 个 cron job 已切 deliver=local**（`db41a513ebfd` / `21129f505fb4` / `28f0bff3083d` / `skill-cleanup-weekly`；schedule / prompt / skill set / enable state 不变，仅 `deliver: weixin → local`）；状态从 `still_rate_limited_needs_C_or_F_decision` 更新为 `low_priority_jobs_local_delivery_applied`；高优先级投递策略仍待独立决策。报告：`~/.hermes/pipeline-runs/HCC-20260602-P7-WECHAT-ILINK-LOCAL-DELIVERY/01-report.md` 与 `~/.hermes/pipeline-runs/HCC-20260602-WECHAT-ILINK-NATURAL-RUN-VERIFY/01-report.md` |
 | **MODEL-STRATEGY 001-006B** | Model lane / provider requirements / approval contract dry-run chain | ✅ PASS：001 dry-run fixture；002A provider catalog；002B smoke matrix；002C disabled UI descriptor；003A read-only HccCockpit panel；004A rollout simulation；004B rollback preview；004C UI status projection；005A EchoBird taxonomy；005B Hermes-native model-nexus descriptor；005C install/recovery diagnostics；006A user-configured lane/provider requirements descriptor；006B live config adapter approval contract。006B implementation commit `071b033`；typecheck PASS；103 files / 3267 tests PASS；不写 `~/.hermes/config.yaml`，不触 handoff/audit，不回显 API key/secret，不接 credential pool/keychain/local runtime。后续 006C+ live config adapter implementation 必须另批。 |
 | **UI Slice 0** | Hermes Pro UI Contract Audit | ✅ 完成（`docs/design/UI-SLICE-0-CONTRACT-AUDIT-2026-06-05.md`）。Knowledge IPC 迁移已完成（三通道 main-process bridge）。Slice 1-2 已落地。 |
@@ -104,7 +122,7 @@
 | **UI-CHAT-001c** | Inspector 三 tab 化 + Chat 引用面板迁入 | ✅ **已完成并推送**（2026-06-13，commits `a67cf37` + `f088cd8`）。InspectorTabs 三 tab：上下文（ContextTab）/ 引用（ReferenceTab）/ 边界（BoundaryTab）；默认 tab=context；Chat 内部 chat-reference-panel aside 已移除；ReferenceTab 吸收原 Chat 三张知识卡片；BoundaryTab 保留全部既存 boundary inspector data-testid anchors；零新 IPC；13/13 tests PASS。|
 | **UI-KNOWLEDGE-001** | secret 脱敏 + 卡片四要素 | ✅ **已完成并推送**（2026-06-13，commit `85a4f78`，与 UI-CHAT-001b 同 commit）。redactSecrets 扩展五种模式（AWS/GitHub PAT/PEM 块/hex40 启发式）；KnowledgeColumn 中文化（收件箱/候选/已验证/已链接/过期/归档）；KnowledgeCard 固定四要素顺序（title→source→trust→prompt_use）；TrustBadge "来源未验证" 指示；page-level "录入请前往「知识」页" notice；8 测试断言 PASS。|
 | **UI-ARCHIVE-001** | BaiLongma/HccCockpit 归档 | ✅ **已完成并推送**（2026-06-13，commit `d80a71f`）。BaiLongma.tsx / HccCockpit.tsx git mv 到 `screens/_archive/`，加历史参考头注解；删除孤单 index.tsx（HccCockpit + BaiLongma）+ HccCockpit.test.tsx（已归档组件集成测试）；layout-routes.tsx 未改动（legacySource prop 通过 Mission）；ModelStrategyDryRunPanel 原位保留（preflight §4）；error-classification 原位保留；grep 零活跃引用；36/36 tests PASS。|
-| **UI-SHELL-CONTRACT-001** | shell pseudo-view 入合约 | ⏳ **待用户批准**。Preflight：`docs/design/preflight/UI-SHELL-CONTRACT-001.md` |
+| **UI-SAFETY-001** | 只读测试 import-graph 硬化 | ✅ **已完成**（2026-06-11）。contract 加 `enforcement` 字段；5 个 read_only view 设为 import-graph；新增 `tests/_helpers/import-graph.ts`；3 个测试文件加 import-graph 断言。installUpdate 已确认无原生确认弹层。 |
 | **UI-SAFETY-001** | 只读测试 import-graph 硬化 | ✅ **已完成**（2026-06-11）。contract 加 `enforcement` 字段；5 个 read_only view 设为 import-graph；新增 `tests/_helpers/import-graph.ts`；3 个测试文件加 import-graph 断言。installUpdate 已确认无原生确认弹层。 |
 
 > **Productionization NOT APPROVED** — BaiLongma/HCC 仍停留在只读增强与候选设计阶段；写入/执行版必须另批。
