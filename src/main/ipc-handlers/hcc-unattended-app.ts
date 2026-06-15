@@ -35,6 +35,9 @@ import {
   type HCCUnattendedAppEntrypointInput,
   type HCCUnattendedAppEntrypointResult,
 } from "../../shared/lib/hcc-unattended-app-entrypoint";
+import type {
+  HCCFinalControlledRealDispatchAdapter,
+} from "../../shared/lib/hcc-final-controlled-real-dispatch";
 
 export const HCC_UNATTENDED_APP_IPC_SCHEMA_VERSION =
   "1.0.0" as const;
@@ -101,6 +104,32 @@ export interface HCCUnattendedAppIpcHandlerDeps {
    * keep the result deterministic. Default: `() => Date.now()`.
    */
   now?: () => number;
+  /**
+   * Optional dispatch adapter. When present, the handler passes
+   * it directly into `scheduler_input.dispatch_adapter` so the
+   * full entrypoint / scheduler / runner chain can perform
+   * real dispatch through the injected adapter. When absent,
+   * the handler preserves the existing safe no-op adapter
+   * (which returns a typed NO-GO at the entrypoint level
+   * because `supportsKind` is false).
+   */
+  dispatch_adapter?: HCCFinalControlledRealDispatchAdapter;
+}
+
+/**
+ * Default no-op dispatch adapter. Returns `supportsKind: false`
+ * so the entrypoint surfaces a typed NO-GO. Production wiring
+ * injects a real adapter via `deps.dispatch_adapter`.
+ */
+export function defaultNoOpDispatchAdapter(): HCCFinalControlledRealDispatchAdapter {
+  return {
+    supportsKind: () => false,
+    dispatch: () => {
+      throw new Error(
+        "hcc-unattended-app-ipc: no dispatch adapter injected; the handler's default no-op adapter refuses dispatch. Inject a real adapter via deps.dispatch_adapter.",
+      );
+    },
+  };
 }
 
 /**
@@ -251,18 +280,14 @@ export async function handleHccUnattendedAppIpcRequest(
       },
       budget: { present: true, exceeded: false },
       blockers_resolved: true,
-      // The handler uses a no-op dispatch adapter that the
-      // entrypoint will catch and surface as a typed NO-GO. A
-      // real production wiring slice injects a real adapter
-      // via `deps.dispatchAdapter` (out of scope here).
-      dispatch_adapter: {
-        supportsKind: () => false,
-        dispatch: () => {
-          throw new Error(
-            "hcc-unattended-app-ipc: no dispatch adapter injected; the handler's default no-op adapter refuses dispatch. Inject a real adapter via deps.dispatchAdapter (future slice).",
-          );
-        },
-      },
+      // If the caller injected a dispatch adapter, pass it
+      // through to the scheduler. Otherwise preserve the
+      // default no-op adapter (which surfaces a typed NO-GO
+      // at the entrypoint level because `supportsKind` is
+      // false). Production wiring injects a real adapter via
+      // `deps.dispatch_adapter`.
+      dispatch_adapter:
+        deps.dispatch_adapter ?? defaultNoOpDispatchAdapter(),
     },
   };
 
