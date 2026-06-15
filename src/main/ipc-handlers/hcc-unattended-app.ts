@@ -38,6 +38,9 @@ import {
 import type {
   HCCFinalControlledRealDispatchAdapter,
 } from "../../shared/lib/hcc-final-controlled-real-dispatch";
+import type {
+  HCCUnattendedReadyConsumerResult,
+} from "../../shared/lib/hcc-unattended-ready-consumer";
 
 export const HCC_UNATTENDED_APP_IPC_SCHEMA_VERSION =
   "1.0.0" as const;
@@ -114,6 +117,63 @@ export interface HCCUnattendedAppIpcHandlerDeps {
    * because `supportsKind` is false).
    */
   dispatch_adapter?: HCCFinalControlledRealDispatchAdapter;
+  /**
+   * Optional ready_result. When present, the handler passes it
+   * directly into `scheduler_input.ready_result` so the full
+   * entrypoint / scheduler / runner chain can reach the runner's
+   * dispatch call. When absent, the handler uses the default
+   * no-go ready_result scaffold (which preserves the existing
+   * typed NO-GO behavior from the entrypoint because
+   * `verdict` is `"NO-GO"`).
+   *
+   * This field is the second of two injectable deps the
+   * handler needs before a real production dispatch can fire:
+   *   (a) `dispatch_adapter` — the adapter that performs the
+   *       actual action (added in `1a997aa`)
+   *   (b) `ready_result` — the ready consumer verdict that
+   *       passes the `UNATTENDED-READY-CANDIDATE` gate
+   *       (added in this slice)
+   *
+   * The handler does NOT synthesize a real ready_result from
+   * the IPC payload. A future production wiring slice is
+   * responsible for constructing a real
+   * `HCCUnattendedReadyConsumerResult` and injecting it.
+   */
+  ready_result?: HCCUnattendedReadyConsumerResult;
+}
+
+/**
+ * Default no-go ready_result scaffold. Produced when the caller
+ * does NOT inject a real ready_result via
+ * `deps.ready_result`. The entrypoint will block at
+ * `ready_result.verdict must be UNATTENDED-READY-CANDIDATE`
+ * and surface a typed NO-GO, preserving the existing safe
+ * behavior.
+ */
+export function defaultNoGoReadyResult(
+  request: HCCUnattendedAppIpcRequest,
+): HCCUnattendedReadyConsumerResult {
+  return {
+    schema_version: "1.0.0",
+    verdict: "NO-GO",
+    reason:
+      "hcc-unattended-app-ipc: ready_result not provided by IPC handler; handler does not synthesize ready state",
+    task_id: request.task_id,
+    source_plan_ref: request.source_plan_ref,
+    requested_by_user: request.requested_by_user,
+    authorization_id: request.authorization_id,
+    enablement_verdict: "",
+    final_dispatch_verdict: "",
+    unattended_ready: false,
+    night_run_ready: false,
+    go_no_go: "NO-GO",
+    auto_executor_started: false,
+    would_execute: false,
+    executed_commands: [],
+    subprocess_count: 0,
+    any_command_executed: false,
+    real_execution_ready: false,
+  };
 }
 
 /**
@@ -248,31 +308,12 @@ export async function handleHccUnattendedAppIpcRequest(
       requested_by_user: request.requested_by_user,
       authorization_id: request.authorization_id,
       feature_flag_enabled: request.feature_flag_enabled,
-      // The IPC handler does NOT synthesize a real ready_result.
-      // The entrypoint's NO-GO path will surface the gate that
-      // blocked dispatch. A real production caller (future
-      // slice) provides a real ready_result by extending the
-      // IPC payload or by calling the entrypoint directly.
-      ready_result: {
-        schema_version: "1.0.0",
-        verdict: "NO-GO",
-        reason: "hcc-unattended-app-ipc: ready_result not provided by IPC handler; handler does not synthesize ready state",
-        task_id: request.task_id,
-        source_plan_ref: request.source_plan_ref,
-        requested_by_user: request.requested_by_user,
-        authorization_id: request.authorization_id,
-        enablement_verdict: "",
-        final_dispatch_verdict: "",
-        unattended_ready: false,
-        night_run_ready: false,
-        go_no_go: "NO-GO",
-        auto_executor_started: false,
-        would_execute: false,
-        executed_commands: [],
-        subprocess_count: 0,
-        any_command_executed: false,
-        real_execution_ready: false,
-      },
+      // If the caller injected a ready_result, pass it
+      // through to the scheduler. Otherwise use the default
+      // no-go scaffold (which preserves the existing typed
+      // NO-GO because `verdict` is `"NO-GO"`).
+      ready_result:
+        deps.ready_result ?? defaultNoGoReadyResult(request),
       planned_action: {
         planned_action_id: request.planned_action_id,
         planned_action_kind: request.planned_action_kind,
