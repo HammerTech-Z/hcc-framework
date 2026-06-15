@@ -713,5 +713,11 @@ function derivePayloadFromKind(
       content: "",
     };
   }
+  if (kind === "config_patch") {
+    if (existing && (existing as { kind?: string }).kind === "config") {
+      return existing;
+    }
+    return undefined;
+  }
   return undefined;
 }

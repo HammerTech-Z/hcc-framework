@@ -47,6 +47,13 @@ import type {
   HCCFinalControlledRealDispatchAdapter,
   HCCFinalControlledRealDispatchInput,
 } from "../shared/lib/hcc-final-controlled-real-dispatch";
+import {
+  buildDispatchAdapterFromPlanFixture,
+  type HCCPlanFixture,
+} from "../shared/lib/hcc-plan-fixture-generator";
+import type {
+  HCCControlledDispatchExecutorDeps,
+} from "../shared/lib/hcc-controlled-dispatch-adapter";
 
 export const HCC_TERMINAL_PLAN_INVOKER_CLI_SCHEMA_VERSION =
   "1.0.0" as const;
@@ -360,6 +367,7 @@ export async function runTerminalPlanInvokerCli(
   args: HCCTerminalPlanInvokerCliArgs,
   dispatchAdapter: HCCFinalControlledRealDispatchAdapter = defaultNoOpAdapter(),
   readFixture: (path: string) => string = (p) => readFileSync(p, "utf-8"),
+  executorDeps?: HCCControlledDispatchExecutorDeps,
 ): Promise<HCCTerminalPlanInvokerCliResult> {
   // Read fixture file.
   let raw: string;
@@ -380,6 +388,21 @@ export async function runTerminalPlanInvokerCli(
 
   const f = parsed.fixture;
 
+  // If real executors were injected, build a real dispatch
+  // adapter from the fixture's dispatch_backend/dispatch_payload.
+  // The factory is pure: no I/O, no spawn, no ~/.hermes writes.
+  // The injected executors remain the ONLY execution surface.
+  let effectiveAdapter: HCCFinalControlledRealDispatchAdapter = dispatchAdapter;
+  if (executorDeps !== undefined) {
+    effectiveAdapter = buildDispatchAdapterFromPlanFixture(
+      f as Pick<
+        HCCPlanFixture,
+        "task_id" | "planned_action_id" | "dispatch_backend" | "dispatch_payload"
+      >,
+      executorDeps,
+    );
+  }
+
   // Build the terminal invocation fixture.
   const terminalFixture: HCCTerminalInvocationFixture = {
     terminal_agent_session_id: args.terminal_agent_session_id,
@@ -395,13 +418,13 @@ export async function runTerminalPlanInvokerCli(
       whitelist_action_id: f.whitelist_action_id,
       target_path: f.target_path,
       explicit_user_trigger_token: args.explicit_user_trigger_token,
-      dispatch_adapter: dispatchAdapter,
+      dispatch_adapter: effectiveAdapter,
       authorization_result: f.authorization_result as HCCFinalControlledRealDispatchInput["authorization_result"],
       runner_result: f.runner_result as HCCFinalControlledRealDispatchInput["runner_result"],
       audit_result: f.audit_result as HCCFinalControlledRealDispatchInput["audit_result"],
       rollback_plan: f.rollback_plan as HCCFinalControlledRealDispatchInput["rollback_plan"],
     },
-    dispatch_adapter: dispatchAdapter,
+    dispatch_adapter: effectiveAdapter,
   };
 
   // Invoke.

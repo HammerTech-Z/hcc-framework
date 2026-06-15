@@ -620,3 +620,126 @@ describe("HCC terminal plan invoker CLI: static source guard", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Real adapter wiring (HCC-TERMINAL-PLAN-INVOKER-WIRING-001)
+// ---------------------------------------------------------------------------
+
+describe("HCC terminal plan invoker CLI: real adapter wiring", () => {
+  function makeExecutorDeps() {
+    return {
+      shell_executor: vi.fn(async (command_id: string) => ({ command_id })),
+      writer: vi.fn(async () => ({ controlled_command_id: "wired-cc" })),
+      patcher: vi.fn(async () => ({ controlled_command_id: "wired-cc" })),
+    };
+  }
+
+  it("real executors + file_write fixture -> CANDIDATE, writer called", async () => {
+    const executorDeps = makeExecutorDeps();
+    const fixture = makeValidFixture();
+    fixture.dispatch_backend = "file_write";
+    fixture.dispatch_payload = {
+      kind: "file",
+      target_path: "src/shared/lib/notes/wired-001.md",
+      content: "wired",
+    };
+    const r = await runTerminalPlanInvokerCli(
+      makeCliArgs(),
+      undefined, // no explicit adapter
+      () => JSON.stringify(fixture),
+      executorDeps,
+    );
+    expect(r.verdict).toBe("FINAL-CONTROLLED-REAL-DISPATCH-CANDIDATE");
+    expect(executorDeps.writer).toHaveBeenCalledTimes(1);
+  });
+
+  it("real executors + shell_command fixture -> CANDIDATE, shell called", async () => {
+    const executorDeps = makeExecutorDeps();
+    const base = makeValidFixture();
+    const fixture: typeof base = {
+      ...base,
+      dispatch_backend: "shell_command",
+      planned_action_kind: "shell_command",
+      target_path: "src/shared/lib/notes/allowlist-target",
+      dispatch_payload: { argv: ["git", "status"] },
+    };
+    // Re-stamp runner_result and audit_result to match the new kind.
+    fixture.runner_result = {
+      ...fixture.runner_result,
+      planned_action_kind: "shell_command",
+      planned_action_id: fixture.planned_action_id,
+    } as typeof fixture.runner_result;
+    fixture.audit_result = {
+      ...fixture.audit_result,
+      planned_action_kind: "shell_command",
+      planned_action_id: fixture.planned_action_id,
+      target_path: fixture.target_path,
+    } as typeof fixture.audit_result;
+    fixture.rollback_plan = {
+      ...fixture.rollback_plan,
+      planned_action_kind: "shell_command",
+      planned_action_id: fixture.planned_action_id,
+      target_path: fixture.target_path,
+    } as typeof fixture.rollback_plan;
+    const r = await runTerminalPlanInvokerCli(
+      makeCliArgs(),
+      undefined,
+      () => JSON.stringify(fixture),
+      executorDeps,
+    );
+    expect(r.verdict).toBe("FINAL-CONTROLLED-REAL-DISPATCH-CANDIDATE");
+    expect(executorDeps.shell_executor).toHaveBeenCalledTimes(1);
+  });
+
+  it("no executorDeps -> no-op adapter path, dispatch never called", async () => {
+    const fixture = makeValidFixture();
+    const r = await runTerminalPlanInvokerCli(
+      makeCliArgs(),
+      undefined, // no adapter
+      () => JSON.stringify(fixture),
+      undefined, // no executors
+    );
+    expect(r.verdict).toBe("NO-GO");
+  });
+
+  it("executorDeps + non-allowlisted shell -> NO-GO via controlled dispatch deny", async () => {
+    const executorDeps = {
+      shell_executor: vi.fn(async (cid: string) => ({ command_id: cid })),
+      writer: vi.fn(async () => ({ controlled_command_id: "x" })),
+      patcher: vi.fn(async () => ({ controlled_command_id: "x" })),
+    };
+    const base = makeValidFixture();
+    const fixture: typeof base = {
+      ...base,
+      dispatch_backend: "shell_command",
+      planned_action_kind: "shell_command",
+      dispatch_payload: { argv: ["rm", "-rf", "/"] },
+    };
+    fixture.runner_result = {
+      ...fixture.runner_result,
+      planned_action_kind: "shell_command",
+      planned_action_id: fixture.planned_action_id,
+    } as typeof fixture.runner_result;
+    fixture.audit_result = {
+      ...fixture.audit_result,
+      planned_action_kind: "shell_command",
+      planned_action_id: fixture.planned_action_id,
+      target_path: fixture.target_path,
+    } as typeof fixture.audit_result;
+    fixture.rollback_plan = {
+      ...fixture.rollback_plan,
+      planned_action_kind: "shell_command",
+      planned_action_id: fixture.planned_action_id,
+      target_path: fixture.target_path,
+    } as typeof fixture.rollback_plan;
+    const r = await runTerminalPlanInvokerCli(
+      makeCliArgs(),
+      undefined,
+      () => JSON.stringify(fixture),
+      executorDeps,
+    );
+    expect(r.verdict).toBe("NO-GO");
+    expect(r.reason).toContain("DENIED");
+    expect(executorDeps.shell_executor).not.toHaveBeenCalled();
+  });
+});

@@ -7,6 +7,14 @@
 // the exact shape consumed by `bin/hcc-terminal-plan-invoker.mjs`
 // / `src/cli/hcc-terminal-plan-invoker.ts::parsePlanFixture`.
 //
+// This module also exports `buildDispatchAdapterFromPlanFixture`
+// — a pure factory that converts a plan fixture's
+// `dispatch_backend` / `dispatch_payload` into a real
+// `HCCFinalControlledRealDispatchAdapter` backed by the caller's
+// injected `executors`. The factory never spawns, writes, or
+// patches directly; it only wires the caller-supplied executors
+// into the controlled dispatch adapter.
+//
 // Per HCC governance:
 //   - NO background timer / cron / setInterval / setTimeout.
 //   - NO direct spawn / exec / child_process.
@@ -222,4 +230,108 @@ export async function generatePlanFixture(
       wrote_to_disk: !isDryRun,
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Dispatch adapter factory
+// ---------------------------------------------------------------------------
+
+import {
+  buildControlledDispatchAdapter,
+  type HCCControlledDispatchExecutorDeps,
+  type HCCControlledDispatchInput,
+} from "./hcc-controlled-dispatch-adapter";
+import type {
+  HCCFinalControlledRealDispatchAdapter,
+} from "./hcc-final-controlled-real-dispatch";
+
+/**
+ * Build a real `HCCFinalControlledRealDispatchAdapter` from a
+ * parsed plan fixture + injected executors. Pure factory — no
+ * side effects, no I/O. The factory wires the caller's
+ * `executors.{shell_executor, writer, patcher}` into the
+ * controlled dispatch backend selected by the fixture's
+ * `dispatch_backend` field.
+ *
+ * The factory returns a fresh closure for each call so callers
+ * can mint multiple independent adapters (e.g., one per
+ * terminal invocation).
+ *
+ * The factory does NOT:
+ *   - call any executor itself
+ *   - read or write files
+ *   - spawn processes
+ *   - touch `~/.hermes/**`
+ *   - set `go_no_go: "GO"` or `night_run_ready: true`
+ */
+export function buildDispatchAdapterFromPlanFixture(
+  fixture: Pick<
+    HCCPlanFixtureGeneratorInput,
+    | "task_id"
+    | "planned_action_id"
+    | "dispatch_backend"
+    | "dispatch_payload"
+  >,
+  executors: HCCControlledDispatchExecutorDeps,
+  now: () => string = () => new Date().toISOString(),
+): HCCFinalControlledRealDispatchAdapter {
+  return buildControlledDispatchAdapter(() => ({
+    planned_action_id: fixture.planned_action_id,
+    backend: fixture.dispatch_backend,
+    payload: derivePayloadFromPlanFixture(
+      fixture.dispatch_backend,
+      fixture.dispatch_payload,
+    ),
+    trigger_proof: {
+      explicit_user_trigger_token: fixture.task_id,
+      source_service: "hcc-user-explicit-local-invoker",
+    },
+    executors,
+    now,
+  }));
+}
+
+/**
+ * Pure projection: convert the fixture's `dispatch_payload`
+ * (an untyped JSON value produced by the generator) into the
+ * typed `HCCControlledDispatchInput["payload"]` shape the
+ * controlled dispatch adapter expects. Returns `undefined` for
+ * `in_memory` backend (no payload required).
+ */
+function derivePayloadFromPlanFixture(
+  backend: HCCPlanFixtureDispatchBackend,
+  raw: unknown,
+): HCCControlledDispatchInput["payload"] {
+  if (backend === "in_memory") return undefined;
+  if (backend === "shell_command") {
+    if (raw === null || typeof raw !== "object") return undefined;
+    const obj = raw as { argv?: unknown };
+    if (!Array.isArray(obj.argv)) return undefined;
+    const argv: string[] = [];
+    for (const a of obj.argv) {
+      if (typeof a !== "string") return undefined;
+      argv.push(a);
+    }
+    return { kind: "shell", argv };
+  }
+  if (backend === "file_write") {
+    if (raw === null || typeof raw !== "object") return undefined;
+    const obj = raw as { target_path?: unknown; content?: unknown };
+    if (typeof obj.target_path !== "string") return undefined;
+    if (typeof obj.content !== "string") return undefined;
+    return { kind: "file", target_path: obj.target_path, content: obj.content };
+  }
+  // config_patch
+  if (raw === null || typeof raw !== "object") return undefined;
+  const obj = raw as { target_path?: unknown; patch?: unknown };
+  if (typeof obj.target_path !== "string") return undefined;
+  if (!Array.isArray(obj.patch)) return undefined;
+  const patch: Array<{ key: string; value: unknown }> = [];
+  for (const entry of obj.patch) {
+    if (entry === null || typeof entry !== "object") return undefined;
+    const e = entry as { key?: unknown; value?: unknown };
+    if (typeof e.key !== "string") return undefined;
+    patch.push({ key: e.key, value: e.value });
+  }
+  return { kind: "config", target_path: obj.target_path, patch };
 }

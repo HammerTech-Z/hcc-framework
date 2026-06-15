@@ -7,6 +7,7 @@ import {
   buildPlanFixtureJson,
   generatePlanFixture,
   validatePlanFixtureInput,
+  buildDispatchAdapterFromPlanFixture,
   HCC_PLAN_FIXTURE_GENERATOR_SCHEMA_VERSION,
   type HCCPlanFixtureGeneratorInput,
 } from "../../src/shared/lib/hcc-plan-fixture-generator";
@@ -461,5 +462,129 @@ describe("HCC plan fixture generator: static source guard", () => {
     for (const forbidden of FORBIDDEN) {
       expect(stripped).not.toContain(forbidden);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildDispatchAdapterFromPlanFixture (wiring)
+// ---------------------------------------------------------------------------
+
+describe("HCC plan fixture generator: buildDispatchAdapterFromPlanFixture", () => {
+  function makeExecutors() {
+    return {
+      shell_executor: vi.fn(async (command_id: string) => ({ command_id })),
+      writer: vi.fn(async () => ({ controlled_command_id: "wired-cc" })),
+      patcher: vi.fn(async () => ({ controlled_command_id: "wired-cc" })),
+    };
+  }
+
+  it("returns adapter with supportsKind true for shell/file/config", () => {
+    const adapter = buildDispatchAdapterFromPlanFixture(
+      {
+        task_id: "PLAN-WIRE-001",
+        planned_action_id: "act-wire-001",
+        dispatch_backend: "file_write",
+        dispatch_payload: { target_path: "x", content: "y" },
+      },
+      makeExecutors(),
+    );
+    expect(adapter.supportsKind("shell_command")).toBe(true);
+    expect(adapter.supportsKind("file_write")).toBe(true);
+    expect(adapter.supportsKind("config_patch")).toBe(true);
+  });
+
+  it("dispatches file_write -> calls writer", async () => {
+    const execs = makeExecutors();
+    const adapter = buildDispatchAdapterFromPlanFixture(
+      {
+        task_id: "PLAN-WIRE-001",
+        planned_action_id: "act-wire-001",
+        dispatch_backend: "file_write",
+        dispatch_payload: {
+          kind: "file",
+          target_path: "src/notes/x.md",
+          content: "hello",
+        },
+      },
+      execs,
+      () => "2026-06-16T00:00:00.000Z",
+    );
+    const r = await adapter.dispatch("act-wire-001", "file_write", "src/notes/x.md");
+    expect(r.controlled_command_id).toBe("wired-cc");
+    expect(execs.writer).toHaveBeenCalledTimes(1);
+  });
+
+  it("dispatches shell_command allowlisted -> calls shell_executor", async () => {
+    const execs = makeExecutors();
+    const adapter = buildDispatchAdapterFromPlanFixture(
+      {
+        task_id: "PLAN-WIRE-001",
+        planned_action_id: "act-wire-001",
+        dispatch_backend: "shell_command",
+        dispatch_payload: { argv: ["git", "status"] },
+      },
+      execs,
+    );
+    const r = await adapter.dispatch("act-wire-001", "shell_command", "x");
+    expect(r.controlled_command_id).toContain("shell:");
+    expect(execs.shell_executor).toHaveBeenCalledTimes(1);
+  });
+
+  it("dispatches config_patch -> calls patcher", async () => {
+    const execs = makeExecutors();
+    const adapter = buildDispatchAdapterFromPlanFixture(
+      {
+        task_id: "PLAN-WIRE-001",
+        planned_action_id: "act-wire-001",
+        dispatch_backend: "config_patch",
+        dispatch_payload: {
+          target_path: "docs/config.json",
+          patch: [{ key: "k", value: "v" }],
+        },
+      },
+      execs,
+    );
+    const r = await adapter.dispatch(
+      "act-wire-001",
+      "config_patch",
+      "docs/config.json",
+    );
+    expect(r.controlled_command_id).toBe("wired-cc");
+    expect(execs.patcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("dispatches in_memory -> no executor call", async () => {
+    const execs = makeExecutors();
+    const adapter = buildDispatchAdapterFromPlanFixture(
+      {
+        task_id: "PLAN-WIRE-001",
+        planned_action_id: "act-wire-001",
+        dispatch_backend: "in_memory",
+        dispatch_payload: null,
+      },
+      execs,
+    );
+    const r = await adapter.dispatch("act-wire-001", "in_memory", "x");
+    expect(r.controlled_command_id).toContain("in-memory:");
+    expect(execs.shell_executor).not.toHaveBeenCalled();
+    expect(execs.writer).not.toHaveBeenCalled();
+    expect(execs.patcher).not.toHaveBeenCalled();
+  });
+
+  it("non-allowlisted shell -> throws DENIED, executor not called", async () => {
+    const execs = makeExecutors();
+    const adapter = buildDispatchAdapterFromPlanFixture(
+      {
+        task_id: "PLAN-WIRE-001",
+        planned_action_id: "act-wire-001",
+        dispatch_backend: "shell_command",
+        dispatch_payload: { argv: ["rm", "-rf", "/"] },
+      },
+      execs,
+    );
+    await expect(
+      adapter.dispatch("act-wire-001", "shell_command", "x"),
+    ).rejects.toThrow(/DENIED/);
+    expect(execs.shell_executor).not.toHaveBeenCalled();
   });
 });
