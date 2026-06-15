@@ -75,8 +75,30 @@ export interface HCCUnattendedAppIpcInstallGestureDeps {
       handler_deps?: unknown;
     },
   ) => HCCUnattendedAppIpcInstallResult;
-  /** Optional `handler_deps` passthrough to the installer. */
+  /**
+   * Optional `handler_deps` passthrough to the installer.
+   * When the caller supplies this AND
+   * `buildProductionHandlerDeps` is absent, the wire helper
+   * passes the value verbatim. When the caller supplies
+   * `buildProductionHandlerDeps`, the wire helper calls it
+   * lazily on the first successful arming and caches the
+   * result for the idempotent re-arm path.
+   */
   handler_deps?: unknown;
+  /**
+   * Optional factory that produces the `handler_deps` for the
+   * installer. The factory is called exactly once per
+   * successful arming (idempotency: repeated arming does NOT
+   * re-call the factory). The factory is pure: it must NOT
+   * perform I/O (no files, no shell, no IPC, no timers). It
+   * may construct production instances from injected
+   * fixtures, executors, and ready-state evaluators.
+   *
+   * Default: undefined. When absent, the wire helper passes
+   * `handler_deps: undefined` to the installer, which
+   * preserves the existing safe NO-GO fallback.
+   */
+  buildProductionHandlerDeps?: () => unknown;
   /**
    * `Date.now` indirection. Default: `() => Date.now()`. The
    * wire helper stamps a `gesture_handled_at` ISO 8601 on
@@ -89,7 +111,12 @@ export interface HCCUnattendedAppIpcInstallGestureDeps {
    * Default: a module-scoped `boolean` that flips to `true`
    * after the first successful install.
    */
-  stateStore?: { installed: boolean; lastResult?: HCCUnattendedAppIpcInstallResult };
+  stateStore?: {
+    installed: boolean;
+    lastResult?: HCCUnattendedAppIpcInstallResult;
+    /** Cached production handler_deps (computed once on first arming). */
+    cachedHandlerDeps?: unknown;
+  };
 }
 
 /**
@@ -123,7 +150,11 @@ function isValidPayload(
  * Module-scoped idempotency state. Tests inject a custom
  * `stateStore` to keep tests isolated from each other.
  */
-const defaultStateStore: { installed: boolean; lastResult?: HCCUnattendedAppIpcInstallResult } = {
+const defaultStateStore: {
+  installed: boolean;
+  lastResult?: HCCUnattendedAppIpcInstallResult;
+  cachedHandlerDeps?: unknown;
+} = {
   installed: false,
 };
 
@@ -183,19 +214,43 @@ export async function handleHccUnattendedAppIpcInstallGesture(
   ) => HCCUnattendedAppIpcInstallResult =
     deps.installHccUnattendedAppIpc ?? installHccUnattendedAppIpc;
 
+  // Resolve the production handler_deps. Three sources, in
+  // priority order:
+  //   1. `stateStore.cachedHandlerDeps` — set on a previous
+  //      successful arming. Idempotent: the factory is NOT
+  //      re-called.
+  //   2. `deps.buildProductionHandlerDeps` — the factory the
+  //      caller injected. Called exactly once on the first
+  //      successful arming. The factory is pure (no I/O).
+  //   3. `deps.handler_deps` — the static value the caller
+  //      supplied. Used verbatim (no factory invocation).
+  //   4. undefined — safe default. Preserves the existing
+  //      NO-GO fallback when no production wiring is provided.
+  let resolvedHandlerDeps: unknown;
+  if (stateStore.cachedHandlerDeps !== undefined) {
+    resolvedHandlerDeps = stateStore.cachedHandlerDeps;
+  } else if (deps.buildProductionHandlerDeps) {
+    resolvedHandlerDeps = deps.buildProductionHandlerDeps();
+  } else {
+    resolvedHandlerDeps = deps.handler_deps;
+  }
+
   const installResult: HCCUnattendedAppIpcInstallResult = installFn(
     deps.ipcMainLike,
     {
-      handler_deps: deps.handler_deps as
+      handler_deps: resolvedHandlerDeps as
         | HCCUnattendedAppIpcInstallDeps["handler_deps"]
         | undefined,
     },
   );
 
-  // Cache the result for idempotency. We only cache success.
+  // Cache the result AND the resolved deps for idempotency. We
+  // only cache success — a NO-GO result is not cached so a
+  // future retry can re-attempt with a possibly-fixed payload.
   if (installResult.verdict === "INSTALLED") {
     stateStore.installed = true;
     stateStore.lastResult = installResult;
+    stateStore.cachedHandlerDeps = resolvedHandlerDeps;
   }
 
   return {
