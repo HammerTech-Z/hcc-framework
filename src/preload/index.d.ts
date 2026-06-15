@@ -620,6 +620,28 @@ interface HermesAPI {
 
   readUnderstandingHistory: (filename: string) => Promise<{ content?: string; error?: string }>;
 
+  // HCC Unattended App IPC arming channel
+  // (HCC-UNATTENDED-APP-IPC-RENDERER-001). Narrow bridge;
+  // renderer MUST NOT see raw ipcRenderer. Final dispatch
+  // channel is NOT exposed — registered only by the
+  // main-side installer in response to a successful arming
+  // gesture.
+  armHccUnattendedAppIpc: (payload: {
+    user_confirmation: true;
+    explicit_unattended_trigger_token: string;
+    feature_flag_enabled: true;
+  }) => Promise<{
+    schema_version: "1.0.0";
+    verdict: "INSTALLED" | "NO-GO";
+    reason: string;
+    channel: string;
+    handler_count: number;
+    installed_at: string;
+    gesture_verdict: "INSTALLED" | "ALREADY-INSTALLED" | "NO-GO";
+    gesture_handled_at: string;
+    channel_armed: "hcc:unattended-app-ipc-install";
+  }>;
+
   understandAnything: (
     input: string,
     filePath?: string,

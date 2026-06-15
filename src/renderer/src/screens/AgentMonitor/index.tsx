@@ -10,6 +10,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useChartColors } from "../../hooks/useChartColors";
+import { HccUnattendedArming } from "../../components/HccUnattendedArming/HccUnattendedArming";
 
 interface GatewayState {
   pid: number;
@@ -627,6 +628,15 @@ export default function AgentMonitor() {
             ))}
           </div>
         )}
+
+        {/* HCC Unattended App IPC arming entrypoint
+            (HCC-UNATTENDED-APP-IPC-RENDERER-001). The button is
+            safe by default — it only opens a confirmation
+            dialog. The arming bridge is called only after the
+            user explicitly confirms. */}
+        <div className="monitor-section">
+          <HccUnattendedArming />
+        </div>
       </div>
     </div>
   );
