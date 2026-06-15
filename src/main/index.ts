@@ -83,6 +83,10 @@ import { listModels, addModel, removeModel, updateModel } from "./models";
 import { createKnowledgeIpcStartup } from "./knowledge-ipc-startup";
 import { installAutoExecutorHost } from "./auto-executor-bootstrap";
 import {
+  handleHccUnattendedAppIpcInstallGesture,
+  HCC_UNATTENDED_APP_IPC_INSTALL_CHANNEL,
+} from "./ipc-handlers/wire-hcc-unattended-app-ipc";
+import {
   listProfiles,
   createProfile,
   deleteProfile,
@@ -1100,6 +1104,21 @@ function setupIPC(): void {
       return [];
     }
   });
+
+  // HCC Unattended App IPC installer arming channel.
+  // The final HCC dispatch handler
+  // (HCC_UNATTENDED_APP_IPC_CHANNEL) is NOT registered here.
+  // It is registered ONLY when the renderer sends an
+  // explicit install gesture to this arming channel. The
+  // gesture handler is idempotent — repeated valid calls
+  // do not re-register the dispatch channel.
+  ipcMain.handle(
+    HCC_UNATTENDED_APP_IPC_INSTALL_CHANNEL,
+    async (_event, payload) =>
+      handleHccUnattendedAppIpcInstallGesture(payload, {
+        ipcMainLike: ipcMain,
+      }),
+  );
 
   // Knowledge IPC Migration Slice 7: wire guarded knowledge IPC handlers
   // with the real main-side gateway transport. The transport closure
