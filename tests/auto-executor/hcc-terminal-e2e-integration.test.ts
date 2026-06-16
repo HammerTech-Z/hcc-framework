@@ -424,7 +424,7 @@ describe("HCC terminal e2e integration: negative paths", () => {
     expect(spawn.mock.calls).toHaveLength(0);
   });
 
-  it("shell runner timeout -> controlled result, runner kill(SIGKILL)", async () => {
+  it("shell runner timeout -> NO-GO via EXECUTOR_REJECTED, runner kill(SIGKILL)", async () => {
     // To exercise the runner timeout path, we use a slow child.
     const emitter = new EventEmitter();
     const stdout = new Readable({ read() {} });
@@ -444,7 +444,6 @@ describe("HCC terminal e2e integration: negative paths", () => {
     }) as unknown as typeof setTimeout;
     const clearTimeoutFn = vi.fn() as unknown as typeof clearTimeout;
     const spawn = makeSpawnMock(() => slow) as MockSpawn;
-    // Build a custom runner with manually-triggered timer.
     const fastTimeoutRunner = buildProductionShellRunner({
       repoRoot: "/tmp/e2e-fake-repo",
       spawn,
@@ -461,8 +460,6 @@ describe("HCC terminal e2e integration: negative paths", () => {
       "/tmp/x.json",
     );
     if (!gen.ok) throw new Error("gen failed");
-    // Start the CLI but do NOT await yet. Then trigger the
-    // timer, then await.
     const cliP = runTerminalPlanInvokerCli(
       {
         plan_fixture_path: "/tmp/x.json",
@@ -475,22 +472,52 @@ describe("HCC terminal e2e integration: negative paths", () => {
       () => gen.result.fixture_json,
       executors,
     );
-    // Yield so the dispatch enters spawn and registers the
-    // timer.
     await new Promise((resolve) => setImmediate(resolve));
     trigger!();
     const r = await cliP;
-    // The runner's timed_out=true is treated by the dispatch
-    // adapter as a successful controlled dispatch (it did not
-    // throw). The result is therefore CANDIDATE — the
-    // runner's controlled_command_id is recorded, and the
-    // child was killed with SIGKILL. The "controlled" prefix
-    // matters: the dispatch DID happen, it just produced a
-    // timed-out child. The CLI's NO-GO is reserved for actual
-    // dispatch errors (denied / executor-rejected), not for
-    // timed-out children.
+    // Post-fix semantics: timeout must produce NO-GO
+    // (EXECUTOR_REJECTED). The runner still killed the
+    // child with SIGKILL.
     expect(slow.kill).toHaveBeenCalledWith("SIGKILL");
-    expect(r.verdict).toBe("FINAL-CONTROLLED-REAL-DISPATCH-CANDIDATE");
+    expect(r.verdict).toBe("NO-GO");
+    expect(r.reason).toMatch(/timed out|EXECUTOR_REJECTED/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Post-fix result semantics: non-zero exit, signal, timeout -> NO-GO
+// ---------------------------------------------------------------------------
+
+describe("HCC terminal e2e integration: shell runner result semantics (post-fix)", () => {
+  it("shell exits non-zero -> NO-GO, runner called once", async () => {
+    const spawn = makeSpawnMock(() => makeMockChild({ exitCode: 1, stderr: "boom" }));
+    const { result } = await runFullChain({
+      dispatch_payload: { argv: ["git", "status"] },
+      spawn,
+    });
+    expect(result.verdict).toBe("NO-GO");
+    expect(result.reason).toMatch(/non-zero|EXECUTOR_REJECTED/);
+    expect(spawn.mock.calls).toHaveLength(1);
+  });
+
+  it("shell terminated by signal -> NO-GO, runner called once", async () => {
+    const spawn = makeSpawnMock(() => makeMockChild({ signal: "SIGTERM" }));
+    const { result } = await runFullChain({
+      dispatch_payload: { argv: ["git", "status"] },
+      spawn,
+    });
+    expect(result.verdict).toBe("NO-GO");
+    expect(result.reason).toMatch(/signal|EXECUTOR_REJECTED/);
+    expect(spawn.mock.calls).toHaveLength(1);
+  });
+
+  it("shell exit 0 -> CANDIDATE (regression: success path still works)", async () => {
+    const spawn = makeSpawnMock(() => makeMockChild({ exitCode: 0 }));
+    const { result } = await runFullChain({
+      dispatch_payload: { argv: ["git", "status"] },
+      spawn,
+    });
+    expect(result.verdict).toBe("FINAL-CONTROLLED-REAL-DISPATCH-CANDIDATE");
   });
 });
 

@@ -142,6 +142,61 @@ describe("HCC terminal executor impl: shell_executor", () => {
     ).rejects.toThrow(/runner rejected/);
   });
 
+  it("runner returns timed_out:true -> shell_executor throws", async () => {
+    const shell = (async () => ({
+      stdout: "",
+      stderr: "",
+      code: -1,
+      timed_out: true,
+      signal: "SIGKILL" as NodeJS.Signals,
+    })) as unknown as ShellSpawnRunner;
+    const e = buildTerminalExecutors({ repoRoot: REPO, shellRunner: shell });
+    await expect(
+      e.shell_executor("git.status", ["git", "status"]),
+    ).rejects.toThrow(/timed out/);
+  });
+
+  it("runner returns non-null signal -> shell_executor throws", async () => {
+    const shell = (async () => ({
+      stdout: "",
+      stderr: "",
+      code: 0,
+      timed_out: false,
+      signal: "SIGTERM" as NodeJS.Signals,
+    })) as unknown as ShellSpawnRunner;
+    const e = buildTerminalExecutors({ repoRoot: REPO, shellRunner: shell });
+    await expect(
+      e.shell_executor("git.status", ["git", "status"]),
+    ).rejects.toThrow(/signal/);
+  });
+
+  it("runner returns non-zero code (no signal, not timed_out) -> shell_executor throws", async () => {
+    const shell = (async () => ({
+      stdout: "",
+      stderr: "boom",
+      code: 1,
+      timed_out: false,
+      signal: null as NodeJS.Signals | null,
+    })) as unknown as ShellSpawnRunner;
+    const e = buildTerminalExecutors({ repoRoot: REPO, shellRunner: shell });
+    await expect(
+      e.shell_executor("git.status", ["git", "status"]),
+    ).rejects.toThrow(/non-zero code 1/);
+  });
+
+  it("runner returns code 0 with no signal and not timed_out -> command_id returned", async () => {
+    const shell = (async () => ({
+      stdout: "ok",
+      stderr: "",
+      code: 0,
+      timed_out: false,
+      signal: null as NodeJS.Signals | null,
+    })) as unknown as ShellSpawnRunner;
+    const e = buildTerminalExecutors({ repoRoot: REPO, shellRunner: shell });
+    const r = await e.shell_executor("git.status", ["git", "status"]);
+    expect(r.command_id).toBe("git.status");
+  });
+
   it("exposes a 3-entry frozen allowlist (read-only public view)", () => {
     expect(HCC_TERMINAL_SHELL_ALLOWLIST_READONLY).toHaveLength(3);
     expect(HCC_TERMINAL_SHELL_ALLOWLIST_READONLY.map((e) => e.command_id)).toEqual(

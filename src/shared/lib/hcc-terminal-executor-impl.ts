@@ -95,8 +95,26 @@ export interface ShellSpawnRunner {
    * Run an argv. MUST throw on rejection. The lib NEVER
    * calls `child_process` directly; the runner is the only
    * shell surface.
+   *
+   * The `code === 0` requirement for a successful dispatch
+   * is enforced by the executor impl. The runner MAY also
+   * report `timed_out: true` or a non-null `signal`; both
+   * cause the executor to throw a typed EXECUTOR_REJECTED
+   * error so the dispatch can never produce
+   * FINAL-CONTROLLED-REAL-DISPATCH-CANDIDATE under those
+   * conditions. The minimum required field is `code`; the
+   * others are optional for backward compatibility with
+   * simple test runners.
    */
-  (argv: readonly string[]): Promise<{ stdout: string; stderr: string; code: number }>;
+  (
+    argv: readonly string[],
+  ): Promise<{
+    stdout: string;
+    stderr: string;
+    code: number;
+    timed_out?: boolean;
+    signal?: NodeJS.Signals | null;
+  }>;
 }
 
 export interface FileSystemRunner {
@@ -286,7 +304,30 @@ export function buildTerminalExecutors(
     }
     // argv is the allowlist's argv (identity-matched), so the
     // runner gets exactly what the allowlist prescribes.
-    await shellRunner(match.argv);
+    const result = await shellRunner(match.argv);
+    // Post-runner result semantics: a non-zero exit code,
+    // a non-null signal, or a timed-out child MUST NOT
+    // produce a successful dispatch. Throwing here
+    // propagates as EXECUTOR_REJECTED through the dispatch
+    // adapter, so the final dispatch can never reach
+    // FINAL-CONTROLLED-REAL-DISPATCH-CANDIDATE for a
+    // failed child. Only `code === 0 && !timed_out && signal
+    // === null` produces a successful dispatch.
+    if (result.timed_out === true) {
+      throw new Error(
+        `shell_executor: shell timed out (command_id="${match.command_id}"). Rejecting.`,
+      );
+    }
+    if (result.signal !== null && result.signal !== undefined) {
+      throw new Error(
+        `shell_executor: shell terminated by signal ${result.signal} (command_id="${match.command_id}"). Rejecting.`,
+      );
+    }
+    if (result.code !== 0) {
+      throw new Error(
+        `shell_executor: shell exited with non-zero code ${result.code} (command_id="${match.command_id}"). Rejecting.`,
+      );
+    }
     return { command_id: match.command_id };
   };
 
