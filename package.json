@@ -1,0 +1,18 @@
+{
+  "name": "hcc-framework",
+  "version": "0.1.0",
+  "description": "HCC decision + contract framework — extracted from hermes-pro @ 1427626. NO runtime. NO auto-execution.",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.0"
+  }
+}
